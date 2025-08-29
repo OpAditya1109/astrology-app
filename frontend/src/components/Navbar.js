@@ -1,11 +1,13 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
+import { Menu, X } from "lucide-react"; // hamburger + close icons
 
 export default function Navbar() {
   const navigate = useNavigate();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
-  // Check login status on mount + listen for changes
+  // Check login status
   useEffect(() => {
     const checkLogin = () => {
       const token = sessionStorage.getItem("token");
@@ -14,7 +16,6 @@ export default function Navbar() {
 
     checkLogin();
     window.addEventListener("storage", checkLogin);
-
     return () => window.removeEventListener("storage", checkLogin);
   }, []);
 
@@ -25,11 +26,8 @@ export default function Navbar() {
   };
 
   const handleLogoClick = () => {
-    if (isLoggedIn) {
-      navigate("/user/dashboard");
-    } else {
-      navigate("/");
-    }
+    if (isLoggedIn) navigate("/user/dashboard");
+    else navigate("/");
   };
 
   return (
@@ -42,7 +40,7 @@ export default function Navbar() {
             className="cursor-pointer flex items-center gap-2"
           >
             <img
-              src="/Bhavanaastro-logo.jpeg" // place in public folder for direct access
+              src="/Bhavanaastro-logo.jpeg"
               alt="Logo"
               className="h-10 w-10 rounded-full object-cover"
             />
@@ -51,41 +49,26 @@ export default function Navbar() {
             </span>
           </span>
 
-          {/* Navigation Links */}
+          {/* Desktop Links */}
           <div className="hidden md:flex items-center gap-6">
             {!isLoggedIn ? (
               <>
-                <Link
-                  to="/"
-                  className="text-gray-700 hover:text-purple-700 font-medium"
-                >
+                <Link to="/" className="text-gray-700 hover:text-purple-700 font-medium">
                   Home
                 </Link>
-                <Link
-                  to="/login"
-                  className="text-gray-700 hover:text-purple-700 font-medium"
-                >
+                <Link to="/login" className="text-gray-700 hover:text-purple-700 font-medium">
                   Login
                 </Link>
-                <Link
-                  to="/user/register"
-                  className="text-gray-700 hover:text-purple-700 font-medium"
-                >
+                <Link to="/user/register" className="text-gray-700 hover:text-purple-700 font-medium">
                   User Register
                 </Link>
-                <Link
-                  to="/astrologer/register"
-                  className="text-gray-700 hover:text-purple-700 font-medium"
-                >
+                <Link to="/astrologer/register" className="text-gray-700 hover:text-purple-700 font-medium">
                   Astrologer Register
                 </Link>
               </>
             ) : (
               <>
-                <Link
-                  to="/user/wallet"
-                  className="text-gray-700 hover:text-purple-700 font-medium"
-                >
+                <Link to="/user/wallet" className="text-gray-700 hover:text-purple-700 font-medium">
                   Wallet
                 </Link>
                 <button
@@ -97,7 +80,52 @@ export default function Navbar() {
               </>
             )}
           </div>
+
+          {/* Mobile Hamburger */}
+          <button
+            className="md:hidden text-gray-700"
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
+          >
+            {isMenuOpen ? <X size={28} /> : <Menu size={28} />}
+          </button>
         </div>
+
+        {/* Mobile Dropdown Menu */}
+        {isMenuOpen && (
+          <div className="md:hidden bg-white shadow-md px-6 py-4 flex flex-col gap-4">
+            {!isLoggedIn ? (
+              <>
+                <Link to="/" className="text-gray-700 hover:text-purple-700 font-medium" onClick={() => setIsMenuOpen(false)}>
+                  Home
+                </Link>
+                <Link to="/login" className="text-gray-700 hover:text-purple-700 font-medium" onClick={() => setIsMenuOpen(false)}>
+                  Login
+                </Link>
+                <Link to="/user/register" className="text-gray-700 hover:text-purple-700 font-medium" onClick={() => setIsMenuOpen(false)}>
+                  User Register
+                </Link>
+                <Link to="/astrologer/register" className="text-gray-700 hover:text-purple-700 font-medium" onClick={() => setIsMenuOpen(false)}>
+                  Astrologer Register
+                </Link>
+              </>
+            ) : (
+              <>
+                <Link to="/user/wallet" className="text-gray-700 hover:text-purple-700 font-medium" onClick={() => setIsMenuOpen(false)}>
+                  Wallet
+                </Link>
+                <button
+                  onClick={() => {
+                    handleLogout();
+                    setIsMenuOpen(false);
+                  }}
+                  className="text-gray-700 hover:text-red-600 font-medium text-left"
+                >
+                  Logout
+                </button>
+              </>
+            )}
+          </div>
+        )}
       </nav>
 
       {/* Spacer */}
