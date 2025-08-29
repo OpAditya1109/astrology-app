@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { io } from "socket.io-client";
 
-const socket = io("http://localhost:5000"); // Your backend Socket.IO URL
+const socket = io("https://bhavanaastro.onrender.com"); // Your backend Socket.IO URL
 
 export default function AstrologerConsultations() {
   const [consultations, setConsultations] = useState([]);
@@ -22,7 +22,7 @@ export default function AstrologerConsultations() {
       try {
         const token = sessionStorage.getItem("token");
         const res = await axios.get(
-          `http://localhost:5000/api/consultations/${astrologer.id}`,
+          `https://bhavanaastro.onrender.com/api/consultations/${astrologer.id}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
 
@@ -76,7 +76,7 @@ export default function AstrologerConsultations() {
     try {
       const token = sessionStorage.getItem("token");
       await axios.delete(
-        `http://localhost:5000/api/consultations/${consultationId}`,
+        `https://bhavanaastro.onrender.com/api/consultations/${consultationId}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
 

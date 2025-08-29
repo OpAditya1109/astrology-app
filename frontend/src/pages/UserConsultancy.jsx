@@ -71,7 +71,7 @@ export default function UserConsultancy() {
     const fetchAstrologers = async () => {
       try {
         setLoading(true);
-        const response = await axios.get("http://localhost:5000/api/Consult-astrologers");
+        const response = await axios.get("https://bhavanaastro.onrender.com/api/Consult-astrologers");
         setConsultations(response.data.astrologers || []);
       } catch (error) {
         console.error("Error fetching astrologers:", error);
@@ -104,7 +104,7 @@ export default function UserConsultancy() {
     try {
       const token = sessionStorage.getItem("token");
       const res = await axios.post(
-        "http://localhost:5000/api/consultations",
+        "https://bhavanaastro.onrender.com/api/consultations",
         { userId: currentUser.id, astrologerId, topic: "General Chat", mode: "Chat" },
         { headers: { Authorization: `Bearer ${token}` } }
       );

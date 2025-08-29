@@ -18,7 +18,7 @@ export default function ChatPage() {
 
     socket.emit("joinRoom", roomId);
 
-    fetch(`http://localhost:5000/api/consultations/${roomId}/messages`)
+    fetch(`https://bhavanaastro.onrender.com/api/consultations/${roomId}/messages`)
       .then((res) => res.json())
       .then((data) => setMessages(data));
 

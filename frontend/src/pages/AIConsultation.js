@@ -12,7 +12,7 @@ export default function AIConsultation() {
     const fetchAI = async () => {
       try {
         setLoading(true);
-        const res = await axios.get("http://localhost:5000/api/ai-astrologer");
+        const res = await axios.get("https://bhavanaastro.onrender.com/api/ai-astrologer");
         setAiAstrologer(res.data.astrologer || null); // corrected line
       } catch (err) {
         console.error("Failed to fetch AI astrologer:", err);
@@ -36,7 +36,7 @@ export default function AIConsultation() {
     try {
       const token = sessionStorage.getItem("token");
       const res = await axios.post(
-        `http://localhost:5000/api/ai-astrologer/start/${currentUser.id}`,
+        `https://bhavanaastro.onrender.com/api/ai-astrologer/start/${currentUser.id}`,
         {},
         { headers: { Authorization: `Bearer ${token}` } }
       );

@@ -76,7 +76,7 @@ const AstrologerRegister = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const res = await axios.post("http://localhost:5000/api/astrologers/register", {
+      const res = await axios.post("https://bhavanaastro.onrender.com/api/astrologers/register", {
         ...form,
         systemsKnown: form.systemsKnown.map((s) => s.value),
         languagesKnown: form.languagesKnown.map((l) => l.value),

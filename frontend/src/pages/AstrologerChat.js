@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 import io from "socket.io-client";
 
-const socket = io("http://localhost:5000");
+const socket = io("https://bhavanaastro.onrender.com");
 
 export default function AstrologerChat() {
   const { consultationId } = useParams();
@@ -21,7 +21,7 @@ export default function AstrologerChat() {
     socket.emit("joinRoom", consultationId);
 
     // ✅ Load chat history
-    fetch(`http://localhost:5000/api/consultations/${consultationId}/messages`)
+    fetch(`https://bhavanaastro.onrender.com/api/consultations/${consultationId}/messages`)
       .then((res) => res.json())
       .then((data) => setMessages(data));
 
