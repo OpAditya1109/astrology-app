@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import PanchangCard from "./PanchangCard";
+import PanchangCard from "../components/Panchang";
 export default function Home() {
   return (
     <div className="min-h-screen bg-gray-50 text-gray-800">
