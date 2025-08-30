@@ -26,6 +26,8 @@ app.use("/api/Consult-astrologers", require("./routes/astrologers"));
 app.use("/api/consultations", require("./routes/consultationRoutes"));
 app.use("/api/ai-astrologer", require("./routes/aiRoutes"));
 app.use("/api", panchangRoutes);
+app.use("/api/payment", require("./routes/payment"));
+
 // --- Create HTTP server ---
 const server = http.createServer(app);
 

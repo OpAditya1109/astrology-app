@@ -15,7 +15,7 @@ export default function Wallet() {
     const fetchBalance = async () => {
       try {
         const token = sessionStorage.getItem("token"); 
-        const res = await axios.get("/api/wallet/balance", {
+        const res = await axios.get("https://bhavanaastro.onrender.com/api/wallet/balance", {
           headers: { Authorization: `Bearer ${token}` },
         });
         setBalance(res.data.balance || 0);
@@ -40,7 +40,7 @@ export default function Wallet() {
 
       // ✅ Step 1: Call backend to create order
       const res = await axios.post(
-        "/api/payment/create-order",
+        "https://bhavanaastro.onrender.com/api/payment/create-order",
         { amount: value, userId: "12345" }, // replace with logged-in userId
         { headers: { Authorization: `Bearer ${token}` } }
       );
