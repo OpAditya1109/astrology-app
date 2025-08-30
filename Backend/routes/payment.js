@@ -5,7 +5,7 @@ const router = express.Router();
 
 const CASHFREE_CLIENT_ID = process.env.CASHFREE_CLIENT_ID;
 const CASHFREE_SECRET_KEY = process.env.CASHFREE_SECRET_KEY;
-const CASHFREE_BASE_URL = "https://sandbox.cashfree.com/pg"; // Change to prod later
+const CASHFREE_BASE_URL = "https://sandbox.cashfree.com/pg/orders"; // ✅ Correct endpoint
 
 // Create Payment Order
 router.post("/create-order", async (req, res) => {
@@ -15,10 +15,10 @@ router.post("/create-order", async (req, res) => {
     const orderId = "order_" + Date.now();
 
     const response = await axios.post(
-      `${CASHFREE_BASE_URL}/orders`,
+      CASHFREE_BASE_URL,
       {
         order_id: orderId,
-        order_amount: amount,
+        order_amount: Number(amount),
         order_currency: "INR",
         customer_details: {
           customer_id: userId,
@@ -30,6 +30,7 @@ router.post("/create-order", async (req, res) => {
         headers: {
           "x-client-id": CASHFREE_CLIENT_ID,
           "x-client-secret": CASHFREE_SECRET_KEY,
+          "x-api-version": "2022-09-01",   // ✅ Required for PG v3
           "Content-Type": "application/json",
         },
       }
@@ -37,7 +38,7 @@ router.post("/create-order", async (req, res) => {
 
     res.json(response.data); // Return payment link/details to frontend
   } catch (err) {
-    console.error(err.response?.data || err.message);
+    console.error("Cashfree Error:", err.response?.data || err.message);
     res.status(500).json({ error: "Payment order creation failed" });
   }
 });
