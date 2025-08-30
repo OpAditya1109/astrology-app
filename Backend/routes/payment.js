@@ -23,28 +23,30 @@ router.post("/create-order", async (req, res) => {
 
     const orderId = "order_" + Date.now();
 
-    const response = await fetch(CASHFREE_URL, {
-      method: "POST",
-      headers: {
-        "x-api-version": "2022-09-01",
-        "x-client-id": CASHFREE_CLIENT_ID,
-        "x-client-secret": CASHFREE_SECRET_KEY,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        order_id: orderId,
-        order_currency: "INR",
-        order_amount: amount,
-        customer_details: {
-          customer_id: userId,
-          customer_phone: customerPhone || "9999999999",
-          customer_email: customerEmail || "no-reply@example.com",
-        },
-        order_meta: {
-          return_url: `https://yourfrontend.com/payment-success?order_id=${orderId}`,
-        },
-      }),
-    });
+ // ✅ No require/import needed in Node 18+
+const response = await fetch("https://api.cashfree.com/pg/orders", {
+  method: "POST",
+  headers: {
+    "x-api-version": "2022-09-01",
+    "x-client-id": process.env.CASHFREE_CLIENT_ID,
+    "x-client-secret": process.env.CASHFREE_SECRET_KEY,
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({
+    order_id: "order_" + Date.now(),
+    order_currency: "INR",
+    order_amount: 100,
+    customer_details: {
+      customer_id: "12345",
+      customer_phone: "9999999999",
+      customer_email: "test@example.com",
+    },
+  }),
+});
+
+
+console.log(data);
+
 
     const data = await response.json();
 
