@@ -1,6 +1,6 @@
-// routes/cashfreeRoutes.js
-import express from "express";
-import fetch from "node-fetch";
+// routes/payment.js (or cashfreeRoutes.js)
+const express = require("express");
+const fetch = require("node-fetch");
 
 const router = express.Router();
 
@@ -41,7 +41,7 @@ router.post("/create-order", async (req, res) => {
           customer_email: customerEmail || "no-reply@example.com",
         },
         order_meta: {
-          return_url: `https://yourfrontend.com/payment-success?order_id=${orderId}`, // ✅ redirect after payment
+          return_url: `https://yourfrontend.com/payment-success?order_id=${orderId}`,
         },
       }),
     });
@@ -67,4 +67,4 @@ router.post("/create-order", async (req, res) => {
   }
 });
 
-export default router;
+module.exports = router; // ✅ CommonJS export
