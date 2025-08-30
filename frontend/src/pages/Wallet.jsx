@@ -1,9 +1,27 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import axios from "axios";
 
 export default function Wallet() {
   const [amount, setAmount] = useState("");
   const [loading, setLoading] = useState(false);
+  const [cashfree, setCashfree] = useState(null);
+
+  // ✅ Load Cashfree SDK dynamically
+  useEffect(() => {
+    const script = document.createElement("script");
+    script.src = "https://sdk.cashfree.com/js/ui/2.0.0/cashfree.prod.js"; // use prod
+    script.async = true;
+    script.onload = () => {
+      if (window.Cashfree) {
+        setCashfree(new window.Cashfree({ mode: "production" }));
+      }
+    };
+    document.body.appendChild(script);
+
+    return () => {
+      document.body.removeChild(script);
+    };
+  }, []);
 
   const handleAddFunds = async () => {
     const value = Number(amount);
@@ -19,7 +37,7 @@ export default function Wallet() {
       // Step 1: Call backend to create order
       const res = await axios.post(
         "https://bhavanaastro.onrender.com/api/payment/create-order",
-        { amount: value, userId: "12345" }, // TODO: replace with logged-in userId
+        { amount: value, userId: "12345" }, // replace with logged-in userId
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
@@ -29,8 +47,12 @@ export default function Wallet() {
         return;
       }
 
-      // Step 2: Load Cashfree SDK (Production mode)
-      const cashfree = new window.Cashfree({ mode: "production" });
+      // Step 2: Call Cashfree checkout
+      if (!cashfree) {
+        alert("Cashfree SDK not loaded yet, try again.");
+        return;
+      }
+
       cashfree.checkout({
         paymentSessionId: sessionId,
         redirectTarget: "_self", // open in same tab
