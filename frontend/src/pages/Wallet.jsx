@@ -1,21 +1,57 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import axios from "axios";
 
 export default function Wallet() {
-  const [balance, setBalance] = useState(0); // Replace with API fetch if needed
+  const [balance, setBalance] = useState(0);
   const [amount, setAmount] = useState("");
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   const presetAmounts = [200, 500, 1000, 2000, 3000, 4000, 8000, 15000];
 
-  const handleAddFunds = (amt) => {
+  // Fetch wallet balance on page load
+  useEffect(() => {
+    const fetchBalance = async () => {
+      try {
+        const token = sessionStorage.getItem("token"); // adjust if using localStorage
+        const res = await axios.get("/api/wallet/balance", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setBalance(res.data.balance || 0);
+      } catch (err) {
+        console.error("Failed to fetch balance", err);
+      }
+    };
+    fetchBalance();
+  }, []);
+
+  // Handle Add Funds
+  const handleAddFunds = async (amt) => {
     const value = amt || Number(amount);
     if (!value || value <= 0) {
       alert("Please enter a valid amount");
       return;
     }
-    // Redirect to payment page with selected amount
-    navigate(`/payment?amount=${value}`);
+
+    try {
+      setLoading(true);
+      // 👉 Step 1: Create payment session on backend
+      const token = sessionStorage.getItem("token");
+      const res = await axios.post(
+        "/api/wallet/create-payment",
+        { amount: value },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      // 👉 Step 2: Redirect user to UPI/payment gateway
+      window.location.href = res.data.paymentUrl;
+    } catch (err) {
+      console.error("Error starting payment", err);
+      alert("Something went wrong, try again later.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -52,7 +88,9 @@ export default function Wallet() {
 
         {/* Wallet Balance */}
         <div className="bg-white shadow-md rounded-2xl p-6 text-center mb-8">
-          <h3 className="text-xl font-bold text-purple-700 mb-2">Current Balance</h3>
+          <h3 className="text-xl font-bold text-purple-700 mb-2">
+            Current Balance
+          </h3>
           <p className="text-gray-700 text-2xl font-semibold">₹{balance}</p>
         </div>
 
@@ -67,6 +105,7 @@ export default function Wallet() {
                 key={amt}
                 onClick={() => handleAddFunds(amt)}
                 className="px-4 py-2 bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200"
+                disabled={loading}
               >
                 ₹{amt}
               </button>
@@ -80,12 +119,14 @@ export default function Wallet() {
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
             className="border rounded-lg px-4 py-2 w-full mb-4 outline-none"
+            disabled={loading}
           />
           <button
             onClick={() => handleAddFunds()}
-            className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
+            className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50"
+            disabled={loading}
           >
-            Add Money
+            {loading ? "Processing..." : "Add Money"}
           </button>
         </div>
       </section>
