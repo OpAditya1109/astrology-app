@@ -8,6 +8,7 @@ const { Server } = require("socket.io");
 const Consultation = require("./models/Consultation");
 const Astrologer = require("./models/Astrologer");
 const { getAstrologyResponse } = require("./api/astrology");
+import panchangRoutes from "./routes/panchang.js";
 
 dotenv.config();
 connectDB();
@@ -23,7 +24,7 @@ app.use("/api/auth", require("./routes/auth"));
 app.use("/api/Consult-astrologers", require("./routes/astrologers"));
 app.use("/api/consultations", require("./routes/consultationRoutes"));
 app.use("/api/ai-astrologer", require("./routes/aiRoutes"));
-
+app.use("/api", panchangRoutes);
 // --- Create HTTP server ---
 const server = http.createServer(app);
 

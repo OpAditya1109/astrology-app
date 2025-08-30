@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-
+import PanchangCard from "./PanchangCard";
 export default function Home() {
   return (
     <div className="min-h-screen bg-gray-50 text-gray-800">
@@ -12,7 +12,7 @@ export default function Home() {
           Get your personalized horoscope, Kundli, and connect with top astrologers online.
         </p>
       </section>
-
+<PanchangCard />
       {/* Services */}
       <section className="max-w-7xl mx-auto px-6 py-12">
         <h2 className="text-3xl font-semibold text-center mb-10">
