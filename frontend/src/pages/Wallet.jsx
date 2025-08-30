@@ -1,34 +1,12 @@
-import { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useState } from "react";
 import axios from "axios";
 
 export default function Wallet() {
-  const [balance, setBalance] = useState(0);
   const [amount, setAmount] = useState("");
   const [loading, setLoading] = useState(false);
-  const navigate = useNavigate();
 
-  const presetAmounts = [200, 500, 1000, 2000, 3000, 4000, 8000, 15000];
-
-  // Fetch wallet balance on page load
-  useEffect(() => {
-    const fetchBalance = async () => {
-      try {
-        const token = sessionStorage.getItem("token"); 
-        const res = await axios.get("https://bhavanaastro.onrender.com/api/wallet/balance", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        setBalance(res.data.balance || 0);
-      } catch (err) {
-        console.error("Failed to fetch balance", err);
-      }
-    };
-    fetchBalance();
-  }, []);
-
-  // Handle Add Funds
-  const handleAddFunds = async (amt) => {
-    const value = amt || Number(amount);
+  const handleAddFunds = async () => {
+    const value = Number(amount);
     if (!value || value <= 0) {
       alert("Please enter a valid amount");
       return;
@@ -38,19 +16,25 @@ export default function Wallet() {
       setLoading(true);
       const token = sessionStorage.getItem("token");
 
-      // ✅ Step 1: Call backend to create order
+      // Step 1: Call backend to create order
       const res = await axios.post(
         "https://bhavanaastro.onrender.com/api/payment/create-order",
-        { amount: value, userId: "12345" }, // replace with logged-in userId
+        { amount: value, userId: "12345" }, // TODO: replace with logged-in userId
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      // ✅ Step 2: Redirect to Cashfree checkout
-      if (res.data.paymentUrl) {
-        window.location.href = res.data.paymentUrl;
-      } else {
-        alert("Could not start payment, try again later.");
+      const sessionId = res.data.sessionId;
+      if (!sessionId) {
+        alert("Failed to get payment session ID");
+        return;
       }
+
+      // Step 2: Load Cashfree SDK (Production mode)
+      const cashfree = new window.Cashfree({ mode: "production" });
+      cashfree.checkout({
+        paymentSessionId: sessionId,
+        redirectTarget: "_self", // open in same tab
+      });
     } catch (err) {
       console.error("Error starting payment", err);
       alert("Something went wrong, try again later.");
@@ -60,77 +44,29 @@ export default function Wallet() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Navbar */}
-      <nav className="bg-white shadow-md fixed w-full top-0 left-0 z-50">
-        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-purple-700">Astro Bhavana</h1>
-          <div className="flex items-center gap-6">
-            <Link to="/user/dashboard" className="text-gray-700 hover:text-purple-700 font-medium">
-              Dashboard
-            </Link>
-            <Link to="/logout" className="text-gray-700 hover:text-red-600 font-medium">
-              Logout
-            </Link>
-          </div>
-        </div>
-      </nav>
+    <div className="min-h-screen flex items-center justify-center bg-gray-100">
+      <div className="bg-white shadow-lg rounded-xl p-6 w-full max-w-md text-center">
+        <h2 className="text-2xl font-bold text-purple-700 mb-6">Add Money</h2>
 
-      {/* Spacer */}
-      <div className="pt-20"></div>
+        {/* Input Box */}
+        <input
+          type="number"
+          placeholder="Enter amount"
+          value={amount}
+          onChange={(e) => setAmount(e.target.value)}
+          className="border rounded-lg px-4 py-2 w-full mb-4 outline-none"
+          disabled={loading}
+        />
 
-      <section className="max-w-2xl mx-auto px-6 py-12">
-        <h2 className="text-3xl font-semibold text-purple-700 mb-6">My Wallet</h2>
-        <p className="text-gray-600 mb-8">
-          Check your balance, add funds, or redeem your wallet credits.
-        </p>
-
-        {/* Wallet Balance */}
-        <div className="bg-white shadow-md rounded-2xl p-6 text-center mb-8">
-          <h3 className="text-xl font-bold text-purple-700 mb-2">Current Balance</h3>
-          <p className="text-gray-700 text-2xl font-semibold">₹{balance}</p>
-        </div>
-
-        {/* Add Funds */}
-        <div className="bg-white shadow-md rounded-2xl p-6 text-center">
-          <h3 className="text-xl font-bold text-purple-700 mb-4">Add Funds</h3>
-
-          {/* Preset Amount Buttons */}
-          <div className="flex flex-wrap justify-center gap-3 mb-4">
-            {presetAmounts.map((amt) => (
-              <button
-                key={amt}
-                onClick={() => handleAddFunds(amt)}
-                className="px-4 py-2 bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200"
-                disabled={loading}
-              >
-                ₹{amt}
-              </button>
-            ))}
-          </div>
-
-          {/* Custom Amount Input */}
-          <input
-            type="number"
-            placeholder="Enter custom amount"
-            value={amount}
-            onChange={(e) => setAmount(e.target.value)}
-            className="border rounded-lg px-4 py-2 w-full mb-4 outline-none"
-            disabled={loading}
-          />
-          <button
-            onClick={() => handleAddFunds()}
-            className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50"
-            disabled={loading}
-          >
-            {loading ? "Processing..." : "Add Money"}
-          </button>
-        </div>
-      </section>
-
-      <footer className="bg-white border-t py-6 mt-12 text-center text-gray-500">
-        © {new Date().getFullYear()} AstroBhavana. All rights reserved.
-      </footer>
+        {/* Add Money Button */}
+        <button
+          onClick={handleAddFunds}
+          className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 w-full"
+          disabled={loading}
+        >
+          {loading ? "Processing..." : "Add Money"}
+        </button>
+      </div>
     </div>
   );
 }
