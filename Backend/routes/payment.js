@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const crypto = require('crypto');
+const router = express.Router();
 const { Cashfree } = require('cashfree-pg');
 require('dotenv').config();
 
@@ -13,7 +14,7 @@ app.use(express.urlencoded({ extended: true }));
 Cashfree.XClientId = process.env.CLIENT_ID;
 Cashfree.XClientSecret = process.env.CLIENT_SECRET;
 // Change to SANDBOX for testing, PRODUCTION for live
-Cashfree.XEnvironment = Cashfree.Environment.PRODUCTION;
+Cashfree.XEnvironment = "PROD";
 
 // Generate unique order ID
 function generateOrderId() {
@@ -83,3 +84,4 @@ app.post('/verify', async (req, res) => {
   }
 });
 
+module.exports = router;
