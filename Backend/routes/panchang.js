@@ -1,17 +1,14 @@
 // routes/panchang.js
-import express from "express";
-import axios from "axios";
+const express = require("express");
+const axios = require("axios");
 const router = express.Router();
 
-// Panchang endpoints available in FreeAstrologyAPI
 const endpoints = [
-  "tithi-durations",
+  "tithi-timings",
   "nakshatra-durations",
-  "yoga-durations",
-  "karana-durations",
-  "sunrise-sunset", // available
-  "rahu-kalam",
-  "abhijit-muhurta"
+  "yoga-timings",
+  "karana-timings",
+  "sunrise-sunset",
 ];
 
 router.post("/panchang", async (req, res) => {
@@ -32,11 +29,11 @@ router.post("/panchang", async (req, res) => {
       data[ep] = results[idx].data;
     });
 
-    res.json({ success: true, data });
+    res.json(data);
   } catch (err) {
-    console.error("Panchang API Error:", err.message);
-    res.status(500).json({ success: false, error: "Failed to fetch full Panchang" });
+    console.error(err);
+    res.status(500).json({ error: "Failed to fetch full Panchang" });
   }
 });
 
-export default router;
+module.exports = router; // ✅ use module.exports

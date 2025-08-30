@@ -8,7 +8,8 @@ const { Server } = require("socket.io");
 const Consultation = require("./models/Consultation");
 const Astrologer = require("./models/Astrologer");
 const { getAstrologyResponse } = require("./api/astrology");
-import panchangRoutes from "./routes/panchang.js";
+const panchangRoutes = require("./routes/panchang"); // ✅ use require
+
 
 dotenv.config();
 connectDB();
