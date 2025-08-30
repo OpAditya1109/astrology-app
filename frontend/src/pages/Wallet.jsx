@@ -14,7 +14,7 @@ export default function Wallet() {
   useEffect(() => {
     const fetchBalance = async () => {
       try {
-        const token = sessionStorage.getItem("token"); // adjust if using localStorage
+        const token = sessionStorage.getItem("token"); 
         const res = await axios.get("/api/wallet/balance", {
           headers: { Authorization: `Bearer ${token}` },
         });
@@ -36,16 +36,21 @@ export default function Wallet() {
 
     try {
       setLoading(true);
-      // 👉 Step 1: Create payment session on backend
       const token = sessionStorage.getItem("token");
+
+      // ✅ Step 1: Call backend to create order
       const res = await axios.post(
-        "/api/wallet/create-payment",
-        { amount: value },
+        "/api/payment/create-order",
+        { amount: value, userId: "12345" }, // replace with logged-in userId
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      // 👉 Step 2: Redirect user to UPI/payment gateway
-      window.location.href = res.data.paymentUrl;
+      // ✅ Step 2: Redirect to Cashfree checkout
+      if (res.data.paymentUrl) {
+        window.location.href = res.data.paymentUrl;
+      } else {
+        alert("Could not start payment, try again later.");
+      }
     } catch (err) {
       console.error("Error starting payment", err);
       alert("Something went wrong, try again later.");
@@ -61,16 +66,10 @@ export default function Wallet() {
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           <h1 className="text-2xl font-bold text-purple-700">Astro Bhavana</h1>
           <div className="flex items-center gap-6">
-            <Link
-              to="/user/dashboard"
-              className="text-gray-700 hover:text-purple-700 font-medium"
-            >
+            <Link to="/user/dashboard" className="text-gray-700 hover:text-purple-700 font-medium">
               Dashboard
             </Link>
-            <Link
-              to="/logout"
-              className="text-gray-700 hover:text-red-600 font-medium"
-            >
+            <Link to="/logout" className="text-gray-700 hover:text-red-600 font-medium">
               Logout
             </Link>
           </div>
@@ -88,9 +87,7 @@ export default function Wallet() {
 
         {/* Wallet Balance */}
         <div className="bg-white shadow-md rounded-2xl p-6 text-center mb-8">
-          <h3 className="text-xl font-bold text-purple-700 mb-2">
-            Current Balance
-          </h3>
+          <h3 className="text-xl font-bold text-purple-700 mb-2">Current Balance</h3>
           <p className="text-gray-700 text-2xl font-semibold">₹{balance}</p>
         </div>
 
