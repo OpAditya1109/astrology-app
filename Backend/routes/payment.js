@@ -45,10 +45,10 @@ const response = await fetch("https://api.cashfree.com/pg/orders", {
 });
 
 
-console.log(data);
 
 
     const data = await response.json();
+console.log(data);
 
     if (response.ok && data.payment_session_id) {
       res.json({
