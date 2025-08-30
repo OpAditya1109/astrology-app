@@ -5,7 +5,7 @@ const router = express.Router();
 
 const CASHFREE_CLIENT_ID = process.env.CASHFREE_CLIENT_ID;
 const CASHFREE_SECRET_KEY = process.env.CASHFREE_SECRET_KEY;
-const CASHFREE_BASE_URL = "https://sandbox.cashfree.com/pg/orders"; // ✅ Correct endpoint
+const CASHFREE_BASE_URL = "https://api.cashfree.com/pg"; // ✅ Correct endpoint
 
 // Create Payment Order
 router.post("/create-order", async (req, res) => {
