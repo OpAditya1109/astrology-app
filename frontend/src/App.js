@@ -15,6 +15,7 @@ import AstrologerConsultations from "./pages/AstrologerConsultations";
 import ChatPage from "./pages/ChatPage";
 import AstrologerChat from "./pages/AstrologerChat";
 import AIConsultation from "./pages/AIConsultation";
+import MatchMakingForm from "./pages/MatchMakingForm";
 function App() {
   return (
     <Router>
@@ -36,13 +37,14 @@ function App() {
           path="/astrologer/dashboard/consultations"
           element={<AstrologerConsultations />}
         />
-<Route path="/chat/:consultationId" element={<ChatPage />} />
-<Route path="/astrologer/chat/:consultationId" element={<AstrologerChat />} />
-<Route path="/ai-consultation" element={<AIConsultation />} />
-
+        <Route path="/chat/:consultationId" element={<ChatPage />} />
+        <Route
+          path="/astrologer/chat/:consultationId"
+          element={<AstrologerChat />}
+        />
+        <Route path="/ai-consultation" element={<AIConsultation />} />
+        <Route path="/match-making" element={<MatchMakingForm />} />
       </Routes>
-     
-
     </Router>
   );
 }

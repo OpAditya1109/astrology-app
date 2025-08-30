@@ -22,7 +22,8 @@ const Panchang = () => {
         };
 
         const res = await axios.post("https://bhavanaastro.onrender.com/api/panchang", payload);
-        setPanchang(res.data.data);
+        setPanchang(res.data);
+
       } catch (err) {
         console.error("Error fetching Panchang:", err);
       } finally {
