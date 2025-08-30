@@ -21,7 +21,7 @@ const Panchang = () => {
           timezone: 5.5
         };
 
-        const res = await axios.post("http://localhost:5000/api/panchang", payload);
+        const res = await axios.post("https://bhavanaastro.onrender.com/api/panchang", payload);
         setPanchang(res.data.data);
       } catch (err) {
         console.error("Error fetching Panchang:", err);
