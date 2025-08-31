@@ -1,23 +1,27 @@
 // VideoCall.jsx
 import { useEffect, useRef, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { io } from "socket.io-client";
 
 const SOCKET_SERVER_URL = "https://bhavanaastro.onrender.com";
 
 export default function VideoCall() {
   const { consultationId } = useParams();
+  const navigate = useNavigate();
+
   const localVideoRef = useRef(null);
   const remoteVideoRef = useRef(null);
   const peerConnectionRef = useRef(null);
   const targetSocketRef = useRef(null);
   const socketRef = useRef(null);
+
   const [status, setStatus] = useState("Connecting...");
+  const [isMuted, setIsMuted] = useState(false);
+  const [isVideoOff, setIsVideoOff] = useState(false);
 
   const ICE_SERVERS = {
     iceServers: [
       { urls: "stun:stun.l.google.com:19302" },
-      // ⚠ For real-world reliability add a TURN server here
       // { urls: "turn:YOUR_TURN_HOST:3478", username: "USER", credential: "PASS" },
     ],
   };
@@ -65,10 +69,9 @@ export default function VideoCall() {
     // Join signaling room
     socket.emit("joinRoom", consultationId);
 
-    // You are the JOINER → server tells you who is already in the room
+    // You are the JOINER
     socket.on("existing-peers", async ({ peers }) => {
       if (peers && peers.length > 0) {
-        // Call the first peer
         targetSocketRef.current = peers[0];
         setStatus("Calling...");
         await startCall();
@@ -77,16 +80,14 @@ export default function VideoCall() {
       }
     });
 
-    // Someone else joined (you were here first) — don't start an offer here
+    // Someone else joined (you were here first)
     socket.on("peer-joined", ({ socketId }) => {
-      // This peer will initiate (they got existing-peers)
-      // Keep reference for ICE if needed later
       if (!targetSocketRef.current) {
         targetSocketRef.current = socketId;
       }
     });
 
-    // Incoming offer → you are the ANSWERER
+    // Incoming offer
     socket.on("incoming-call", async ({ from, offer }) => {
       try {
         targetSocketRef.current = from;
@@ -100,7 +101,7 @@ export default function VideoCall() {
       }
     });
 
-    // Your offer was answered
+    // Offer answered
     socket.on("call-answered", async ({ answer }) => {
       try {
         await pc.setRemoteDescription(answer);
@@ -113,7 +114,6 @@ export default function VideoCall() {
     // Remote ICE
     socket.on("ice-candidate", async ({ candidate }) => {
       try {
-        // Some browsers require wrapping:
         await pc.addIceCandidate(candidate?.candidate ? candidate : new RTCIceCandidate(candidate));
       } catch (err) {
         console.error("Error adding ICE candidate:", err);
@@ -124,7 +124,7 @@ export default function VideoCall() {
     socket.on("peer-left", () => {
       setStatus("Peer left");
       if (remoteVideoRef.current && remoteVideoRef.current.srcObject) {
-        remoteVideoRef.current.srcObject.getTracks().forEach(t => t.stop());
+        remoteVideoRef.current.srcObject.getTracks().forEach((t) => t.stop());
         remoteVideoRef.current.srcObject = null;
       }
     });
@@ -132,7 +132,6 @@ export default function VideoCall() {
     return () => {
       socket.removeAllListeners();
       socket.disconnect();
-      // Stop local tracks
       if (localVideoRef.current?.srcObject) {
         localVideoRef.current.srcObject.getTracks().forEach((t) => t.stop());
       }
@@ -154,74 +153,73 @@ export default function VideoCall() {
     }
   };
 
-return (
-  <div className="relative w-screen h-screen bg-black overflow-hidden">
-    {/* Remote video (fullscreen, no scroll) */}
-    <video
-      ref={remoteVideoRef}
-      autoPlay
-      playsInline
-      className="absolute inset-0 w-full h-full object-cover"
-    />
+  // --- Controls ---
+  const toggleMute = () => {
+    const stream = localVideoRef.current?.srcObject;
+    if (stream) {
+      const audioTrack = stream.getTracks().find((t) => t.kind === "audio");
+      if (audioTrack) {
+        audioTrack.enabled = !audioTrack.enabled;
+        setIsMuted(!audioTrack.enabled);
+      }
+    }
+  };
 
-    {/* Local video (small floating) */}
-    <video
-      ref={localVideoRef}
-      autoPlay
-      playsInline
-      muted
-      className="absolute bottom-4 right-4 w-40 h-28 bg-black rounded-lg shadow-lg border-2 border-white"
-    />
+  const toggleVideo = () => {
+    const stream = localVideoRef.current?.srcObject;
+    if (stream) {
+      const videoTrack = stream.getTracks().find((t) => t.kind === "video");
+      if (videoTrack) {
+        videoTrack.enabled = !videoTrack.enabled;
+        setIsVideoOff(!videoTrack.enabled);
+      }
+    }
+  };
 
-    {/* Status overlay */}
-    <div className="absolute top-4 left-4 bg-black bg-opacity-50 text-white px-4 py-2 rounded-lg">
-      {status}
+  const endCall = () => {
+    if (peerConnectionRef.current) peerConnectionRef.current.close();
+    if (socketRef.current) socketRef.current.disconnect();
+    navigate("/"); // redirect to home
+  };
+
+  return (
+    <div className="relative w-screen h-screen bg-black overflow-hidden">
+      {/* Remote video */}
+      <video
+        ref={remoteVideoRef}
+        autoPlay
+        playsInline
+        className="absolute inset-0 w-full h-full object-cover"
+      />
+
+      {/* Local video */}
+      <video
+        ref={localVideoRef}
+        autoPlay
+        playsInline
+        muted
+        className="absolute bottom-4 right-4 w-40 h-28 bg-black rounded-lg shadow-lg border-2 border-white"
+      />
+
+      {/* Status overlay */}
+      <div className="absolute top-4 left-4 bg-black bg-opacity-50 text-white px-4 py-2 rounded-lg">
+        {status}
+      </div>
+
+      {/* Control Bar */}
+      <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex gap-6 bg-black bg-opacity-60 px-6 py-3 rounded-full">
+        <button onClick={toggleMute} className="text-white hover:text-red-500 transition">
+          {isMuted ? "🔇" : "🎤"}
+        </button>
+
+        <button onClick={toggleVideo} className="text-white hover:text-red-500 transition">
+          {isVideoOff ? "📷❌" : "🎥"}
+        </button>
+
+        <button onClick={endCall} className="text-white hover:text-red-500 transition">
+          ❌
+        </button>
+      </div>
     </div>
-
-    {/* Control Bar */}
-    <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex gap-6 bg-black bg-opacity-60 px-6 py-3 rounded-full">
-      {/* Mute/Unmute */}
-      <button
-        onClick={() => {
-          const stream = localVideoRef.current?.srcObject;
-          if (stream) {
-            const audioTrack = stream.getTracks().find(t => t.kind === "audio");
-            if (audioTrack) audioTrack.enabled = !audioTrack.enabled;
-          }
-        }}
-        className="text-white hover:text-red-500 transition"
-      >
-        🎤
-      </button>
-
-      {/* Toggle Camera */}
-      <button
-        onClick={() => {
-          const stream = localVideoRef.current?.srcObject;
-          if (stream) {
-            const videoTrack = stream.getTracks().find(t => t.kind === "video");
-            if (videoTrack) videoTrack.enabled = !videoTrack.enabled;
-          }
-        }}
-        className="text-white hover:text-red-500 transition"
-      >
-        🎥
-      </button>
-
-      {/* End Call */}
-      <button
-        onClick={() => {
-          if (peerConnection.current) peerConnection.current.close();
-          socket.disconnect();
-          navigate("/"); // redirect to home or chat list
-        }}
-        className="text-white hover:text-red-500 transition"
-      >
-        ❌
-      </button>
-    </div>
-  </div>
-);
-
-
+  );
 }
