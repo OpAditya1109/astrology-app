@@ -1,118 +1,104 @@
-import { useEffect, useRef, useState, useCallback } from "react";
-import { useParams } from "react-router-dom";
+// VideoCall.jsx
+import { useEffect, useRef } from "react";
+import { useParams, useLocation } from "react-router-dom";
 import io from "socket.io-client";
 
 const SOCKET_SERVER_URL = "https://bhavanaastro.onrender.com";
 
 export default function VideoCall() {
   const { consultationId } = useParams();
+  const location = useLocation();
+  const isCaller = location.state?.isCaller; // true for user
   const localVideoRef = useRef(null);
   const remoteVideoRef = useRef(null);
+  const peerConnectionRef = useRef(null);
+  const targetSocketRef = useRef(null);
+  const socketRef = useRef(null);
 
-  const [socket, setSocket] = useState(null);
-  const [peerConnection, setPeerConnection] = useState(null);
-  const [targetSocketId, setTargetSocketId] = useState(null);
-
-  // Use useCallback to prevent ESLint warning
-  const ICE_SERVERS = useCallback(
-    () => ({ iceServers: [{ urls: "stun:stun.l.google.com:19302" }] }),
-    []
-  );
+  const ICE_SERVERS = { iceServers: [{ urls: "stun:stun.l.google.com:19302" }] };
 
   useEffect(() => {
-    const s = io(SOCKET_SERVER_URL);
-    setSocket(s);
+    const socket = io(SOCKET_SERVER_URL);
+    socketRef.current = socket;
 
-    const pc = new RTCPeerConnection(ICE_SERVERS());
-    setPeerConnection(pc);
+    const pc = new RTCPeerConnection(ICE_SERVERS);
+    peerConnectionRef.current = pc;
 
-    // Get local media
     navigator.mediaDevices.getUserMedia({ video: true, audio: true })
-      .then(stream => {
-        if (localVideoRef.current) localVideoRef.current.srcObject = stream;
-        stream.getTracks().forEach(track => pc.addTrack(track, stream));
-      })
-      .catch(err => console.error("Error accessing media devices:", err));
+      .then((stream) => {
+        localVideoRef.current.srcObject = stream;
+        stream.getTracks().forEach((track) => pc.addTrack(track, stream));
+      });
 
-    // Receive remote track
     pc.ontrack = (event) => {
-      if (remoteVideoRef.current) remoteVideoRef.current.srcObject = event.streams[0];
+      remoteVideoRef.current.srcObject = event.streams[0];
     };
 
-    // Send ICE candidates to peer
     pc.onicecandidate = (event) => {
-      if (event.candidate && targetSocketId) {
-        s.emit("ice-candidate", { to: targetSocketId, candidate: event.candidate });
+      if (event.candidate && targetSocketRef.current) {
+        socket.emit("ice-candidate", {
+          to: targetSocketRef.current,
+          candidate: event.candidate,
+        });
       }
     };
 
     // Join room
-    s.emit("joinRoom", consultationId);
+    socket.emit("joinRoom", consultationId);
 
-    // Listen for incoming call
-    s.on("incoming-call", async ({ from, offer }) => {
-      setTargetSocketId(from);
-      await pc.setRemoteDescription(offer);
+    // When another peer joins
+    socket.on("peer-joined", ({ socketId }) => {
+      targetSocketRef.current = socketId;
+      if (isCaller) startCall(); // user automatically initiates call
+    });
+
+    // Incoming call (callee)
+    socket.on("incoming-call", async ({ from, offer }) => {
+      targetSocketRef.current = from;
+      await pc.setRemoteDescription(new RTCSessionDescription(offer));
       const answer = await pc.createAnswer();
       await pc.setLocalDescription(answer);
-      s.emit("answer-call", { to: from, answer });
+      socket.emit("answer-call", { to: from, answer });
     });
 
-    // Call answered
-    s.on("call-answered", async ({ answer }) => {
-      await pc.setRemoteDescription(answer);
+    // Call answered (caller)
+    socket.on("call-answered", async ({ answer }) => {
+      await pc.setRemoteDescription(new RTCSessionDescription(answer));
     });
 
-    // ICE candidate received
-    s.on("ice-candidate", async ({ candidate }) => {
-      try { await pc.addIceCandidate(candidate); } 
-      catch (err) { console.error(err); }
+    // ICE candidate from remote
+    socket.on("ice-candidate", async ({ candidate }) => {
+      try {
+        await pc.addIceCandidate(candidate);
+      } catch (err) {
+        console.error("Error adding ICE candidate:", err);
+      }
     });
 
-    // Cleanup on unmount
     return () => {
-      s.disconnect();
+      socket.disconnect();
       pc.close();
     };
-  }, [consultationId, targetSocketId, ICE_SERVERS]);
+  }, [consultationId, isCaller]);
 
   const startCall = async () => {
-    if (!peerConnection || !socket) return;
-
-    socket.emit("getPeerSocketId", consultationId, async (peerId) => {
-      if (!peerId) return alert("No one is available to call");
-      setTargetSocketId(peerId);
-
-      const offer = await peerConnection.createOffer();
-      await peerConnection.setLocalDescription(offer);
-      socket.emit("call-user", { to: peerId, offer });
-    });
+    const pc = peerConnectionRef.current;
+    if (!pc || !targetSocketRef.current) return;
+    const offer = await pc.createOffer();
+    await pc.setLocalDescription(offer);
+    socketRef.current.emit("call-user", { to: targetSocketRef.current, offer });
   };
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 p-6">
       <h2 className="text-2xl font-bold text-purple-700 mb-4">Video Call</h2>
       <div className="flex gap-4">
-        <video
-          ref={localVideoRef}
-          autoPlay
-          playsInline
-          muted
-          className="w-64 h-48 bg-black rounded-lg"
-        />
-        <video
-          ref={remoteVideoRef}
-          autoPlay
-          playsInline
-          className="w-64 h-48 bg-black rounded-lg"
-        />
+        <video ref={localVideoRef} autoPlay playsInline muted className="w-64 h-48 bg-black rounded-lg"/>
+        <video ref={remoteVideoRef} autoPlay playsInline className="w-64 h-48 bg-black rounded-lg"/>
       </div>
-      <button
-        onClick={startCall}
-        className="mt-6 px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg"
-      >
-        Start Call
-      </button>
+      {!isCaller && (
+        <p className="mt-4 text-gray-500">Waiting for user to call...</p>
+      )}
     </div>
   );
 }

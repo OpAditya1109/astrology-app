@@ -209,13 +209,14 @@ export default function UserConsultancy() {
                     {startingConsultationId === c._id ? "Connecting..." : "Start Chat"}
                   </button>
 
-                  <button
-                    onClick={() => startConsultation(c._id, "Video", "/video-call")}
-                    disabled={startingConsultationId === c._id}
-                    className="px-4 py-2 text-white rounded-lg bg-green-600 hover:bg-green-700"
-                  >
-                    Start Video Call
-                  </button>
+                 <button
+  onClick={() => navigate(`/video-call/${c._id}`, { state: { isCaller: true } })}
+  disabled={startingConsultationId === c._id}
+  className="px-4 py-2 text-white rounded-lg bg-green-600 hover:bg-green-700"
+>
+  Start Video Call
+</button>
+
                 </div>
               </div>
             ))}

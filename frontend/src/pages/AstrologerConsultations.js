@@ -68,9 +68,10 @@ export default function AstrologerConsultations() {
     navigate(`/astrologer/chat/${consultationId}`);
   };
 
-  const handleStartVideoCall = (consultationId) => {
-    navigate(`/video-call/${consultationId}`);
-  };
+const handleStartVideoCall = (consultationId) => {
+  // Astrologer is always callee
+  navigate(`/video-call/${consultationId}`, { state: { isCaller: false } });
+};
 
   const handleEndChat = async (consultationId) => {
     const confirmEnd = window.confirm(
