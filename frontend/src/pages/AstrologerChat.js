@@ -52,7 +52,8 @@ const sendMessage = () => {
     <div className="h-screen flex flex-col bg-gray-50">
       {/* Header */}
       <header className="bg-purple-700 text-white p-4 text-lg font-semibold">
-        Consultation Chat ({consultationId})
+        {/* Consultation Chat ({consultationId}) */}
+        Chat Room
       </header>
 
       {/* Messages */}
