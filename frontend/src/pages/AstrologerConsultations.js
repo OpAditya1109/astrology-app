@@ -1,13 +1,18 @@
 import { useEffect, useState } from "react";
 import { FaUserCircle } from "react-icons/fa";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import axios from "axios";
 import { io } from "socket.io-client";
 
 export default function AstrologerConsultations() {
   const [consultations, setConsultations] = useState([]);
   const navigate = useNavigate();
+  const location = useLocation();
   const astrologer = JSON.parse(sessionStorage.getItem("user"));
+
+  // Read mode from query param
+  const query = new URLSearchParams(location.search);
+  const modeFromQuery = query.get("mode") || "Chat";
 
   useEffect(() => {
     if (!astrologer?.id) {
@@ -28,9 +33,11 @@ export default function AstrologerConsultations() {
           { headers: { Authorization: `Bearer ${token}` } }
         );
 
+        // Ensure mode is defaulted to "Chat" if undefined
         const uniqueConsultations = Array.from(
-          new Map(res.data.map((c) => [c._id, c])).values()
+          new Map(res.data.map((c) => [c._id, { ...c, mode: c.mode || "Chat" }])).values()
         );
+
         setConsultations(uniqueConsultations || []);
       } catch (err) {
         console.error("Error fetching consultations", err);
@@ -39,9 +46,8 @@ export default function AstrologerConsultations() {
 
     fetchConsultations();
 
-    // Handle new consultation via socket
     const handleNewConsultation = (data) => {
-      setConsultations((prev) => [data, ...prev]);
+      setConsultations((prev) => [{ ...data, mode: data.mode || "Chat" }, ...prev]);
 
       if (Notification.permission === "granted") {
         new Notification("New Consultation", {
@@ -52,7 +58,6 @@ export default function AstrologerConsultations() {
 
     socket.on("newConsultation", handleNewConsultation);
 
-    // Request Notification permission
     if ("Notification" in window && Notification.permission !== "granted") {
       Notification.requestPermission();
     }
@@ -64,15 +69,15 @@ export default function AstrologerConsultations() {
   }, [astrologer?.id, navigate]);
 
   const handleStartChat = (consultationId) => {
-    navigate(`/astrologer/chat/${consultationId}`, { state: { mode: "Chat" } });
+    navigate(`/astrologer/chat/${consultationId}?mode=Chat`);
   };
 
   const handleStartVideoCall = (consultationId) => {
-    navigate(`/video-call/${consultationId}`, { state: { mode: "Video" } });
+    navigate(`/video-call/${consultationId}?mode=Video`);
   };
 
   const handleStartAudioCall = (consultationId) => {
-    navigate(`/video-call/${consultationId}`, { state: { mode: "Audio" } });
+    navigate(`/video-call/${consultationId}?mode=Audio`);
   };
 
   const handleEndChat = async (consultationId) => {
@@ -88,9 +93,7 @@ export default function AstrologerConsultations() {
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      setConsultations((prev) =>
-        prev.filter((c) => c._id !== consultationId)
-      );
+      setConsultations((prev) => prev.filter((c) => c._id !== consultationId));
     } catch (err) {
       console.error("Error ending consultation", err);
       alert("Failed to end consultation. Please try again.");
@@ -105,69 +108,71 @@ export default function AstrologerConsultations() {
         <p className="text-gray-500">No consultations booked yet.</p>
       ) : (
         <div className="grid gap-6">
-          {consultations.map((c) => (
-            <div
-              key={c._id}
-              className={`bg-white rounded-xl shadow p-5 flex items-center justify-between transition hover:shadow-lg ${
-                c.status === "ongoing" ? "border-2 border-green-500" : ""
-              }`}
-            >
-              <div className="flex items-center gap-4">
-                <FaUserCircle className="text-purple-600 text-4xl" />
-                <div>
-                  <h2 className="font-semibold text-lg">{c.userName || "User"}</h2>
-                  <p className="text-gray-600 text-sm">
-                    DOB: {c.dob ? new Date(c.dob).toLocaleDateString() : "-"}
-                  </p>
-                  <p className="text-gray-600 text-sm">
-                    Topic: <span className="font-medium">{c.topic || "-"}</span>
-                  </p>
-                  <p className="text-gray-600 text-sm">
-                    Mode: <span className="font-medium">{c.mode || "Chat"}</span>
-                  </p>
-                  <p className="text-gray-500 text-xs">
-                    Booked At:{" "}
-                    {c.bookedAt ? new Date(c.bookedAt).toLocaleString() : "-"}
-                  </p>
+          {consultations.map((c) => {
+            const modeToUse = c.mode || "Chat"; // default to Chat
+            return (
+              <div
+                key={c._id}
+                className={`bg-white rounded-xl shadow p-5 flex items-center justify-between transition hover:shadow-lg ${
+                  c.status === "ongoing" ? "border-2 border-green-500" : ""
+                }`}
+              >
+                <div className="flex items-center gap-4">
+                  <FaUserCircle className="text-purple-600 text-4xl" />
+                  <div>
+                    <h2 className="font-semibold text-lg">{c.userName || "User"}</h2>
+                    <p className="text-gray-600 text-sm">
+                      DOB: {c.dob ? new Date(c.dob).toLocaleDateString() : "-"}
+                    </p>
+                    <p className="text-gray-600 text-sm">
+                      Topic: <span className="font-medium">{c.topic || "-"}</span>
+                    </p>
+                    <p className="text-gray-600 text-sm">
+                      Mode: <span className="font-medium">{modeToUse}</span>
+                    </p>
+                    <p className="text-gray-500 text-xs">
+                      Booked At: {c.bookedAt ? new Date(c.bookedAt).toLocaleString() : "-"}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  {modeToUse !== "Chat" && (
+                    <>
+                      <button
+                        className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                        onClick={() => handleStartAudioCall(c._id)}
+                      >
+                        Start Audio Call
+                      </button>
+                      <button
+                        className="px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+                        onClick={() => handleStartVideoCall(c._id)}
+                      >
+                        Start Video Call
+                      </button>
+                    </>
+                  )}
+
+                  {modeToUse === "Chat" && (
+                    <button
+                      className="px-3 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
+                      onClick={() => handleStartChat(c._id)}
+                    >
+                      Start Chat
+                    </button>
+                  )}
+
+                  <button
+                    className="px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+                    onClick={() => handleEndChat(c._id)}
+                  >
+                    End Consultation
+                  </button>
                 </div>
               </div>
-
-              <div className="flex items-center gap-2">
-                {c.mode !== "Chat" && (
-                  <>
-                    <button
-                      className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-                      onClick={() => handleStartAudioCall(c._id)}
-                    >
-                      Start Audio Call
-                    </button>
-                    <button
-                      className="px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
-                      onClick={() => handleStartVideoCall(c._id)}
-                    >
-                      Start Video Call
-                    </button>
-                  </>
-                )}
-
-                {c.mode === "Chat" && (
-                  <button
-                    className="px-3 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
-                    onClick={() => handleStartChat(c._id)}
-                  >
-                    Start Chat
-                  </button>
-                )}
-
-                <button
-                  className="px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
-                  onClick={() => handleEndChat(c._id)}
-                >
-                  End Consultation
-                </button>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>
