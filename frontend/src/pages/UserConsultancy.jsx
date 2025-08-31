@@ -20,7 +20,8 @@ export default function UserConsultancy() {
     { value: "", label: "Any" },
     "Assamese","Bengali","Bhojpuri","English","Gujarati","Hindi",
     "Kannada","Malayalam","Marathi","Oriya","Punjabi","Sanskrit","Tamil","Telugu","Urdu"
-  ].map(lang => ({ value: lang, label: lang }));
+ ].map(lang => typeof lang === "string" ? { value: lang, label: lang } : lang);
+
 
   const systemsOptions = [
     { value: "", label: "Any" },
