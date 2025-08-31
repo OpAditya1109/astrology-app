@@ -176,11 +176,12 @@ export default function VideoCall() {
     }
   };
 
-  const endCall = () => {
-    if (peerConnectionRef.current) peerConnectionRef.current.close();
-    if (socketRef.current) socketRef.current.disconnect();
-    navigate("/"); // redirect to home
-  };
+const endCall = () => {
+  if (peerConnectionRef.current) peerConnectionRef.current.close();
+  if (socketRef.current) socketRef.current.disconnect();
+  navigate(-1); // 👈 Go back to previous page
+};
+
 
   return (
     <div className="relative w-screen h-screen bg-black overflow-hidden">
