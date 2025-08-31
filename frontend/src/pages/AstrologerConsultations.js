@@ -12,7 +12,7 @@ export default function AstrologerConsultations() {
 
   // Read mode from query param
   const query = new URLSearchParams(location.search);
-  const modeFromQuery = query.get("mode") || "Chat";
+  const modeFromQuery = query.get("mode"); // Could be "Chat", "Video", or "Audio"
 
   useEffect(() => {
     if (!astrologer?.id) {
@@ -33,9 +33,9 @@ export default function AstrologerConsultations() {
           { headers: { Authorization: `Bearer ${token}` } }
         );
 
-        // Ensure mode is defaulted to "Chat" if undefined
+        // Keep the actual mode from backend (don't default to "Chat")
         const uniqueConsultations = Array.from(
-          new Map(res.data.map((c) => [c._id, { ...c, mode: c.mode || "Chat" }])).values()
+          new Map(res.data.map((c) => [c._id, c])).values()
         );
 
         setConsultations(uniqueConsultations || []);
@@ -47,7 +47,7 @@ export default function AstrologerConsultations() {
     fetchConsultations();
 
     const handleNewConsultation = (data) => {
-      setConsultations((prev) => [{ ...data, mode: data.mode || "Chat" }, ...prev]);
+      setConsultations((prev) => [data, ...prev]);
 
       if (Notification.permission === "granted") {
         new Notification("New Consultation", {
@@ -100,16 +100,22 @@ export default function AstrologerConsultations() {
     }
   };
 
+  // Filter consultations by selected mode (if modeFromQuery is provided)
+  const filteredConsultations = modeFromQuery
+    ? consultations.filter((c) => c.mode === modeFromQuery)
+    : consultations;
+
   return (
     <div className="p-6">
       <h1 className="text-2xl font-bold text-purple-700 mb-6">📅 Consultations</h1>
 
-      {consultations.length === 0 ? (
+      {filteredConsultations.length === 0 ? (
         <p className="text-gray-500">No consultations booked yet.</p>
       ) : (
         <div className="grid gap-6">
-          {consultations.map((c) => {
-            const modeToUse = c.mode || "Chat"; // default to Chat
+          {filteredConsultations.map((c) => {
+            const modeToUse = c.mode; // Use backend mode directly
+
             return (
               <div
                 key={c._id}
@@ -137,29 +143,30 @@ export default function AstrologerConsultations() {
                 </div>
 
                 <div className="flex items-center gap-2">
-                  {modeToUse !== "Chat" && (
-                    <>
-                      <button
-                        className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-                        onClick={() => handleStartAudioCall(c._id)}
-                      >
-                        Start Audio Call
-                      </button>
-                      <button
-                        className="px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
-                        onClick={() => handleStartVideoCall(c._id)}
-                      >
-                        Start Video Call
-                      </button>
-                    </>
-                  )}
-
                   {modeToUse === "Chat" && (
                     <button
                       className="px-3 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
                       onClick={() => handleStartChat(c._id)}
                     >
                       Start Chat
+                    </button>
+                  )}
+
+                  {modeToUse === "Video" && (
+                    <button
+                      className="px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+                      onClick={() => handleStartVideoCall(c._id)}
+                    >
+                      Start Video Call
+                    </button>
+                  )}
+
+                  {modeToUse === "Audio" && (
+                    <button
+                      className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                      onClick={() => handleStartAudioCall(c._id)}
+                    >
+                      Start Audio Call
                     </button>
                   )}
 
