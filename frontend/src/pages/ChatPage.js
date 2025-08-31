@@ -45,8 +45,8 @@ const sendMessage = () => {
   return (
     <div className="h-screen flex flex-col bg-gray-50">
       <header className="bg-purple-700 text-white p-4 text-lg font-semibold">
-        {/* Chat Room ({consultationId}) */}
-        Chat Room
+        Chat Room ({consultationId})
+      
       </header>
 
       <div className="flex-1 overflow-y-auto p-4 space-y-2">
