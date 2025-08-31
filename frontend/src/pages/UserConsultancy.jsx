@@ -24,34 +24,11 @@ export default function UserConsultancy() {
 
 
   const systemsOptions = [
-    { value: "", label: "Any" },
-    { value: "Angel", label: "Angel Reading" },
-    { value: "FaceReading", label: "Face Reading" },
-    { value: "Horary", label: "Horary Astrology" },
-    { value: "KP", label: "KP System" },
-    { value: "LalKitab", label: "Lal Kitab" },
-    { value: "Nadi", label: "Nadi Astrology" },
-    { value: "Numerology", label: "Numerology" },
-    { value: "Palmistry", label: "Palmistry" },
-    { value: "Prashna", label: "Prashna Kundali" },
-    { value: "Psychic", label: "Psychic Reading" },
-    { value: "Tarot", label: "Tarot Reading" },
-    { value: "Vastu", label: "Vastu Shastra" },
-    { value: "Vedic", label: "Vedic Astrology" },
-    { value: "Western", label: "Western Astrology" },
+    { value: "", label: "Any" }, { value: "Angel", label: "Angel Reading" }, { value: "FaceReading", label: "Face Reading" },{ value: "Horary", label: "Horary Astrology" },{ value: "KP", label: "KP System" },{ value: "LalKitab", label: "Lal Kitab" },{ value: "Nadi", label: "Nadi Astrology" },{ value: "Numerology", label: "Numerology" },{ value: "Palmistry", label: "Palmistry" },{ value: "Prashna", label: "Prashna Kundali" },{ value: "Psychic", label: "Psychic Reading" },{ value: "Tarot", label: "Tarot Reading" }, { value: "Vastu", label: "Vastu Shastra" },{ value: "Vedic", label: "Vedic Astrology" },{ value: "Western", label: "Western Astrology" },
   ];
 
   const categoryOptions = [
-    { value: "", label: "Any" },
-    { value: "Business", label: "Business" },
-    { value: "Career", label: "Career" },
-    { value: "Education", label: "Education" },
-    { value: "Finance", label: "Finance" },
-    { value: "Health", label: "Health" },
-    { value: "Legal", label: "Legal" },
-    { value: "Love", label: "Love" },
-    { value: "Marriage", label: "Marriage" },
-    { value: "Pregnancy", label: "Pregnancy" },
+    { value: "", label: "Any" },{ value: "Business", label: "Business" }, { value: "Career", label: "Career" }, { value: "Education", label: "Education" },{ value: "Finance", label: "Finance" },{ value: "Health", label: "Health" },{ value: "Legal", label: "Legal" },{ value: "Love", label: "Love" },{ value: "Marriage", label: "Marriage" },{ value: "Pregnancy", label: "Pregnancy" },
   ];
 
   // Fetch astrologers
@@ -209,14 +186,13 @@ export default function UserConsultancy() {
                     {startingConsultationId === c._id ? "Connecting..." : "Start Chat"}
                   </button>
 
-                 <button
-  onClick={() => navigate(`/video-call/${c._id}`, { state: { isCaller: true } })}
-  disabled={startingConsultationId === c._id}
-  className="px-4 py-2 text-white rounded-lg bg-green-600 hover:bg-green-700"
->
-  Start Video Call
-</button>
-
+                  <button
+                    onClick={() => startConsultation(c._id, "Video", "/video-call")}
+                    disabled={startingConsultationId === c._id}
+                    className="px-4 py-2 text-white rounded-lg bg-green-600 hover:bg-green-700"
+                  >
+                    Start Video Call
+                  </button>
                 </div>
               </div>
             ))}

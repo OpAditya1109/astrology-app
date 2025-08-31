@@ -38,25 +38,38 @@ const io = new Server(server, {
 app.set("io", io);
 
 // --- Handle socket connections ---
+// ...imports & setup unchanged...
+
 io.on("connection", (socket) => {
   console.log("⚡ New client connected:", socket.id);
 
   // --- Join user room for video call ---
-  socket.on("joinRoom", (roomId) => {
+  socket.on("joinRoom", async (roomId) => {
     socket.join(roomId);
     console.log(`📌 User ${socket.id} joined room: ${roomId}`);
 
-    // Notify existing peers in room
+    // Send list of existing peers in this room to the JOINING socket
+    try {
+      const sockets = await io.in(roomId).fetchSockets();
+      const peers = sockets.filter(s => s.id !== socket.id).map(s => s.id);
+      if (peers.length) {
+        socket.emit("existing-peers", { peers });
+      }
+    } catch (e) {
+      console.error("fetchSockets failed:", e);
+    }
+
+    // Notify existing peers that a new one joined (for UI/cleanup etc.)
     socket.to(roomId).emit("peer-joined", { socketId: socket.id });
   });
 
-  // --- Join astrologer room ---
+  // --- Join astrologer room (for dashboard events) ---
   socket.on("joinAstrologerRoom", (astrologerId) => {
     socket.join(astrologerId);
     console.log(`📌 Astrologer ${socket.id} joined room: ${astrologerId}`);
   });
 
-  // --- Chat messages ---
+  // --- Chat messages (unchanged) ---
   socket.on("sendMessage", async ({ roomId, sender, text }) => {
     try {
       const consultation = await Consultation.findById(roomId);
@@ -67,7 +80,6 @@ io.on("connection", (socket) => {
       await consultation.save();
       io.to(roomId).emit("newMessage", newMessage);
 
-      // AI reply
       const astrologer = await Astrologer.findById(consultation.astrologerId);
       if (astrologer && astrologer.isAI) {
         const aiReply = await getAstrologyResponse(text);
@@ -88,33 +100,29 @@ io.on("connection", (socket) => {
 
   // --- VIDEO CALL SIGNALING ---
   socket.on("call-user", ({ to, offer }) => {
-    if (to) {
-      io.to(to).emit("incoming-call", { from: socket.id, offer });
-    }
+    if (to) io.to(to).emit("incoming-call", { from: socket.id, offer });
   });
 
   socket.on("answer-call", ({ to, answer }) => {
-    if (to) {
-      io.to(to).emit("call-answered", { from: socket.id, answer });
-    }
+    if (to) io.to(to).emit("call-answered", { from: socket.id, answer });
   });
 
   socket.on("ice-candidate", ({ to, candidate }) => {
-    if (to) {
-      io.to(to).emit("ice-candidate", { from: socket.id, candidate });
-    }
+    if (to) io.to(to).emit("ice-candidate", { from: socket.id, candidate });
   });
 
   // --- Handle disconnect ---
   socket.on("disconnect", () => {
     console.log("❌ Client disconnected:", socket.id);
-    // Optional: notify others in all rooms
     const rooms = Array.from(socket.rooms).filter(r => r !== socket.id);
     rooms.forEach(room => {
       socket.to(room).emit("peer-left", { socketId: socket.id });
     });
   });
 });
+
+// ...listen unchanged...
+
 
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, () =>
