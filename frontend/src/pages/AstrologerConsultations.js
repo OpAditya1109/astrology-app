@@ -16,9 +16,8 @@ export default function AstrologerConsultations() {
       return;
     }
 
-    const socket = io("https://bhavanaastro.onrender.com"); // Create socket inside useEffect
+    const socket = io("https://bhavanaastro.onrender.com");
 
-    // Join astrologer's room
     socket.emit("joinAstrologerRoom", astrologer.id);
 
     const fetchConsultations = async () => {
@@ -28,6 +27,7 @@ export default function AstrologerConsultations() {
           `https://bhavanaastro.onrender.com/api/consultations/${astrologer.id}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
+
         const uniqueConsultations = Array.from(
           new Map(res.data.map((c) => [c._id, c])).values()
         );
@@ -45,7 +45,7 @@ export default function AstrologerConsultations() {
 
       if (Notification.permission === "granted") {
         new Notification("New Consultation", {
-          body: "A new consultation has been booked. Please check your dashboard.",
+          body: `New ${data.mode || "consultation"} booked by ${data.userName || "User"}`,
         });
       }
     };
@@ -57,7 +57,6 @@ export default function AstrologerConsultations() {
       Notification.requestPermission();
     }
 
-    // Cleanup
     return () => {
       socket.off("newConsultation", handleNewConsultation);
       socket.disconnect();
@@ -65,16 +64,20 @@ export default function AstrologerConsultations() {
   }, [astrologer?.id, navigate]);
 
   const handleStartChat = (consultationId) => {
-    navigate(`/astrologer/chat/${consultationId}`);
+    navigate(`/astrologer/chat/${consultationId}`, { state: { mode: "Chat" } });
   };
 
   const handleStartVideoCall = (consultationId) => {
-    navigate(`/video-call/${consultationId}`);
+    navigate(`/video-call/${consultationId}`, { state: { mode: "Video" } });
+  };
+
+  const handleStartAudioCall = (consultationId) => {
+    navigate(`/video-call/${consultationId}`, { state: { mode: "Audio" } });
   };
 
   const handleEndChat = async (consultationId) => {
     const confirmEnd = window.confirm(
-      "Are you sure you want to end this chat? This will delete the consultation."
+      "Are you sure you want to end this consultation? This will delete it."
     );
     if (!confirmEnd) return;
 
@@ -105,7 +108,9 @@ export default function AstrologerConsultations() {
           {consultations.map((c) => (
             <div
               key={c._id}
-              className="bg-white rounded-xl shadow p-5 flex items-center justify-between"
+              className={`bg-white rounded-xl shadow p-5 flex items-center justify-between transition hover:shadow-lg ${
+                c.status === "ongoing" ? "border-2 border-green-500" : ""
+              }`}
             >
               <div className="flex items-center gap-4">
                 <FaUserCircle className="text-purple-600 text-4xl" />
@@ -117,6 +122,9 @@ export default function AstrologerConsultations() {
                   <p className="text-gray-600 text-sm">
                     Topic: <span className="font-medium">{c.topic || "-"}</span>
                   </p>
+                  <p className="text-gray-600 text-sm">
+                    Mode: <span className="font-medium">{c.mode || "Chat"}</span>
+                  </p>
                   <p className="text-gray-500 text-xs">
                     Booked At:{" "}
                     {c.bookedAt ? new Date(c.bookedAt).toLocaleString() : "-"}
@@ -125,25 +133,37 @@ export default function AstrologerConsultations() {
               </div>
 
               <div className="flex items-center gap-2">
-                <button
-                  className="px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
-                  onClick={() => handleStartVideoCall(c._id)}
-                >
-                  Start Video Call
-                </button>
+                {c.mode !== "Chat" && (
+                  <>
+                    <button
+                      className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                      onClick={() => handleStartAudioCall(c._id)}
+                    >
+                      Start Audio Call
+                    </button>
+                    <button
+                      className="px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+                      onClick={() => handleStartVideoCall(c._id)}
+                    >
+                      Start Video Call
+                    </button>
+                  </>
+                )}
 
-                <button
-                  className="px-3 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
-                  onClick={() => handleStartChat(c._id)}
-                >
-                  Start Chat
-                </button>
+                {c.mode === "Chat" && (
+                  <button
+                    className="px-3 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
+                    onClick={() => handleStartChat(c._id)}
+                  >
+                    Start Chat
+                  </button>
+                )}
 
                 <button
                   className="px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
                   onClick={() => handleEndChat(c._id)}
                 >
-                  End Chat
+                  End Consultation
                 </button>
               </div>
             </div>

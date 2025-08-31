@@ -1,6 +1,5 @@
-// VideoCall.jsx
 import { useEffect, useRef, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { io } from "socket.io-client";
 
 // Import your icons
@@ -14,6 +13,8 @@ const SOCKET_SERVER_URL = "https://bhavanaastro.onrender.com";
 export default function VideoCall() {
   const { consultationId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
+  const callMode = location.state?.mode || "Video"; // "Video" or "Audio"
 
   const localVideoRef = useRef(null);
   const remoteVideoRef = useRef(null);
@@ -23,7 +24,7 @@ export default function VideoCall() {
 
   const [status, setStatus] = useState("Connecting...");
   const [isMuted, setIsMuted] = useState(false);
-  const [isVideoOff, setIsVideoOff] = useState(false);
+  const [isVideoOff, setIsVideoOff] = useState(callMode === "Audio"); // Audio call starts with video off
 
   const ICE_SERVERS = {
     iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
@@ -39,10 +40,20 @@ export default function VideoCall() {
     (async () => {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({
-          video: true,
+          video: callMode === "Video",
           audio: true,
         });
+
         if (localVideoRef.current) localVideoRef.current.srcObject = stream;
+
+        // Automatically disable video track for audio-only calls
+        if (callMode === "Audio") {
+          const videoTrack = stream.getTracks().find((t) => t.kind === "video");
+          if (videoTrack) {
+            videoTrack.enabled = false;
+          }
+        }
+
         stream.getTracks().forEach((track) => pc.addTrack(track, stream));
       } catch (e) {
         console.error("getUserMedia error:", e);
@@ -72,10 +83,8 @@ export default function VideoCall() {
       }
     };
 
-    // Join signaling room
     socket.emit("joinRoom", consultationId);
 
-    // You are the JOINER
     socket.on("existing-peers", async ({ peers }) => {
       if (peers && peers.length > 0) {
         targetSocketRef.current = peers[0];
@@ -86,14 +95,12 @@ export default function VideoCall() {
       }
     });
 
-    // Someone else joined
     socket.on("peer-joined", ({ socketId }) => {
       if (!targetSocketRef.current) {
         targetSocketRef.current = socketId;
       }
     });
 
-    // Incoming offer
     socket.on("incoming-call", async ({ from, offer }) => {
       try {
         targetSocketRef.current = from;
@@ -107,7 +114,6 @@ export default function VideoCall() {
       }
     });
 
-    // Offer answered
     socket.on("call-answered", async ({ answer }) => {
       try {
         await pc.setRemoteDescription(answer);
@@ -117,7 +123,6 @@ export default function VideoCall() {
       }
     });
 
-    // Remote ICE
     socket.on("ice-candidate", async ({ candidate }) => {
       try {
         await pc.addIceCandidate(
@@ -128,7 +133,6 @@ export default function VideoCall() {
       }
     });
 
-    // Peer left
     socket.on("peer-left", () => {
       setStatus("Peer left");
       if (remoteVideoRef.current?.srcObject) {
@@ -145,7 +149,7 @@ export default function VideoCall() {
       }
       pc.close();
     };
-  }, [consultationId]);
+  }, [consultationId, callMode]);
 
   const startCall = async () => {
     const pc = peerConnectionRef.current;
@@ -174,6 +178,7 @@ export default function VideoCall() {
   };
 
   const toggleVideo = () => {
+    if (callMode === "Audio") return; // Disable video toggle for audio-only
     const stream = localVideoRef.current?.srcObject;
     if (stream) {
       const videoTrack = stream.getTracks().find((t) => t.kind === "video");
@@ -197,24 +202,26 @@ export default function VideoCall() {
         ref={remoteVideoRef}
         autoPlay
         playsInline
-        className="absolute inset-0 w-full h-full object-cover"
+        className={`absolute inset-0 w-full h-full object-cover ${callMode === "Audio" ? "bg-gray-900" : ""}`}
       />
 
       {/* Local video */}
-      <video
-        ref={localVideoRef}
-        autoPlay
-        playsInline
-        muted
-        className="absolute bottom-4 right-4 w-40 h-28 bg-black rounded-lg shadow-lg border-2 border-white"
-      />
+      {callMode === "Video" && (
+        <video
+          ref={localVideoRef}
+          autoPlay
+          playsInline
+          muted
+          className="absolute bottom-4 right-4 w-40 h-28 bg-black rounded-lg shadow-lg border-2 border-white"
+        />
+      )}
 
       {/* Status overlay */}
       <div className="absolute top-4 left-4 bg-black bg-opacity-50 text-white px-4 py-2 rounded-lg">
         {status}
       </div>
 
-      {/* ❌ End Call button at top-right */}
+      {/* End Call button */}
       <button
         onClick={endCall}
         className="absolute top-4 right-4 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-full shadow-lg transition"
@@ -222,7 +229,7 @@ export default function VideoCall() {
         End
       </button>
 
-      {/* Control Bar (bottom) */}
+      {/* Control Bar */}
       <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex gap-6 bg-black bg-opacity-60 px-6 py-3 rounded-full">
         {/* Mic button */}
         <button
@@ -236,17 +243,19 @@ export default function VideoCall() {
           />
         </button>
 
-        {/* Video button */}
-        <button
-          onClick={toggleVideo}
-          className="p-3 rounded-full bg-white shadow-md hover:bg-gray-200 transition"
-        >
-          <img
-            src={isVideoOff ? videoOffIcon : videoOnIcon}
-            alt="Video"
-            className="w-6 h-6"
-          />
-        </button>
+        {/* Video button (only for video calls) */}
+        {callMode === "Video" && (
+          <button
+            onClick={toggleVideo}
+            className="p-3 rounded-full bg-white shadow-md hover:bg-gray-200 transition"
+          >
+            <img
+              src={isVideoOff ? videoOffIcon : videoOnIcon}
+              alt="Video"
+              className="w-6 h-6"
+            />
+          </button>
+        )}
       </div>
     </div>
   );

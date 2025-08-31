@@ -20,15 +20,37 @@ export default function UserConsultancy() {
     { value: "", label: "Any" },
     "Assamese","Bengali","Bhojpuri","English","Gujarati","Hindi",
     "Kannada","Malayalam","Marathi","Oriya","Punjabi","Sanskrit","Tamil","Telugu","Urdu"
- ].map(lang => typeof lang === "string" ? { value: lang, label: lang } : lang);
-
+  ].map(lang => typeof lang === "string" ? { value: lang, label: lang } : lang);
 
   const systemsOptions = [
-    { value: "", label: "Any" }, { value: "Angel", label: "Angel Reading" }, { value: "FaceReading", label: "Face Reading" },{ value: "Horary", label: "Horary Astrology" },{ value: "KP", label: "KP System" },{ value: "LalKitab", label: "Lal Kitab" },{ value: "Nadi", label: "Nadi Astrology" },{ value: "Numerology", label: "Numerology" },{ value: "Palmistry", label: "Palmistry" },{ value: "Prashna", label: "Prashna Kundali" },{ value: "Psychic", label: "Psychic Reading" },{ value: "Tarot", label: "Tarot Reading" }, { value: "Vastu", label: "Vastu Shastra" },{ value: "Vedic", label: "Vedic Astrology" },{ value: "Western", label: "Western Astrology" },
+    { value: "", label: "Any" },
+    { value: "Angel", label: "Angel Reading" },
+    { value: "FaceReading", label: "Face Reading" },
+    { value: "Horary", label: "Horary Astrology" },
+    { value: "KP", label: "KP System" },
+    { value: "LalKitab", label: "Lal Kitab" },
+    { value: "Nadi", label: "Nadi Astrology" },
+    { value: "Numerology", label: "Numerology" },
+    { value: "Palmistry", label: "Palmistry" },
+    { value: "Prashna", label: "Prashna Kundali" },
+    { value: "Psychic", label: "Psychic Reading" },
+    { value: "Tarot", label: "Tarot Reading" },
+    { value: "Vastu", label: "Vastu Shastra" },
+    { value: "Vedic", label: "Vedic Astrology" },
+    { value: "Western", label: "Western Astrology" },
   ];
 
   const categoryOptions = [
-    { value: "", label: "Any" },{ value: "Business", label: "Business" }, { value: "Career", label: "Career" }, { value: "Education", label: "Education" },{ value: "Finance", label: "Finance" },{ value: "Health", label: "Health" },{ value: "Legal", label: "Legal" },{ value: "Love", label: "Love" },{ value: "Marriage", label: "Marriage" },{ value: "Pregnancy", label: "Pregnancy" },
+    { value: "", label: "Any" },
+    { value: "Business", label: "Business" },
+    { value: "Career", label: "Career" },
+    { value: "Education", label: "Education" },
+    { value: "Finance", label: "Finance" },
+    { value: "Health", label: "Health" },
+    { value: "Legal", label: "Legal" },
+    { value: "Love", label: "Love" },
+    { value: "Marriage", label: "Marriage" },
+    { value: "Pregnancy", label: "Pregnancy" },
   ];
 
   // Fetch astrologers
@@ -49,7 +71,7 @@ export default function UserConsultancy() {
     fetchAstrologers();
   }, []);
 
-  // Filter astrologers based on selections
+  // Filter astrologers
   const filtered = consultations.filter(c =>
     (!filters.experience || c.experience >= Number(filters.experience)) &&
     (!filters.language || c.languagesKnown?.map(l => l.toLowerCase()).includes(filters.language.toLowerCase())) &&
@@ -76,13 +98,14 @@ export default function UserConsultancy() {
         {
           userId: currentUser.id,
           astrologerId,
-          topic: mode === "Chat" ? "General Chat" : "Video Call",
+          topic: mode === "Chat" ? "General Chat" : `${mode} Call`,
           mode
         },
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      navigate(`${route}/${res.data._id}`);
+      // Pass mode via state to VideoCall component
+      navigate(`${route}/${res.data._id}`, { state: { mode } });
     } catch (err) {
       console.error(`Error starting ${mode}:`, err);
       alert(`Failed to start ${mode}. Try again.`);
@@ -192,6 +215,14 @@ export default function UserConsultancy() {
                     className="px-4 py-2 text-white rounded-lg bg-green-600 hover:bg-green-700"
                   >
                     Start Video Call
+                  </button>
+
+                  <button
+                    onClick={() => startConsultation(c._id, "Audio", "/video-call")}
+                    disabled={startingConsultationId === c._id}
+                    className="px-4 py-2 text-white rounded-lg bg-blue-600 hover:bg-blue-700"
+                  >
+                    Start Audio Call
                   </button>
                 </div>
               </div>
