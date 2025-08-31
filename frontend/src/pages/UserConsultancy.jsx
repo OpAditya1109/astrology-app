@@ -9,10 +9,10 @@ export default function UserConsultancy() {
     category: "",
     system: "",
   });
-
   const [consultations, setConsultations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [startingConsultationId, setStartingConsultationId] = useState(null);
+  const [showFilters, setShowFilters] = useState(false); // Toggle for mobile
 
   const navigate = useNavigate();
 
@@ -53,7 +53,6 @@ export default function UserConsultancy() {
     { value: "Pregnancy", label: "Pregnancy" },
   ];
 
-  // Fetch astrologers
   useEffect(() => {
     const fetchAstrologers = async () => {
       setLoading(true);
@@ -71,7 +70,6 @@ export default function UserConsultancy() {
     fetchAstrologers();
   }, []);
 
-  // Filter astrologers
   const filtered = consultations.filter(c =>
     (!filters.experience || c.experience >= Number(filters.experience)) &&
     (!filters.language || c.languagesKnown?.map(l => l.toLowerCase()).includes(filters.language.toLowerCase())) &&
@@ -104,7 +102,6 @@ export default function UserConsultancy() {
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      // Pass mode via state to VideoCall component
       navigate(`${route}/${res.data._id}`, { state: { mode } });
     } catch (err) {
       console.error(`Error starting ${mode}:`, err);
@@ -115,9 +112,23 @@ export default function UserConsultancy() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
+    <div className="min-h-screen bg-gray-50 flex flex-col md:flex-row">
+      {/* Mobile filter button */}
+      <div className="md:hidden p-4 bg-white shadow flex justify-between items-center">
+        <h2 className="text-lg font-semibold text-purple-700">Filters</h2>
+        <button
+          onClick={() => setShowFilters(!showFilters)}
+          className="px-3 py-2 bg-purple-600 text-white rounded-lg"
+        >
+          {showFilters ? "Close" : "Show"}
+        </button>
+      </div>
+
       {/* Sidebar */}
-      <aside className="w-64 bg-white shadow-md p-6 sticky top-0 h-screen">
+      <aside
+        className={`bg-white shadow-md p-6 md:w-64 md:sticky md:top-0 md:h-screen transform md:transform-none transition-transform duration-300 ease-in-out
+          ${showFilters ? "translate-x-0" : "-translate-x-full"} md:translate-x-0 fixed z-20 top-0 left-0 h-full w-64`}
+      >
         <h2 className="text-xl font-semibold mb-4 text-purple-700">Filters</h2>
 
         <div className="mb-4">
@@ -176,7 +187,7 @@ export default function UserConsultancy() {
       </aside>
 
       {/* Consultation List */}
-      <main className="flex-1 p-6">
+      <main className="flex-1 p-6 md:ml-64">
         <h2 className="text-2xl font-semibold mb-6 text-purple-700">Consultations</h2>
 
         {loading ? (
@@ -196,7 +207,7 @@ export default function UserConsultancy() {
                 <p className="text-gray-500 mb-1">{c.languagesKnown?.join(", ") || ""}</p>
                 <p className="text-gray-500 mb-4">{c.categories?.join(", ") || ""}</p>
 
-                <div className="flex gap-2">
+                <div className="flex gap-2 flex-wrap">
                   <button
                     onClick={() => startConsultation(c._id, "Chat", "/chat")}
                     disabled={startingConsultationId === c._id}
