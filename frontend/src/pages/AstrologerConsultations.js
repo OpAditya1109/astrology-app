@@ -26,7 +26,6 @@ export default function AstrologerConsultations() {
           { headers: { Authorization: `Bearer ${token}` } }
         );
 
-        // Unique consultations by _id
         const uniqueConsultations = Array.from(
           new Map(res.data.map((c) => [c._id, c])).values()
         );
@@ -42,10 +41,8 @@ export default function AstrologerConsultations() {
     socket.emit("joinAstrologerRoom", astrologer.id);
 
     socket.on("newConsultation", (data) => {
-      // Add new consultation at top
       setConsultations((prev) => [data, ...prev]);
 
-      // Show Chrome notification
       if (Notification.permission === "granted") {
         new Notification("New Consultation", {
           body: `Please Check the Astrologer Consultations`,
@@ -53,7 +50,6 @@ export default function AstrologerConsultations() {
       }
     });
 
-    // Request notification permission if not granted
     if ("Notification" in window && Notification.permission !== "granted") {
       Notification.requestPermission();
     }
@@ -65,6 +61,10 @@ export default function AstrologerConsultations() {
 
   const handleStartChat = (consultationId) => {
     navigate(`/astrologer/chat/${consultationId}`);
+  };
+
+  const handleStartVideoCall = (consultationId) => {
+    navigate(`/video-call/${consultationId}`);
   };
 
   const handleEndChat = async (consultationId) => {
@@ -120,6 +120,13 @@ export default function AstrologerConsultations() {
               </div>
 
               <div className="flex items-center gap-2">
+                <button
+                  className="px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+                  onClick={() => handleStartVideoCall(c._id)}
+                >
+                  Start Video Call
+                </button>
+
                 <button
                   className="px-3 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
                   onClick={() => handleStartChat(c._id)}

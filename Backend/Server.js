@@ -42,7 +42,7 @@ app.set("io", io);
 io.on("connection", (socket) => {
   console.log("⚡ New client connected:", socket.id);
 
-  // --- Chat rooms ---
+  // --- Join rooms ---
   socket.on("joinRoom", (roomId) => {
     socket.join(roomId);
     console.log(`📌 User ${socket.id} joined room: ${roomId}`);
@@ -59,12 +59,7 @@ io.on("connection", (socket) => {
       const consultation = await Consultation.findById(roomId);
       if (!consultation) return console.log("❌ Consultation not found:", roomId);
 
-      const newMessage = {
-        sender,
-        text,
-        senderModel: "User",
-        createdAt: new Date(),
-      };
+      const newMessage = { sender, text, senderModel: "User", createdAt: new Date() };
       consultation.messages.push(newMessage);
       await consultation.save();
       io.to(roomId).emit("newMessage", newMessage);
@@ -89,30 +84,25 @@ io.on("connection", (socket) => {
   });
 
   // --- VIDEO CALL SIGNALING ---
-  
-  // Initiate a call
   socket.on("call-user", ({ to, offer }) => {
     io.to(to).emit("incoming-call", { from: socket.id, offer });
   });
 
-  // Answer a call
   socket.on("answer-call", ({ to, answer }) => {
     io.to(to).emit("call-answered", { from: socket.id, answer });
   });
 
-  // ICE candidates
   socket.on("ice-candidate", ({ to, candidate }) => {
     io.to(to).emit("ice-candidate", { from: socket.id, candidate });
   });
 
-  // --- Disconnect ---
+  // --- Handle disconnect ---
   socket.on("disconnect", () => {
     console.log("❌ Client disconnected:", socket.id);
-    // Optionally notify peers about call end
   });
 });
 
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, () =>
-  console.log(`🚀 Server running on http://localhost:${PORT}`)
+  console.log(`🚀 Server running on port ${PORT}`)
 );
