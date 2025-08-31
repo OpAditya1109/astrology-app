@@ -55,8 +55,8 @@
       customer_email: req.body.email || 'test@example.com'
     },
     order_meta: {
-      return_url: `http://localhost:5173/wallet-success?order_id=${orderId}`,
-      notify_url: `http://localhost:5000/api/wallet/webhook`,
+      return_url: `https://www.astrobhavana.com/wallet-success?order_id=${orderId}`,
+      notify_url: `https://bhavanaastro.onrender.com/api/wallet/webhook`,
       payment_methods: 'cc,dc,upi'
     }
   };

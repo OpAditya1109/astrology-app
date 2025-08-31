@@ -17,6 +17,7 @@ import AstrologerChat from "./pages/AstrologerChat";
 import AIConsultation from "./pages/AIConsultation";
 import MatchMakingForm from "./pages/MatchMakingForm";
 import VideoCall from "./pages/VideoCall";
+import WalletSuccess from "./pages/WalletSuccess";
 
 function App() {
   return (
@@ -44,9 +45,10 @@ function App() {
           path="/astrologer/chat/:consultationId"
           element={<AstrologerChat />}
         />
-          <Route path="/video-call/:consultationId" element={<VideoCall />} />
+        <Route path="/video-call/:consultationId" element={<VideoCall />} />
         <Route path="/ai-consultation" element={<AIConsultation />} />
         <Route path="/match-making" element={<MatchMakingForm />} />
+        <Route path="/wallet-success" element={<WalletSuccess />} />
       </Routes>
     </Router>
   );
