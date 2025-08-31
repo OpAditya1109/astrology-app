@@ -184,43 +184,48 @@ const endCall = () => {
 
 
   return (
-    <div className="relative w-screen h-screen bg-black overflow-hidden">
-      {/* Remote video */}
-      <video
-        ref={remoteVideoRef}
-        autoPlay
-        playsInline
-        className="absolute inset-0 w-full h-full object-cover"
-      />
+  <div className="relative w-screen h-screen bg-black overflow-hidden">
+    {/* Remote video */}
+    <video
+      ref={remoteVideoRef}
+      autoPlay
+      playsInline
+      className="absolute inset-0 w-full h-full object-cover"
+    />
 
-      {/* Local video */}
-      <video
-        ref={localVideoRef}
-        autoPlay
-        playsInline
-        muted
-        className="absolute bottom-4 right-4 w-40 h-28 bg-black rounded-lg shadow-lg border-2 border-white"
-      />
+    {/* Local video */}
+    <video
+      ref={localVideoRef}
+      autoPlay
+      playsInline
+      muted
+      className="absolute bottom-4 right-4 w-40 h-28 bg-black rounded-lg shadow-lg border-2 border-white"
+    />
 
-      {/* Status overlay */}
-      <div className="absolute top-4 left-4 bg-black bg-opacity-50 text-white px-4 py-2 rounded-lg">
-        {status}
-      </div>
-
-      {/* Control Bar */}
-      <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex gap-6 bg-black bg-opacity-60 px-6 py-3 rounded-full">
-        <button onClick={toggleMute} className="text-white hover:text-red-500 transition">
-          {isMuted ? "🔇" : "🎤"}
-        </button>
-
-        <button onClick={toggleVideo} className="text-white hover:text-red-500 transition">
-          {isVideoOff ? "📷❌" : "🎥"}
-        </button>
-
-        <button onClick={endCall} className="text-white hover:text-red-500 transition">
-          ❌
-        </button>
-      </div>
+    {/* Status overlay */}
+    <div className="absolute top-4 left-4 bg-black bg-opacity-50 text-white px-4 py-2 rounded-lg">
+      {status}
     </div>
-  );
+
+    {/* ❌ End Call button at top-right */}
+    <button
+      onClick={endCall}
+      className="absolute top-4 right-4 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-full shadow-lg transition"
+    >
+      ❌ End
+    </button>
+
+    {/* Control Bar (bottom) */}
+    <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex gap-6 bg-black bg-opacity-60 px-6 py-3 rounded-full">
+      <button onClick={toggleMute} className="text-white hover:text-red-500 transition">
+        {isMuted ? "🔇" : "🎤"}
+      </button>
+
+      <button onClick={toggleVideo} className="text-white hover:text-red-500 transition">
+        {isVideoOff ? "📷❌" : "🎥"}
+      </button>
+    </div>
+  </div>
+);
+
 }
