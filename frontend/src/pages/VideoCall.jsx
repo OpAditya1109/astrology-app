@@ -155,13 +155,13 @@ export default function VideoCall() {
   };
 
 return (
-  <div className="relative flex items-center justify-center min-h-screen bg-gray-900">
-    {/* Remote video (full screen) */}
+  <div className="relative w-screen h-screen bg-black overflow-hidden">
+    {/* Remote video (fullscreen, no scroll) */}
     <video
       ref={remoteVideoRef}
       autoPlay
       playsInline
-      className="w-full h-full object-cover"
+      className="absolute inset-0 w-full h-full object-cover"
     />
 
     {/* Local video (small floating) */}
@@ -177,7 +177,51 @@ return (
     <div className="absolute top-4 left-4 bg-black bg-opacity-50 text-white px-4 py-2 rounded-lg">
       {status}
     </div>
+
+    {/* Control Bar */}
+    <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex gap-6 bg-black bg-opacity-60 px-6 py-3 rounded-full">
+      {/* Mute/Unmute */}
+      <button
+        onClick={() => {
+          const stream = localVideoRef.current?.srcObject;
+          if (stream) {
+            const audioTrack = stream.getTracks().find(t => t.kind === "audio");
+            if (audioTrack) audioTrack.enabled = !audioTrack.enabled;
+          }
+        }}
+        className="text-white hover:text-red-500 transition"
+      >
+        🎤
+      </button>
+
+      {/* Toggle Camera */}
+      <button
+        onClick={() => {
+          const stream = localVideoRef.current?.srcObject;
+          if (stream) {
+            const videoTrack = stream.getTracks().find(t => t.kind === "video");
+            if (videoTrack) videoTrack.enabled = !videoTrack.enabled;
+          }
+        }}
+        className="text-white hover:text-red-500 transition"
+      >
+        🎥
+      </button>
+
+      {/* End Call */}
+      <button
+        onClick={() => {
+          if (peerConnection.current) peerConnection.current.close();
+          socket.disconnect();
+          navigate("/"); // redirect to home or chat list
+        }}
+        className="text-white hover:text-red-500 transition"
+      >
+        ❌
+      </button>
+    </div>
   </div>
 );
+
 
 }
