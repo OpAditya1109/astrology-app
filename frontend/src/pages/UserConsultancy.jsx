@@ -12,7 +12,7 @@ export default function UserConsultancy() {
 
   const [consultations, setConsultations] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [startingChatId, setStartingChatId] = useState(null); // to disable button while starting chat
+  const [startingChatId, setStartingChatId] = useState(null); // to disable buttons while starting chat/video
 
   const navigate = useNavigate();
 
@@ -66,7 +66,7 @@ export default function UserConsultancy() {
     { value: "Pregnancy", label: "Pregnancy" },
   ];
 
-  // Fetch astrologer details from backend
+  // Fetch astrologers
   useEffect(() => {
     const fetchAstrologers = async () => {
       try {
@@ -91,7 +91,18 @@ export default function UserConsultancy() {
 
   const handleChange = e => setFilters({ ...filters, [e.target.name]: e.target.value });
 
+  // Start Chat
   const handleStartChat = async (astrologerId) => {
+    await startConsultation(astrologerId, "Chat", "/chat");
+  };
+
+  // Start Video Call
+  const handleStartVideoCall = async (astrologerId) => {
+    await startConsultation(astrologerId, "Video", "/video-call");
+  };
+
+  // Shared function to start chat or video consultation
+  const startConsultation = async (astrologerId, mode, route) => {
     const currentUser = JSON.parse(sessionStorage.getItem("user"));
     if (!currentUser?.id) {
       alert("Please login first.");
@@ -99,91 +110,51 @@ export default function UserConsultancy() {
       return;
     }
 
-    setStartingChatId(astrologerId); // disable button
+    setStartingChatId(astrologerId);
 
     try {
       const token = sessionStorage.getItem("token");
       const res = await axios.post(
         "https://bhavanaastro.onrender.com/api/consultations",
-        { userId: currentUser.id, astrologerId, topic: "General Chat", mode: "Chat" },
+        { userId: currentUser.id, astrologerId, topic: mode === "Chat" ? "General Chat" : "Video Call", mode },
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      const consultationId = res.data._id; // existing or new consultation
-      navigate(`/chat/${consultationId}`);
+      const consultationId = res.data._id;
+      navigate(`${route}/${consultationId}`);
     } catch (err) {
-      console.error("Error starting consultation:", err);
-      alert("Failed to start chat. Try again.");
+      console.error(`Error starting ${mode}:`, err);
+      alert(`Failed to start ${mode}. Try again.`);
     } finally {
-      setStartingChatId(null); // re-enable button
+      setStartingChatId(null);
     }
   };
-
-
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
       {/* Sidebar Filter */}
       <aside className="w-64 bg-white shadow-md p-6 sticky top-0 h-screen">
         <h2 className="text-xl font-semibold mb-4 text-purple-700">Filters</h2>
-
         <div className="mb-4">
           <label className="block text-gray-700 mb-1">Exp (years)</label>
-          <input
-            type="number"
-            name="experience"
-            value={filters.experience}
-            onChange={handleChange}
-            className="border rounded-lg px-3 py-2 w-full"
-            placeholder="Min exp"
-          />
+          <input type="number" name="experience" value={filters.experience} onChange={handleChange} className="border rounded-lg px-3 py-2 w-full" placeholder="Min exp" />
         </div>
-
         <div className="mb-4">
           <label className="block text-gray-700 mb-1">Language</label>
-          <select
-            name="language"
-            value={filters.language}
-            onChange={handleChange}
-            className="border rounded-lg px-3 py-2 w-full"
-          >
-            {languages.map((lang) => (
-              <option key={lang.value} value={lang.value}>
-                {lang.label}
-              </option>
-            ))}
+          <select name="language" value={filters.language} onChange={handleChange} className="border rounded-lg px-3 py-2 w-full">
+            {languages.map((lang) => <option key={lang.value} value={lang.value}>{lang.label}</option>)}
           </select>
         </div>
-
         <div className="mb-4">
           <label className="block text-gray-700 mb-1">Category</label>
-          <select
-            name="category"
-            value={filters.category}
-            onChange={handleChange}
-            className="border rounded-lg px-3 py-2 w-full"
-          >
-            {categoryOptions.map((cat) => (
-              <option key={cat.value} value={cat.value}>
-                {cat.label}
-              </option>
-            ))}
+          <select name="category" value={filters.category} onChange={handleChange} className="border rounded-lg px-3 py-2 w-full">
+            {categoryOptions.map((cat) => <option key={cat.value} value={cat.value}>{cat.label}</option>)}
           </select>
         </div>
-
         <div className="mb-4">
           <label className="block text-gray-700 mb-1">System</label>
-          <select
-            name="system"
-            value={filters.system}
-            onChange={handleChange}
-            className="border rounded-lg px-3 py-2 w-full"
-          >
-            {systemsOptions.map((sys) => (
-              <option key={sys.value} value={sys.value}>
-                {sys.label}
-              </option>
-            ))}
+          <select name="system" value={filters.system} onChange={handleChange} className="border rounded-lg px-3 py-2 w-full">
+            {systemsOptions.map((sys) => <option key={sys.value} value={sys.value}>{sys.label}</option>)}
           </select>
         </div>
       </aside>
@@ -199,32 +170,31 @@ export default function UserConsultancy() {
         ) : (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filtered.map((c, index) => (
-              <div
-                key={index}
-                className="bg-white shadow-md rounded-2xl p-6 hover:shadow-xl transition"
-              >
+              <div key={index} className="bg-white shadow-md rounded-2xl p-6 hover:shadow-xl transition">
                 <h3 className="text-xl font-bold text-purple-700 mb-1">{c.name}</h3>
-                
-                {/* Systems Known below name */}
                 <p className="text-sm text-gray-500 mb-2">{c.systemsKnown?.join(", ") || ""}</p>
-
-                {/* Exp instead of Experience */}
                 <p className="text-gray-500 mb-1">Exp - {c.experience} yrs</p>
-
-                {/* No labels for Languages and Categories */}
                 <p className="text-gray-500 mb-1">{c.languagesKnown?.join(", ") || ""}</p>
                 <p className="text-gray-500 mb-4">{c.categories?.join(", ") || ""}</p>
-<button
-                  onClick={() => handleStartChat(c._id)}
-                  disabled={startingChatId === c._id}
-                  className={`px-4 py-2 text-white rounded-lg ${
-                    startingChatId === c._id
-                      ? "bg-gray-400 cursor-not-allowed"
-                      : "bg-purple-600 hover:bg-purple-700"
-                  }`}
-                >
-                  {startingChatId === c._id ? "Connecting..." : "Start Chat"}
-                </button>
+
+                {/* Buttons */}
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => handleStartChat(c._id)}
+                    disabled={startingChatId === c._id}
+                    className={`px-4 py-2 text-white rounded-lg ${startingChatId === c._id ? "bg-gray-400 cursor-not-allowed" : "bg-purple-600 hover:bg-purple-700"}`}
+                  >
+                    {startingChatId === c._id ? "Connecting..." : "Start Chat"}
+                  </button>
+
+                  <button
+                    onClick={() => handleStartVideoCall(c._id)}
+                    disabled={startingChatId === c._id}
+                    className="px-4 py-2 text-white rounded-lg bg-green-600 hover:bg-green-700"
+                  >
+                    Start Video Call
+                  </button>
+                </div>
               </div>
             ))}
           </div>

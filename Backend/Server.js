@@ -8,8 +8,7 @@ const { Server } = require("socket.io");
 const Consultation = require("./models/Consultation");
 const Astrologer = require("./models/Astrologer");
 const { getAstrologyResponse } = require("./api/astrology");
-const panchangRoutes = require("./routes/panchang"); // ✅ use require
-
+const panchangRoutes = require("./routes/panchang");
 
 dotenv.config();
 connectDB();
@@ -33,10 +32,7 @@ const server = http.createServer(app);
 
 // --- Initialize Socket.IO ---
 const io = new Server(server, {
-  cors: {
-    origin: "*",
-    methods: ["GET", "POST"],
-  },
+  cors: { origin: "*", methods: ["GET", "POST"] },
 });
 
 // Attach io to app so routes can emit events
@@ -46,28 +42,23 @@ app.set("io", io);
 io.on("connection", (socket) => {
   console.log("⚡ New client connected:", socket.id);
 
-  // Join a chat room (user <-> astrologer)
+  // --- Chat rooms ---
   socket.on("joinRoom", (roomId) => {
     socket.join(roomId);
     console.log(`📌 User ${socket.id} joined room: ${roomId}`);
   });
 
-  // Join astrologer room for notifications
   socket.on("joinAstrologerRoom", (astrologerId) => {
     socket.join(astrologerId);
     console.log(`📌 Astrologer ${socket.id} joined room: ${astrologerId}`);
   });
 
-  // Handle sending messages (user + AI)
+  // --- Chat messages ---
   socket.on("sendMessage", async ({ roomId, sender, text }) => {
     try {
       const consultation = await Consultation.findById(roomId);
-      if (!consultation) {
-        console.log("❌ Consultation not found:", roomId);
-        return;
-      }
+      if (!consultation) return console.log("❌ Consultation not found:", roomId);
 
-      // Save user/human message
       const newMessage = {
         sender,
         text,
@@ -76,25 +67,20 @@ io.on("connection", (socket) => {
       };
       consultation.messages.push(newMessage);
       await consultation.save();
-
-      // Emit user message
       io.to(roomId).emit("newMessage", newMessage);
 
-      // --- AI reply ---
+      // AI reply
       const astrologer = await Astrologer.findById(consultation.astrologerId);
       if (astrologer && astrologer.isAI) {
         const aiReply = await getAstrologyResponse(text);
-
         const aiMessage = {
-          sender: astrologer._id, // ObjectId
+          sender: astrologer._id,
           senderModel: "Astrologer",
           text: aiReply,
           createdAt: new Date(),
         };
-
         consultation.messages.push(aiMessage);
         await consultation.save();
-
         io.to(roomId).emit("newMessage", aiMessage);
       }
     } catch (error) {
@@ -102,9 +88,27 @@ io.on("connection", (socket) => {
     }
   });
 
-  // Handle disconnect
+  // --- VIDEO CALL SIGNALING ---
+  
+  // Initiate a call
+  socket.on("call-user", ({ to, offer }) => {
+    io.to(to).emit("incoming-call", { from: socket.id, offer });
+  });
+
+  // Answer a call
+  socket.on("answer-call", ({ to, answer }) => {
+    io.to(to).emit("call-answered", { from: socket.id, answer });
+  });
+
+  // ICE candidates
+  socket.on("ice-candidate", ({ to, candidate }) => {
+    io.to(to).emit("ice-candidate", { from: socket.id, candidate });
+  });
+
+  // --- Disconnect ---
   socket.on("disconnect", () => {
     console.log("❌ Client disconnected:", socket.id);
+    // Optionally notify peers about call end
   });
 });
 
