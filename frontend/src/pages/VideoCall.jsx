@@ -3,6 +3,12 @@ import { useEffect, useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { io } from "socket.io-client";
 
+// Import your icons
+import micOnIcon from "../assets/mic-on.png";
+import micOffIcon from "../assets/mic-off.png";
+import videoOnIcon from "../assets/video-on.png";
+import videoOffIcon from "../assets/video-off.png";
+
 const SOCKET_SERVER_URL = "https://bhavanaastro.onrender.com";
 
 export default function VideoCall() {
@@ -20,10 +26,7 @@ export default function VideoCall() {
   const [isVideoOff, setIsVideoOff] = useState(false);
 
   const ICE_SERVERS = {
-    iceServers: [
-      { urls: "stun:stun.l.google.com:19302" },
-      // { urls: "turn:YOUR_TURN_HOST:3478", username: "USER", credential: "PASS" },
-    ],
+    iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
   };
 
   useEffect(() => {
@@ -35,7 +38,10 @@ export default function VideoCall() {
 
     (async () => {
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: true,
+          audio: true,
+        });
         if (localVideoRef.current) localVideoRef.current.srcObject = stream;
         stream.getTracks().forEach((track) => pc.addTrack(track, stream));
       } catch (e) {
@@ -80,7 +86,7 @@ export default function VideoCall() {
       }
     });
 
-    // Someone else joined (you were here first)
+    // Someone else joined
     socket.on("peer-joined", ({ socketId }) => {
       if (!targetSocketRef.current) {
         targetSocketRef.current = socketId;
@@ -114,7 +120,9 @@ export default function VideoCall() {
     // Remote ICE
     socket.on("ice-candidate", async ({ candidate }) => {
       try {
-        await pc.addIceCandidate(candidate?.candidate ? candidate : new RTCIceCandidate(candidate));
+        await pc.addIceCandidate(
+          candidate?.candidate ? candidate : new RTCIceCandidate(candidate)
+        );
       } catch (err) {
         console.error("Error adding ICE candidate:", err);
       }
@@ -123,7 +131,7 @@ export default function VideoCall() {
     // Peer left
     socket.on("peer-left", () => {
       setStatus("Peer left");
-      if (remoteVideoRef.current && remoteVideoRef.current.srcObject) {
+      if (remoteVideoRef.current?.srcObject) {
         remoteVideoRef.current.srcObject.getTracks().forEach((t) => t.stop());
         remoteVideoRef.current.srcObject = null;
       }
@@ -176,56 +184,70 @@ export default function VideoCall() {
     }
   };
 
-const endCall = () => {
-  if (peerConnectionRef.current) peerConnectionRef.current.close();
-  if (socketRef.current) socketRef.current.disconnect();
-  navigate(-1); // 👈 Go back to previous page
-};
-
+  const endCall = () => {
+    if (peerConnectionRef.current) peerConnectionRef.current.close();
+    if (socketRef.current) socketRef.current.disconnect();
+    navigate(-1);
+  };
 
   return (
-  <div className="relative w-screen h-screen bg-black overflow-hidden">
-    {/* Remote video */}
-    <video
-      ref={remoteVideoRef}
-      autoPlay
-      playsInline
-      className="absolute inset-0 w-full h-full object-cover"
-    />
+    <div className="relative w-screen h-screen bg-black overflow-hidden">
+      {/* Remote video */}
+      <video
+        ref={remoteVideoRef}
+        autoPlay
+        playsInline
+        className="absolute inset-0 w-full h-full object-cover"
+      />
 
-    {/* Local video */}
-    <video
-      ref={localVideoRef}
-      autoPlay
-      playsInline
-      muted
-      className="absolute bottom-4 right-4 w-40 h-28 bg-black rounded-lg shadow-lg border-2 border-white"
-    />
+      {/* Local video */}
+      <video
+        ref={localVideoRef}
+        autoPlay
+        playsInline
+        muted
+        className="absolute bottom-4 right-4 w-40 h-28 bg-black rounded-lg shadow-lg border-2 border-white"
+      />
 
-    {/* Status overlay */}
-    <div className="absolute top-4 left-4 bg-black bg-opacity-50 text-white px-4 py-2 rounded-lg">
-      {status}
-    </div>
+      {/* Status overlay */}
+      <div className="absolute top-4 left-4 bg-black bg-opacity-50 text-white px-4 py-2 rounded-lg">
+        {status}
+      </div>
 
-    {/* ❌ End Call button at top-right */}
-    <button
-      onClick={endCall}
-      className="absolute top-4 right-4 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-full shadow-lg transition"
-    >
-      ❌ End
-    </button>
-
-    {/* Control Bar (bottom) */}
-    <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex gap-6 bg-black bg-opacity-60 px-6 py-3 rounded-full">
-      <button onClick={toggleMute} className="text-white hover:text-red-500 transition">
-        {isMuted ? "🔇" : "🎤"}
+      {/* ❌ End Call button at top-right */}
+      <button
+        onClick={endCall}
+        className="absolute top-4 right-4 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-full shadow-lg transition"
+      >
+        End
       </button>
 
-      <button onClick={toggleVideo} className="text-white hover:text-red-500 transition">
-        {isVideoOff ? "📷❌" : "🎥"}
-      </button>
-    </div>
-  </div>
-);
+      {/* Control Bar (bottom) */}
+      <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex gap-6 bg-black bg-opacity-60 px-6 py-3 rounded-full">
+        {/* Mic button */}
+        <button
+          onClick={toggleMute}
+          className="p-3 rounded-full bg-white shadow-md hover:bg-gray-200 transition"
+        >
+          <img
+            src={isMuted ? micOffIcon : micOnIcon}
+            alt="Mic"
+            className="w-6 h-6"
+          />
+        </button>
 
+        {/* Video button */}
+        <button
+          onClick={toggleVideo}
+          className="p-3 rounded-full bg-white shadow-md hover:bg-gray-200 transition"
+        >
+          <img
+            src={isVideoOff ? videoOffIcon : videoOnIcon}
+            alt="Video"
+            className="w-6 h-6"
+          />
+        </button>
+      </div>
+    </div>
+  );
 }
