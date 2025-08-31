@@ -4,8 +4,6 @@ import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { io } from "socket.io-client";
 
-const socket = io("https://bhavanaastro.onrender.com"); // Your backend Socket.IO URL
-
 export default function AstrologerConsultations() {
   const [consultations, setConsultations] = useState([]);
   const navigate = useNavigate();
@@ -18,6 +16,11 @@ export default function AstrologerConsultations() {
       return;
     }
 
+    const socket = io("https://bhavanaastro.onrender.com"); // Create socket inside useEffect
+
+    // Join astrologer's room
+    socket.emit("joinAstrologerRoom", astrologer.id);
+
     const fetchConsultations = async () => {
       try {
         const token = sessionStorage.getItem("token");
@@ -25,7 +28,6 @@ export default function AstrologerConsultations() {
           `https://bhavanaastro.onrender.com/api/consultations/${astrologer.id}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
-
         const uniqueConsultations = Array.from(
           new Map(res.data.map((c) => [c._id, c])).values()
         );
@@ -37,25 +39,28 @@ export default function AstrologerConsultations() {
 
     fetchConsultations();
 
-    // --- SOCKET.IO SETUP ---
-    socket.emit("joinAstrologerRoom", astrologer.id);
-
-    socket.on("newConsultation", (data) => {
+    // Handle new consultation via socket
+    const handleNewConsultation = (data) => {
       setConsultations((prev) => [data, ...prev]);
 
       if (Notification.permission === "granted") {
         new Notification("New Consultation", {
-          body: `Please Check the Astrologer Consultations`,
+          body: "A new consultation has been booked. Please check your dashboard.",
         });
       }
-    });
+    };
 
+    socket.on("newConsultation", handleNewConsultation);
+
+    // Request Notification permission
     if ("Notification" in window && Notification.permission !== "granted") {
       Notification.requestPermission();
     }
 
+    // Cleanup
     return () => {
-      socket.off("newConsultation");
+      socket.off("newConsultation", handleNewConsultation);
+      socket.disconnect();
     };
   }, [astrologer?.id, navigate]);
 

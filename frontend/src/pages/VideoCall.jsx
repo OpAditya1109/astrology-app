@@ -1,5 +1,4 @@
-// VideoCall.jsx
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { useParams } from "react-router-dom";
 import io from "socket.io-client";
 
@@ -9,29 +8,38 @@ export default function VideoCall() {
   const { consultationId } = useParams();
   const localVideoRef = useRef(null);
   const remoteVideoRef = useRef(null);
+
   const [socket, setSocket] = useState(null);
   const [peerConnection, setPeerConnection] = useState(null);
-  const [targetSocketId, setTargetSocketId] = useState(null); // store callee/caller socket id
+  const [targetSocketId, setTargetSocketId] = useState(null);
 
-  const ICE_SERVERS = { iceServers: [{ urls: "stun:stun.l.google.com:19302" }] };
+  // Use useCallback to prevent ESLint warning
+  const ICE_SERVERS = useCallback(
+    () => ({ iceServers: [{ urls: "stun:stun.l.google.com:19302" }] }),
+    []
+  );
 
   useEffect(() => {
     const s = io(SOCKET_SERVER_URL);
     setSocket(s);
 
-    const pc = new RTCPeerConnection(ICE_SERVERS);
+    const pc = new RTCPeerConnection(ICE_SERVERS());
     setPeerConnection(pc);
 
+    // Get local media
     navigator.mediaDevices.getUserMedia({ video: true, audio: true })
       .then(stream => {
-        localVideoRef.current.srcObject = stream;
+        if (localVideoRef.current) localVideoRef.current.srcObject = stream;
         stream.getTracks().forEach(track => pc.addTrack(track, stream));
-      });
+      })
+      .catch(err => console.error("Error accessing media devices:", err));
 
+    // Receive remote track
     pc.ontrack = (event) => {
-      remoteVideoRef.current.srcObject = event.streams[0];
+      if (remoteVideoRef.current) remoteVideoRef.current.srcObject = event.streams[0];
     };
 
+    // Send ICE candidates to peer
     pc.onicecandidate = (event) => {
       if (event.candidate && targetSocketId) {
         s.emit("ice-candidate", { to: targetSocketId, candidate: event.candidate });
@@ -41,7 +49,7 @@ export default function VideoCall() {
     // Join room
     s.emit("joinRoom", consultationId);
 
-    // Listen for signaling events
+    // Listen for incoming call
     s.on("incoming-call", async ({ from, offer }) => {
       setTargetSocketId(from);
       await pc.setRemoteDescription(offer);
@@ -50,25 +58,27 @@ export default function VideoCall() {
       s.emit("answer-call", { to: from, answer });
     });
 
+    // Call answered
     s.on("call-answered", async ({ answer }) => {
       await pc.setRemoteDescription(answer);
     });
 
+    // ICE candidate received
     s.on("ice-candidate", async ({ candidate }) => {
       try { await pc.addIceCandidate(candidate); } 
       catch (err) { console.error(err); }
     });
 
+    // Cleanup on unmount
     return () => {
       s.disconnect();
       pc.close();
     };
-  }, [consultationId, targetSocketId]);
+  }, [consultationId, targetSocketId, ICE_SERVERS]);
 
   const startCall = async () => {
     if (!peerConnection || !socket) return;
 
-    // Ask backend for the other peer's socket ID
     socket.emit("getPeerSocketId", consultationId, async (peerId) => {
       if (!peerId) return alert("No one is available to call");
       setTargetSocketId(peerId);
@@ -83,10 +93,24 @@ export default function VideoCall() {
     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 p-6">
       <h2 className="text-2xl font-bold text-purple-700 mb-4">Video Call</h2>
       <div className="flex gap-4">
-        <video ref={localVideoRef} autoPlay playsInline muted className="w-64 h-48 bg-black rounded-lg"/>
-        <video ref={remoteVideoRef} autoPlay playsInline className="w-64 h-48 bg-black rounded-lg"/>
+        <video
+          ref={localVideoRef}
+          autoPlay
+          playsInline
+          muted
+          className="w-64 h-48 bg-black rounded-lg"
+        />
+        <video
+          ref={remoteVideoRef}
+          autoPlay
+          playsInline
+          className="w-64 h-48 bg-black rounded-lg"
+        />
       </div>
-      <button onClick={startCall} className="mt-6 px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg">
+      <button
+        onClick={startCall}
+        className="mt-6 px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg"
+      >
         Start Call
       </button>
     </div>
