@@ -1,4 +1,3 @@
-// server.js
 const express = require("express");
 const dotenv = require("dotenv");
 const connectDB = require("./config/db");
@@ -42,12 +41,16 @@ app.set("io", io);
 io.on("connection", (socket) => {
   console.log("⚡ New client connected:", socket.id);
 
-  // --- Join rooms ---
+  // --- Join user room for video call ---
   socket.on("joinRoom", (roomId) => {
     socket.join(roomId);
     console.log(`📌 User ${socket.id} joined room: ${roomId}`);
+
+    // Notify existing peers in room
+    socket.to(roomId).emit("peer-joined", { socketId: socket.id });
   });
 
+  // --- Join astrologer room ---
   socket.on("joinAstrologerRoom", (astrologerId) => {
     socket.join(astrologerId);
     console.log(`📌 Astrologer ${socket.id} joined room: ${astrologerId}`);
@@ -85,20 +88,31 @@ io.on("connection", (socket) => {
 
   // --- VIDEO CALL SIGNALING ---
   socket.on("call-user", ({ to, offer }) => {
-    io.to(to).emit("incoming-call", { from: socket.id, offer });
+    if (to) {
+      io.to(to).emit("incoming-call", { from: socket.id, offer });
+    }
   });
 
   socket.on("answer-call", ({ to, answer }) => {
-    io.to(to).emit("call-answered", { from: socket.id, answer });
+    if (to) {
+      io.to(to).emit("call-answered", { from: socket.id, answer });
+    }
   });
 
   socket.on("ice-candidate", ({ to, candidate }) => {
-    io.to(to).emit("ice-candidate", { from: socket.id, candidate });
+    if (to) {
+      io.to(to).emit("ice-candidate", { from: socket.id, candidate });
+    }
   });
 
   // --- Handle disconnect ---
   socket.on("disconnect", () => {
     console.log("❌ Client disconnected:", socket.id);
+    // Optional: notify others in all rooms
+    const rooms = Array.from(socket.rooms).filter(r => r !== socket.id);
+    rooms.forEach(room => {
+      socket.to(room).emit("peer-left", { socketId: socket.id });
+    });
   });
 });
 
