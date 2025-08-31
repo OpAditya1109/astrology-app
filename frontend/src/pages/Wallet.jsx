@@ -1,62 +1,63 @@
 import React, { useState } from "react";
 import axios from "axios";
+import { load } from "@cashfreepayments/cashfree-js";
 
 const Wallet = () => {
   const [amount, setAmount] = useState("");
   const [loading, setLoading] = useState(false);
   const [orderId, setOrderId] = useState(null);
-  const [paymentUrl, setPaymentUrl] = useState(null);
   const [status, setStatus] = useState(null);
   const [transaction, setTransaction] = useState(null);
+  const [error, setError] = useState("");
 
   const userId = "USER_12345"; // Replace with logged-in user ID
 
-  // Create wallet recharge order
+  // Create wallet recharge order and start Cashfree checkout
   const handleRecharge = async () => {
-  if (!amount) return alert("Enter an amount");
+    if (!amount) return alert("Enter an amount");
+    setError("");
 
-  // Open a new tab immediately
-  const newWindow = window.open('', '_blank');
+    try {
+      setLoading(true);
+      // 1️⃣ Create order via backend
+      const res = await axios.post("https://bhavanaastro.onrender.com/api/payment/topup", {
+        userId,
+        amount: parseFloat(amount),
+      });
 
-  try {
-    setLoading(true);
-    const res = await axios.post("http://localhost:5000/api/payment/recharge", {
-      userId,
-      amount: parseFloat(amount)
-    });
-console.log(res.data);
+      const { orderId, paymentSessionId } = res.data;
 
-    setOrderId(res.data.orderId);
-    setPaymentUrl(res.data.paymentUrl);
+      if (!paymentSessionId) {
+        setError("Payment session not received from server");
+        return;
+      }
 
-    // Set the new tab location
-    if (newWindow) {
-      newWindow.location.href = res.data.paymentUrl;
-    } else {
-      alert('Popup blocked! Please allow popups for this site.');
+      setOrderId(orderId);
+
+      // 2️⃣ Load Cashfree JS and start checkout
+      const cashfree = await load({ mode: "production" }); // change to 'production' when live
+      await cashfree.checkout({
+        paymentSessionId: paymentSessionId,
+        redirectTarget: "_self", // _self will redirect current tab
+      });
+
+    } catch (err) {
+      console.error("Failed to create wallet recharge:", err);
+      setError("Failed to initiate payment. Try again.");
+    } finally {
+      setLoading(false);
     }
+  };
 
-  } catch (err) {
-    console.error(err);
-    alert("Failed to create wallet recharge");
-    if (newWindow) newWindow.close();
-  } finally {
-    setLoading(false);
-  }
-};
-
-
-  // Verify payment status
+  // Verify payment status manually
   const handleVerify = async () => {
     if (!orderId) return alert("No order ID to verify");
 
     try {
       setLoading(true);
-      const res = await axios.post("http://localhost:5000/api/payment/verify", { orderId });
-
+      const res = await axios.post("https://bhavanaastro.onrender.com/api/payment/verify", { orderId });
       setStatus(res.data.orderStatus);
       setTransaction(res.data.transaction);
-
       alert(`Payment Status: ${res.data.orderStatus}`);
     } catch (err) {
       console.error(err);
@@ -79,7 +80,11 @@ console.log(res.data);
       />
 
       <div>
-        <button onClick={handleRecharge} disabled={loading || !amount} style={{ padding: "10px 20px", marginRight: 10 }}>
+        <button
+          onClick={handleRecharge}
+          disabled={loading || !amount}
+          style={{ padding: "10px 20px", marginRight: 10 }}
+        >
           {loading ? "Processing..." : "Recharge Wallet"}
         </button>
 
@@ -89,6 +94,8 @@ console.log(res.data);
           </button>
         )}
       </div>
+
+      {error && <p style={{ color: "red", marginTop: 10 }}>{error}</p>}
 
       {status && transaction && (
         <div style={{ marginTop: 20, textAlign: "left" }}>
