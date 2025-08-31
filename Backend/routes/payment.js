@@ -66,7 +66,7 @@ router.post('/recharge', async (req, res) => {
    const cashfreeResponse = await cashfree.PGCreateOrder(orderData);
 
 // Construct the payment URL manually using payment_session_id
-const paymentUrl = `https://sandbox.cashfree.com/pg/orders/${cashfreeResponse.data.payment_session_id}`;
+const paymentUrl = `https://www.cashfree.com/checkout/post/submit/${cashfreeResponse.data.payment_session_id}`;
 
 // Log it
 console.log("Payment URL:", paymentUrl);
