@@ -1,93 +1,109 @@
-import { useState } from 'react'
-import axios from "axios"
-import {load} from '@cashfreepayments/cashfree-js'
+import React, { useState } from "react";
+import axios from "axios";
 
+const Wallet = () => {
+  const [amount, setAmount] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [orderId, setOrderId] = useState(null);
+  const [paymentUrl, setPaymentUrl] = useState(null);
+  const [status, setStatus] = useState(null);
+  const [transaction, setTransaction] = useState(null);
 
-function App() {
+  const userId = "USER_12345"; // Replace with logged-in user ID
 
-  let cashfree;
+  // Create wallet recharge order
+  const handleRecharge = async () => {
+  if (!amount) return alert("Enter an amount");
 
-  let insitialzeSDK = async function () {
+  // Open a new tab immediately
+  const newWindow = window.open('', '_blank');
 
-    cashfree = await load({
-      mode: "production",
-    })
-  }
+  try {
+    setLoading(true);
+    const res = await axios.post("http://localhost:5000/api/payment/recharge", {
+      userId,
+      amount: parseFloat(amount)
+    });
+console.log(res.data);
 
-  insitialzeSDK()
+    setOrderId(res.data.orderId);
+    setPaymentUrl(res.data.paymentUrl);
 
-  const [orderId, setOrderId] = useState("")
-
-
-
-  const getSessionId = async () => {
-    try {
-      let res = await axios.get("http://localhost:8000/payment")
-      
-      if(res.data && res.data.payment_session_id){
-
-        console.log(res.data)
-        setOrderId(res.data.order_id)
-        return res.data.payment_session_id
-      }
-
-
-    } catch (error) {
-      console.log(error)
-    }
-  }
-
-  const verifyPayment = async () => {
-    try {
-      
-      let res = await axios.post("http://localhost:8000/verify", {
-        orderId: orderId
-      })
-
-      if(res && res.data){
-        alert("payment verified")
-      }
-
-    } catch (error) {
-      console.log(error)
-    }
-  }
-
-  const handleClick = async (e) => {
-    e.preventDefault()
-    try {
-
-      let sessionId = await getSessionId()
-      let checkoutOptions = {
-        paymentSessionId : sessionId,
-        redirectTarget:"_modal",
-      }
-
-      cashfree.checkout(checkoutOptions).then((res) => {
-        console.log("payment initialized")
-
-        verifyPayment(orderId)
-      })
-
-
-    } catch (error) {
-      console.log(error)
+    // Set the new tab location
+    if (newWindow) {
+      newWindow.location.href = res.data.paymentUrl;
+    } else {
+      alert('Popup blocked! Please allow popups for this site.');
     }
 
+  } catch (err) {
+    console.error(err);
+    alert("Failed to create wallet recharge");
+    if (newWindow) newWindow.close();
+  } finally {
+    setLoading(false);
   }
+};
+
+
+  // Verify payment status
+  const handleVerify = async () => {
+    if (!orderId) return alert("No order ID to verify");
+
+    try {
+      setLoading(true);
+      const res = await axios.post("http://localhost:5000/api/payment/verify", { orderId });
+
+      setStatus(res.data.orderStatus);
+      setTransaction(res.data.transaction);
+
+      alert(`Payment Status: ${res.data.orderStatus}`);
+    } catch (err) {
+      console.error(err);
+      alert("Failed to verify payment");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
-    <>
+    <div style={{ maxWidth: 500, margin: "50px auto", textAlign: "center" }}>
+      <h2>Wallet Recharge</h2>
 
-      <h1>Cashfree payment getway</h1>
-      <div className="card">
-        <button onClick={handleClick}>
-          Pay now
+      <input
+        type="number"
+        placeholder="Enter amount"
+        value={amount}
+        onChange={(e) => setAmount(e.target.value)}
+        style={{ padding: "10px", width: "80%", marginBottom: "10px" }}
+      />
+
+      <div>
+        <button onClick={handleRecharge} disabled={loading || !amount} style={{ padding: "10px 20px", marginRight: 10 }}>
+          {loading ? "Processing..." : "Recharge Wallet"}
         </button>
 
+        {orderId && (
+          <button onClick={handleVerify} disabled={loading} style={{ padding: "10px 20px" }}>
+            Verify Payment
+          </button>
+        )}
       </div>
 
-    </>
-  )
-}
+      {status && transaction && (
+        <div style={{ marginTop: 20, textAlign: "left" }}>
+          <h3>Transaction Status</h3>
+          <p><b>Status:</b> {status}</p>
+          <p><b>Order ID:</b> {transaction.orderId}</p>
+          <p><b>Amount:</b> ₹{transaction.amount}</p>
+          <p><b>Payment ID:</b> {transaction.paymentId}</p>
+          <p><b>Method:</b> {transaction.paymentMethod}</p>
+          <p><b>Time:</b> {transaction.paymentTime}</p>
+          {transaction.paymentMessage && <p><b>Message:</b> {transaction.paymentMessage}</p>}
+        </div>
+      )}
+    </div>
+  );
+};
 
-export default App
+export default Wallet;
