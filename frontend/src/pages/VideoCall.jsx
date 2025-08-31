@@ -154,14 +154,30 @@ export default function VideoCall() {
     }
   };
 
-  return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 p-6">
-      <h2 className="text-2xl font-bold text-purple-700 mb-2">Video Call</h2>
-      <p className="mb-4 text-gray-600">{status}</p>
-      <div className="flex gap-4">
-        <video ref={localVideoRef} autoPlay playsInline muted className="w-64 h-48 bg-black rounded-lg" />
-        <video ref={remoteVideoRef} autoPlay playsInline className="w-64 h-48 bg-black rounded-lg" />
-      </div>
+return (
+  <div className="relative flex items-center justify-center min-h-screen bg-gray-900">
+    {/* Remote video (full screen) */}
+    <video
+      ref={remoteVideoRef}
+      autoPlay
+      playsInline
+      className="w-full h-full object-cover"
+    />
+
+    {/* Local video (small floating) */}
+    <video
+      ref={localVideoRef}
+      autoPlay
+      playsInline
+      muted
+      className="absolute bottom-4 right-4 w-40 h-28 bg-black rounded-lg shadow-lg border-2 border-white"
+    />
+
+    {/* Status overlay */}
+    <div className="absolute top-4 left-4 bg-black bg-opacity-50 text-white px-4 py-2 rounded-lg">
+      {status}
     </div>
-  );
+  </div>
+);
+
 }
