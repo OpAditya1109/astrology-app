@@ -32,7 +32,7 @@ export default function UserDashboard() {
             <h3 className="text-xl font-bold text-purple-700 mb-2">AI Astrologer</h3>
             <p className="text-gray-500 mb-4">Chat instantly with our AI-powered astrologer</p>
             <Link
-              to="/ai-consultation"
+              to="/astrochat"
               className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
             >
               Chat with AI

@@ -8,6 +8,8 @@ const Consultation = require("./models/Consultation");
 const Astrologer = require("./models/Astrologer");
 const { getAstrologyResponse } = require("./api/astrology");
 const panchangRoutes = require("./routes/panchang");
+const chatbotRoutes = require("./routes/chatbotRoutes");
+const { HfInference } = require("@huggingface/inference");
 
 dotenv.config();
 connectDB();
@@ -25,6 +27,7 @@ app.use("/api/consultations", require("./routes/consultationRoutes"));
 app.use("/api/ai-astrologer", require("./routes/aiRoutes"));
 app.use("/api", panchangRoutes);
 app.use("/api/payment", require("./routes/payment"));
+app.use("/api/chatbot", chatbotRoutes);
 
 // --- Create HTTP server ---
 const server = http.createServer(app);
@@ -123,6 +126,36 @@ io.on("connection", (socket) => {
 
 // ...listen unchanged...
 
+
+
+
+
+const hf = new HfInference(process.env.HF_API_KEY);
+
+app.post("/api/chat", async (req, res) => {
+  try {
+ const userMessage = req.body.query;   // if you want to keep frontend as is
+
+
+    if (!userMessage || userMessage.trim() === "") {
+      return res.status(400).json({ error: "Message cannot be empty" });
+    }
+
+    const response = await hf.chatCompletion({
+      model: "mistralai/Mistral-7B-Instruct-v0.2",
+      messages: [
+        { role: "system", content: "You are a helpful astrology assistant." },
+        { role: "user", content: userMessage }
+      ],
+      max_tokens: 300
+    });
+
+    res.json({ reply: response.choices[0].message.content });
+  } catch (err) {
+    console.error("HuggingFace Error:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
 
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, () =>
