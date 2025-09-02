@@ -8,50 +8,69 @@ export default function AstroChat() {
   const [userProfile, setUserProfile] = useState(null);
   const navigate = useNavigate();
 
-  // Fetch logged-in user profile on mount
-useEffect(() => {
-  const fetchProfile = async () => {
-    try {
-      const userId = localStorage.getItem("userId");
-      if (!userId) {
-        alert("Please login first.");
-        navigate("/login"); // redirect if not logged in
-        return;
-      }
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        // ✅ Get user session from sessionStorage
+        const storedUser = sessionStorage.getItem("user");
+        const token = sessionStorage.getItem("token");
 
-      const res = await axios.get(
-        `http://localhost:5000/api/users/${userId}/details`
-      );
+        if (!storedUser || !token) {
+          alert("Please login first.");
+          navigate("/login");
+          return;
+        }
 
-      if (!res.data) {
-        alert("Please login first.");
-        navigate("/login"); // no profile found
-        return;
-      }
+        const parsedUser = JSON.parse(storedUser);
 
-      setUserProfile(res.data);
+        // If we already have user details in session, no need to call backend
+        if (parsedUser?.id) {
+          setUserProfile(parsedUser);
 
-      // First greeting message from bot
-      setMessages([
-        {
-          sender: "bot",
-          text: `👋 Hello! How can I help you as an astrologer? 
+          setMessages([
+            {
+              sender: "bot",
+              text: `👋 Hello! How can I help you as an astrologer? 
+I already have your birth details:
+- DOB: ${parsedUser.dob?.split("T")[0]}
+- Birth Time: ${parsedUser.birthTime}
+- Birth Place: ${parsedUser.birthPlace}`,
+            },
+          ]);
+        } else {
+          // fallback → fetch from backend if only userId stored
+          const res = await axios.get(
+            `http://localhost:5000/api/users/${parsedUser.id}/details`,
+            { headers: { Authorization: `Bearer ${token}` } }
+          );
+
+          if (!res.data) {
+            alert("Please login first.");
+            navigate("/login");
+            return;
+          }
+
+          setUserProfile(res.data);
+          setMessages([
+            {
+              sender: "bot",
+              text: `👋 Hello! How can I help you as an astrologer? 
 I already have your birth details:
 - DOB: ${res.data.dob?.split("T")[0]}
 - Birth Time: ${res.data.birthTime}
 - Birth Place: ${res.data.birthPlace}`,
-        },
-      ]);
-    } catch (err) {
-      console.error("Profile fetch error:", err);
-      alert("Please login first.");
-      navigate("/login"); // go to login if error
-    }
-  };
+            },
+          ]);
+        }
+      } catch (err) {
+        console.error("Profile fetch error:", err);
+        alert("Please login first.");
+        navigate("/login");
+      }
+    };
 
-  fetchProfile();
-}, [navigate]);
-
+    fetchProfile();
+  }, [navigate]);
 
   const sendMessage = async () => {
     if (!input) return;
@@ -61,10 +80,12 @@ I already have your birth details:
     setInput("");
 
     try {
-      const res = await axios.post("http://localhost:5000/api/chat", {
-        query: input,
-        profile: userProfile,
-      });
+      const token = sessionStorage.getItem("token");
+      const res = await axios.post(
+        "http://localhost:5000/api/chat",
+        { query: input, profile: userProfile },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
 
       const botMessage = { sender: "bot", text: res.data.reply };
       setMessages((prev) => [...prev, botMessage]);
