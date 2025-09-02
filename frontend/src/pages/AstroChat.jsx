@@ -82,7 +82,7 @@ I already have your birth details:
     try {
       const token = sessionStorage.getItem("token");
       const res = await axios.post(
-        "http://localhost:5000/api/chat",
+        "https://bhavanaastro.onrender.com/api/chat",
         { query: input, profile: userProfile },
         { headers: { Authorization: `Bearer ${token}` } }
       );
