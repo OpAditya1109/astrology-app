@@ -28,15 +28,15 @@ router.post("/login", async (req, res) => {
       expiresIn: "1d",
     });
 
-   res.json({
+ res.json({
   token,
   user: {
     id: user._id,
     email: user.email,
     role,
-    birthTime,
-    birthPlace,
-    dob
+    birthTime: user.birthTime,
+    birthPlace: user.birthPlace,
+    dob: user.dob,
   },
 });
 
