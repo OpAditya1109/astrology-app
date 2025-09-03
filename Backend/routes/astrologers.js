@@ -30,7 +30,7 @@ router.get("/", async (req, res) => {
       .skip(skip)
       .limit(Number(limit))
       .sort({ experience: -1 })
-      .select("name experience languagesKnown categories systemsKnown city country"); 
+  .select("name experience languagesKnown categories systemsKnown city country photo");
       // Only return relevant fields
 
     res.json({

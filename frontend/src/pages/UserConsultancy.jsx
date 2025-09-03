@@ -197,46 +197,56 @@ export default function UserConsultancy() {
         ) : (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filtered.map(c => (
-              <div
-                key={c._id}
-                className="bg-white shadow-md rounded-2xl p-6 hover:shadow-xl transition"
-              >
-                <h3 className="text-xl font-bold text-purple-700 mb-1">{c.name}</h3>
-                <p className="text-sm text-gray-500 mb-2">{c.systemsKnown?.join(", ") || ""}</p>
-                <p className="text-gray-500 mb-1">Exp - {c.experience} yrs</p>
-                <p className="text-gray-500 mb-1">{c.languagesKnown?.join(", ") || ""}</p>
-                <p className="text-gray-500 mb-4">{c.categories?.join(", ") || ""}</p>
+            <div
+  key={c._id}
+  className="bg-white shadow-md rounded-2xl p-6 hover:shadow-xl transition flex flex-col items-center text-center"
+>
+  {/* Profile Photo */}
+  <img
+    src={c.photo || "https://via.placeholder.com/150"} // fallback if no photo
+    alt={c.name}
+    className="w-24 h-24 rounded-full object-cover mb-4 border-4 border-purple-200"
+  />
 
-                <div className="flex gap-2 flex-wrap">
-                  <button
-                    onClick={() => startConsultation(c._id, "Chat", "/chat")}
-                    disabled={startingConsultationId === c._id}
-                    className={`px-4 py-2 text-white rounded-lg ${
-                      startingConsultationId === c._id
-                        ? "bg-gray-400 cursor-not-allowed"
-                        : "bg-purple-600 hover:bg-purple-700"
-                    }`}
-                  >
-                    {startingConsultationId === c._id ? "Connecting..." : "Start Chat"}
-                  </button>
+  {/* Name & Details */}
+  <h3 className="text-xl font-bold text-purple-700 mb-1">{c.name}</h3>
+  <p className="text-sm text-gray-500 mb-2">{c.systemsKnown?.join(", ") || ""}</p>
+  <p className="text-gray-500 mb-1">Exp - {c.experience} yrs</p>
+  <p className="text-gray-500 mb-1">{c.languagesKnown?.join(", ") || ""}</p>
+  <p className="text-gray-500 mb-4">{c.categories?.join(", ") || ""}</p>
 
-                  <button
-                    onClick={() => startConsultation(c._id, "Video", "/video-call")}
-                    disabled={startingConsultationId === c._id}
-                    className="px-4 py-2 text-white rounded-lg bg-green-600 hover:bg-green-700"
-                  >
-                    Start Video Call
-                  </button>
+  {/* Buttons */}
+  <div className="flex gap-2 flex-wrap justify-center">
+    <button
+      onClick={() => startConsultation(c._id, "Chat", "/chat")}
+      disabled={startingConsultationId === c._id}
+      className={`px-4 py-2 text-white rounded-lg ${
+        startingConsultationId === c._id
+          ? "bg-gray-400 cursor-not-allowed"
+          : "bg-purple-600 hover:bg-purple-700"
+      }`}
+    >
+      {startingConsultationId === c._id ? "Connecting..." : "Start Chat"}
+    </button>
 
-                  <button
-                    onClick={() => startConsultation(c._id, "Audio", "/video-call")}
-                    disabled={startingConsultationId === c._id}
-                    className="px-4 py-2 text-white rounded-lg bg-blue-600 hover:bg-blue-700"
-                  >
-                    Start Audio Call
-                  </button>
-                </div>
-              </div>
+    <button
+      onClick={() => startConsultation(c._id, "Video", "/video-call")}
+      disabled={startingConsultationId === c._id}
+      className="px-4 py-2 text-white rounded-lg bg-green-600 hover:bg-green-700"
+    >
+      Start Video Call
+    </button>
+
+    <button
+      onClick={() => startConsultation(c._id, "Audio", "/video-call")}
+      disabled={startingConsultationId === c._id}
+      className="px-4 py-2 text-white rounded-lg bg-blue-600 hover:bg-blue-700"
+    >
+      Start Audio Call
+    </button>
+  </div>
+</div>
+
             ))}
           </div>
         )}
