@@ -59,4 +59,18 @@ router.put("/update-rates-online/:id", async (req, res) => {
     res.status(500).json({ error: "Server error" });
   }
 });
+// GET /api/astrologers/:id
+router.get("/:id", async (req, res) => {
+  try {
+    const astrologer = await Astrologer.findById(req.params.id).select(
+      "name email experience languagesKnown categories systemsKnown city country photo rates online"
+    );
+    if (!astrologer) return res.status(404).json({ error: "Astrologer not found" });
+    res.json(astrologer);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
 module.exports = router;
