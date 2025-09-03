@@ -1,6 +1,7 @@
 const express = require('express');
 const { Cashfree, CFEnvironment } = require('cashfree-pg');
 const WalletTransaction = require('../models/WalletTransaction');
+const User = require('../models/User');
 
 const router = express.Router();
 
@@ -28,7 +29,7 @@ const mapStatus = (status) => {
   }
 };
 
-// POST /api/wallet/topup - initiate wallet recharge
+// ------------------- TOPUP -------------------
 router.post('/topup', async (req, res) => {
   try {
     const { userId, amount, phone, name, email } = req.body;
@@ -86,7 +87,7 @@ router.post('/topup', async (req, res) => {
   }
 });
 
-// POST /api/wallet/verify - verify payment
+// ------------------- VERIFY -------------------
 router.post('/verify', async (req, res) => {
   try {
     const { orderId } = req.body;
@@ -100,7 +101,7 @@ router.post('/verify', async (req, res) => {
     if (!transaction) return res.status(404).json({ message: 'Transaction not found' });
 
     transaction.status = mapStatus(orderStatus);
-    transaction.paymentId = paymentDetails.payment_id || paymentDetails.auth_id || transaction.paymentId;
+    transaction.paymentId = paymentDetails.payment_id || transaction.paymentId;
     transaction.paymentMethod = paymentDetails.payment_method || transaction.paymentMethod;
     transaction.paymentTime = paymentDetails.payment_time || transaction.paymentTime;
     transaction.paymentMessage = paymentDetails.payment_message || transaction.paymentMessage;
@@ -114,12 +115,12 @@ router.post('/verify', async (req, res) => {
   }
 });
 
-// POST /api/wallet/webhook - handle Cashfree webhook
+// ------------------- WEBHOOK -------------------
 router.post("/webhook", async (req, res) => {
   try {
     console.log("Wallet webhook received:", req.body);
 
-    const { data, type } = req.body;
+    const { data } = req.body;
     if (!data || !data.order || !data.payment) {
       return res.status(400).json({ success: false, message: "Invalid webhook payload" });
     }
@@ -146,7 +147,7 @@ router.post("/webhook", async (req, res) => {
 
     await transaction.save();
 
-    // ✅ Also credit wallet if paid
+    // ✅ Credit wallet if paid
     if (orderStatus === "PAID") {
       await User.findByIdAndUpdate(transaction.userId, {
         $inc: { "wallet.balance": orderAmount },
@@ -168,14 +169,48 @@ router.post("/webhook", async (req, res) => {
   }
 });
 
-
-
-// GET /api/wallet/status/:orderId - get transaction status
+// ------------------- STATUS -------------------
 router.get('/status/:orderId', async (req, res) => {
   try {
     const { orderId } = req.params;
-    const transaction = await WalletTransaction.findOne({ orderId });
+    let transaction = await WalletTransaction.findOne({ orderId });
     if (!transaction) return res.status(404).json({ message: 'Transaction not found' });
+
+    // If already paid/failed → return directly
+    if (transaction.status !== 'pending') {
+      return res.json({ success: true, transaction });
+    }
+
+    // 🚀 If still pending → query Cashfree API
+    const cfResponse = await cashfree.PGFetchOrder(orderId);
+    const cfStatus = cfResponse.data.order_status;
+    const paymentDetails = cfResponse.data.payment_details || {};
+
+    // Update DB if status changed
+    if (cfStatus === "PAID") {
+      transaction.status = "paid";
+      transaction.paymentId = paymentDetails.payment_id || transaction.paymentId;
+      transaction.paymentMethod = paymentDetails.payment_method || transaction.paymentMethod;
+      transaction.paymentTime = paymentDetails.payment_time || transaction.paymentTime;
+      transaction.paymentMessage = paymentDetails.payment_message || transaction.paymentMessage;
+      await transaction.save();
+
+      // ✅ Credit wallet
+      await User.findByIdAndUpdate(transaction.userId, {
+        $inc: { "wallet.balance": transaction.amount },
+        $push: {
+          "wallet.transactions": {
+            type: "credit",
+            amount: transaction.amount,
+            description: "Wallet recharge",
+            paymentId: transaction.paymentId,
+          },
+        },
+      });
+    } else if (cfStatus === "FAILED") {
+      transaction.status = "failed";
+      await transaction.save();
+    }
 
     res.json({ success: true, transaction });
   } catch (error) {
