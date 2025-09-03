@@ -115,14 +115,30 @@ router.post('/verify', async (req, res) => {
 });
 
 // POST /api/wallet/webhook - handle Cashfree webhook
+// POST /api/wallet/webhook - handle Cashfree webhook
 router.post('/webhook', async (req, res) => {
   try {
     console.log('Wallet webhook received:', req.body);
-    const { orderId, orderStatus, paymentId, paymentMethod, paymentTime, paymentMessage } = req.body;
+
+    // ✅ handle both snake_case and camelCase
+    const orderId = req.body.orderId || req.body.order_id;
+    const orderStatus = req.body.orderStatus || req.body.order_status;
+    const paymentId = req.body.paymentId || req.body.payment_id;
+    const paymentMethod = req.body.paymentMethod || req.body.payment_method;
+    const paymentTime = req.body.paymentTime || req.body.payment_time;
+    const paymentMessage = req.body.paymentMessage || req.body.payment_message;
+
+    if (!orderId) {
+      return res.status(400).json({ success: false, message: 'orderId/order_id missing in webhook' });
+    }
 
     const transaction = await WalletTransaction.findOne({ orderId });
-    if (!transaction) return res.status(404).json({ message: 'Transaction not found' });
+    if (!transaction) {
+      console.error('Transaction not found for orderId:', orderId);
+      return res.status(404).json({ message: 'Transaction not found' });
+    }
 
+    // ✅ update transaction
     transaction.status = mapStatus(orderStatus);
     transaction.paymentId = paymentId || transaction.paymentId;
     transaction.paymentMethod = paymentMethod || transaction.paymentMethod;
@@ -131,12 +147,18 @@ router.post('/webhook', async (req, res) => {
 
     await transaction.save();
 
-    res.json({ success: true, message: 'Webhook processed', orderId, status: orderStatus });
+    res.json({
+      success: true,
+      message: 'Webhook processed',
+      orderId,
+      status: transaction.status
+    });
   } catch (error) {
     console.error('Wallet webhook error:', error);
     res.status(500).json({ message: 'Failed to process webhook', error: error.message });
   }
 });
+
 
 // GET /api/wallet/status/:orderId - get transaction status
 router.get('/status/:orderId', async (req, res) => {
