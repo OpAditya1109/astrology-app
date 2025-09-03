@@ -10,7 +10,13 @@ const Wallet = () => {
   const [transaction, setTransaction] = useState(null);
   const [error, setError] = useState("");
 
-  const userId = "USER_12345"; // Replace with logged-in user ID
+  // Get logged-in user from sessionStorage
+  const user = JSON.parse(sessionStorage.getItem("user"));
+  if (!user) {
+    alert("User not logged in!");
+    return null;
+  }
+  const { id: userId, name, email, mobile } = user;
 
   // Create wallet recharge order and start Cashfree checkout
   const handleRecharge = async () => {
@@ -19,11 +25,18 @@ const Wallet = () => {
 
     try {
       setLoading(true);
+
       // 1️⃣ Create order via backend
-      const res = await axios.post("https://bhavanaastro.onrender.com/api/payment/topup", {
-        userId,
-        amount: parseFloat(amount),
-      });
+      const res = await axios.post(
+        "https://bhavanaastro.onrender.com/api/wallet/topup",
+        {
+          userId,
+          amount: parseFloat(amount),
+          phone: mobile,
+          name,
+          email,
+        }
+      );
 
       const { orderId, paymentSessionId } = res.data;
 
@@ -35,12 +48,11 @@ const Wallet = () => {
       setOrderId(orderId);
 
       // 2️⃣ Load Cashfree JS and start checkout
-      const cashfree = await load({ mode: "production" }); // change to 'production' when live
+      const cashfree = await load({ mode: "production" }); // or 'sandbox' for testing
       await cashfree.checkout({
-        paymentSessionId: paymentSessionId,
-        redirectTarget: "_self", // _self will redirect current tab
+        paymentSessionId,
+        redirectTarget: "_self",
       });
-
     } catch (err) {
       console.error("Failed to create wallet recharge:", err);
       setError("Failed to initiate payment. Try again.");
@@ -55,10 +67,12 @@ const Wallet = () => {
 
     try {
       setLoading(true);
-      const res = await axios.post("https://bhavanaastro.onrender.com/api/payment/verify", { orderId });
+      const res = await axios.post(
+        "https://bhavanaastro.onrender.com/api/wallet/verify",
+        { orderId }
+      );
       setStatus(res.data.orderStatus);
       setTransaction(res.data.transaction);
-      alert(`Payment Status: ${res.data.orderStatus}`);
     } catch (err) {
       console.error(err);
       alert("Failed to verify payment");
@@ -89,7 +103,11 @@ const Wallet = () => {
         </button>
 
         {orderId && (
-          <button onClick={handleVerify} disabled={loading} style={{ padding: "10px 20px" }}>
+          <button
+            onClick={handleVerify}
+            disabled={loading}
+            style={{ padding: "10px 20px" }}
+          >
             Verify Payment
           </button>
         )}

@@ -75,7 +75,6 @@ router.post('/topup', async (req, res) => {
         paymentSessionId: cashfreeResponse.data.payment_session_id
       });
     } else {
-      // Update transaction if payment session fails
       transaction.status = 'failed';
       await transaction.save();
       throw new Error('Failed to create payment session');
