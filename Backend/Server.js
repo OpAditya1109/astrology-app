@@ -26,7 +26,7 @@ app.use(cors());
 app.use("/api/users", require("./routes/userRoutes"));
 app.use("/api/astrologers", require("./routes/astrologerRoutes"));
 app.use("/api/auth", require("./routes/auth"));
-  app.use("/api/Consult-astrologers", require("./routes/astrologers"));
+app.use("/api/Consult-astrologers", require("./routes/astrologers"));
 app.use("/api/consultations", require("./routes/consultationRoutes"));
 app.use("/api/ai-astrologer", require("./routes/aiRoutes"));
 app.use("/api", panchangRoutes);
@@ -44,39 +44,37 @@ const io = new Server(server, {
 // Attach io to app so routes can emit events
 app.set("io", io);
 
-// --- Handle socket connections ---
-// ...imports & setup unchanged...
+// --- Active timers storage ---
+const activeTimers = {};
 
+// --- Handle socket connections ---
 io.on("connection", (socket) => {
   console.log("⚡ New client connected:", socket.id);
 
-  // --- Join user room for video call ---
+  // --- Join user room for chat/video ---
   socket.on("joinRoom", async (roomId) => {
     socket.join(roomId);
     console.log(`📌 User ${socket.id} joined room: ${roomId}`);
 
-    // Send list of existing peers in this room to the JOINING socket
+    // Send list of existing peers
     try {
       const sockets = await io.in(roomId).fetchSockets();
-      const peers = sockets.filter(s => s.id !== socket.id).map(s => s.id);
-      if (peers.length) {
-        socket.emit("existing-peers", { peers });
-      }
+      const peers = sockets.filter((s) => s.id !== socket.id).map((s) => s.id);
+      if (peers.length) socket.emit("existing-peers", { peers });
     } catch (e) {
       console.error("fetchSockets failed:", e);
     }
 
-    // Notify existing peers that a new one joined (for UI/cleanup etc.)
     socket.to(roomId).emit("peer-joined", { socketId: socket.id });
   });
 
-  // --- Join astrologer room (for dashboard events) ---
+  // --- Join astrologer room ---
   socket.on("joinAstrologerRoom", (astrologerId) => {
     socket.join(astrologerId);
     console.log(`📌 Astrologer ${socket.id} joined room: ${astrologerId}`);
   });
 
-  // --- Chat messages (unchanged) ---
+  // --- Chat messages ---
   socket.on("sendMessage", async ({ roomId, sender, text }) => {
     try {
       const consultation = await Consultation.findById(roomId);
@@ -118,50 +116,46 @@ io.on("connection", (socket) => {
     if (to) io.to(to).emit("ice-candidate", { from: socket.id, candidate });
   });
 
-  // --- Handle disconnect ---
+  // --- Timer logic ---
+  socket.on("startConsultationTimer", ({ roomId, durationMinutes = 5 }) => {
+    if (!roomId || activeTimers[roomId]) return;
+
+    let secondsLeft = durationMinutes * 60;
+    console.log(`⏱️ Timer started for room ${roomId} (${durationMinutes} min)`);
+
+    socket.emit("timerUpdate", { secondsLeft });
+
+    activeTimers[roomId] = setInterval(() => {
+      secondsLeft--;
+      socket.emit("timerUpdate", { secondsLeft });
+
+      if (secondsLeft <= 0) {
+        clearInterval(activeTimers[roomId]);
+        delete activeTimers[roomId];
+        socket.emit("timerEnded");
+        console.log(`⏰ Timer ended for room ${roomId}`);
+      }
+    }, 1000);
+  });
+
+  socket.on("stopConsultationTimer", ({ roomId }) => {
+    if (activeTimers[roomId]) {
+      clearInterval(activeTimers[roomId]);
+      delete activeTimers[roomId];
+      console.log(`🛑 Timer stopped for room ${roomId}`);
+    }
+  });
+
+  // --- Disconnect ---
   socket.on("disconnect", () => {
     console.log("❌ Client disconnected:", socket.id);
-    const rooms = Array.from(socket.rooms).filter(r => r !== socket.id);
-    rooms.forEach(room => {
+    const rooms = Array.from(socket.rooms).filter((r) => r !== socket.id);
+    rooms.forEach((room) => {
       socket.to(room).emit("peer-left", { socketId: socket.id });
     });
   });
 });
 
-// ...listen unchanged...
-
-
-
-
-
-// const hf = new HfInference(process.env.HF_API_KEY);
-
-// app.post("/api/chat", async (req, res) => {
-//   try {
-//  const userMessage = req.body.query;   // if you want to keep frontend as is
-
-
-//     if (!userMessage || userMessage.trim() === "") {
-//       return res.status(400).json({ error: "Message cannot be empty" });
-//     }
-
-//     const response = await hf.chatCompletion({
-//       model: "mistralai/Mistral-7B-Instruct-v0.2",
-//       messages: [
-//         { role: "system", content: "You are a helpful astrology assistant." },
-//         { role: "user", content: userMessage }
-//       ],
-//       max_tokens: 300
-//     });
-
-//     res.json({ reply: response.choices[0].message.content });
-//   } catch (err) {
-//     console.error("HuggingFace Error:", err);
-//     res.status(500).json({ error: err.message });
-//   }
-// });
-
+// --- Server listen ---
 const PORT = process.env.PORT || 5000;
-server.listen(PORT, () =>
-  console.log(`🚀 Server running on port ${PORT}`)
-);
+server.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));

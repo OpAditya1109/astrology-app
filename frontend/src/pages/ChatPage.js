@@ -6,6 +6,7 @@ export default function ChatPage() {
   const { consultationId } = useParams();
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
+  const [secondsLeft, setSecondsLeft] = useState(0);
 
   const currentUser = JSON.parse(sessionStorage.getItem("user"));
   const userId = currentUser?.id || "guest";
@@ -16,37 +17,64 @@ export default function ChatPage() {
 
     if (!socket.connected) socket.connect();
 
+    // Join the consultation room
     socket.emit("joinRoom", roomId);
 
+    // Start the timer (5 min upfront)
+    socket.emit("startConsultationTimer", { roomId, durationMinutes: 5 });
+
+    // Fetch existing messages
     fetch(`https://bhavanaastro.onrender.com/api/consultations/${roomId}/messages`)
       .then((res) => res.json())
       .then((data) => setMessages(data));
 
+    // Listen for new chat messages
     const handleNewMessage = (message) => {
       setMessages((prev) => [...prev, message]);
     };
-
     socket.on("newMessage", handleNewMessage);
+
+    // Listen for timer updates
+    const handleTimerUpdate = ({ secondsLeft }) => {
+      setSecondsLeft(secondsLeft);
+    };
+    socket.on("timerUpdate", handleTimerUpdate);
+
+    // Listen for timer end
+    const handleTimerEnd = () => {
+      alert("⏰ Consultation timer ended!");
+      setSecondsLeft(0);
+    };
+    socket.on("timerEnded", handleTimerEnd);
 
     return () => {
       socket.off("newMessage", handleNewMessage);
+      socket.off("timerUpdate", handleTimerUpdate);
+      socket.off("timerEnded", handleTimerEnd);
+      socket.emit("stopConsultationTimer", { roomId });
       socket.emit("leaveRoom", roomId);
     };
   }, [roomId]);
 
-const sendMessage = () => {
-  if (!input.trim()) return;
-  const newMsg = { sender: userId, text: input };
-  socket.emit("sendMessage", { roomId, ...newMsg });
-  setInput("");
-};
+  const sendMessage = () => {
+    if (!input.trim()) return;
+    const newMsg = { sender: userId, text: input };
+    socket.emit("sendMessage", { roomId, ...newMsg });
+    setInput("");
+  };
 
+  // Format seconds as MM:SS
+  const formatTime = (sec) => {
+    const m = Math.floor(sec / 60).toString().padStart(2, "0");
+    const s = (sec % 60).toString().padStart(2, "0");
+    return `${m}:${s}`;
+  };
 
   return (
     <div className="h-screen flex flex-col bg-gray-50">
-      <header className="bg-purple-700 text-white p-4 text-lg font-semibold">
-        Chat Room ({consultationId})
-      
+      <header className="bg-purple-700 text-white p-4 text-lg font-semibold flex justify-between items-center">
+        <span>Chat Room ({consultationId})</span>
+        <span className="bg-purple-900 px-3 py-1 rounded">{formatTime(secondsLeft)}</span>
       </header>
 
       <div className="flex-1 overflow-y-auto p-4 space-y-2">
