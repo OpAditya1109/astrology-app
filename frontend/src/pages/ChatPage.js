@@ -12,49 +12,53 @@ export default function ChatPage() {
   const userId = currentUser?.id || "guest";
   const roomId = consultationId;
 
-  useEffect(() => {
-    if (!roomId) return;
+ useEffect(() => {
+  if (!roomId) return;
 
-    if (!socket.connected) socket.connect();
+  if (!socket.connected) socket.connect();
 
-    // Join the consultation room
-    socket.emit("joinRoom", roomId);
+  socket.emit("joinRoom", roomId);
 
-    // Start the timer (5 min upfront)
-    socket.emit("startConsultationTimer", { roomId, durationMinutes: 5 });
+  // Fetch existing messages
+  fetch(`https://bhavanaastro.onrender.com/api/consultations/${roomId}/messages`)
+    .then((res) => res.json())
+    .then((data) => {
+      // Ensure messages is always an array
+      if (Array.isArray(data)) {
+        setMessages(data);
+      } else if (data?.messages && Array.isArray(data.messages)) {
+        setMessages(data.messages);
+      } else {
+        setMessages([]);
+      }
+    })
+    .catch(() => setMessages([]));
 
-    // Fetch existing messages
-    fetch(`https://bhavanaastro.onrender.com/api/consultations/${roomId}/messages`)
-      .then((res) => res.json())
-      .then((data) => setMessages(data));
+  const handleNewMessage = (message) => {
+    setMessages((prev) => [...prev, message]);
+  };
+  socket.on("newMessage", handleNewMessage);
 
-    // Listen for new chat messages
-    const handleNewMessage = (message) => {
-      setMessages((prev) => [...prev, message]);
-    };
-    socket.on("newMessage", handleNewMessage);
+  const handleTimerUpdate = ({ secondsLeft }) => {
+    setSecondsLeft(secondsLeft);
+  };
+  socket.on("timerUpdate", handleTimerUpdate);
 
-    // Listen for timer updates
-    const handleTimerUpdate = ({ secondsLeft }) => {
-      setSecondsLeft(secondsLeft);
-    };
-    socket.on("timerUpdate", handleTimerUpdate);
+  const handleTimerEnd = () => {
+    alert("⏰ Consultation timer ended!");
+    setSecondsLeft(0);
+  };
+  socket.on("timerEnded", handleTimerEnd);
 
-    // Listen for timer end
-    const handleTimerEnd = () => {
-      alert("⏰ Consultation timer ended!");
-      setSecondsLeft(0);
-    };
-    socket.on("timerEnded", handleTimerEnd);
+  return () => {
+    socket.off("newMessage", handleNewMessage);
+    socket.off("timerUpdate", handleTimerUpdate);
+    socket.off("timerEnded", handleTimerEnd);
+    socket.emit("stopConsultationTimer", { roomId });
+    socket.emit("leaveRoom", roomId);
+  };
+}, [roomId]);
 
-    return () => {
-      socket.off("newMessage", handleNewMessage);
-      socket.off("timerUpdate", handleTimerUpdate);
-      socket.off("timerEnded", handleTimerEnd);
-      socket.emit("stopConsultationTimer", { roomId });
-      socket.emit("leaveRoom", roomId);
-    };
-  }, [roomId]);
 
   const sendMessage = () => {
     if (!input.trim()) return;
