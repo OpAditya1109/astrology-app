@@ -5,7 +5,7 @@ const bcrypt = require("bcryptjs");
 // Register new user with email uniqueness across both collections
 const registerUser = async (req, res) => {
   try {
-    const { name, email, password, dob, birthTime, birthPlace } = req.body;
+    const { name, email,mobile, password, dob, birthTime, birthPlace } = req.body;
 
     // Check if email exists in User OR Astrologer
     const existingUser = await User.findOne({ email });
@@ -22,6 +22,7 @@ const registerUser = async (req, res) => {
     const user = new User({
       name,
       email,
+      mobile,
       password: hashedPassword,
       dob,
       birthTime,
