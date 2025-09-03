@@ -5,48 +5,51 @@ const axios = require("axios");
 
 const router = express.Router();
 
-// Chatbot endpoint
-router.post("/chat/:userId", async (req, res) => {
+router.post("/chat", async (req, res) => {
   try {
-    const { userId } = req.params;
-    const { message } = req.body; // user's message from frontend
+    const { query, profile } = req.body;
 
-    // Fetch user details
-    const user = await User.findById(userId).select("name dob birthTime birthPlace");
-    if (!user) return res.status(404).json({ message: "User not found" });
+    if (!profile) {
+      return res.status(400).json({ message: "User profile missing" });
+    }
 
-    // Format user details
+    // Birth details
     const birthDetails = `
-    Name: ${user.name}
-    DOB: ${user.dob.toDateString()}
-    Birth Time: ${user.birthTime}
-    Birth Place: ${user.birthPlace}
+    Name: ${profile.name}
+    DOB: ${new Date(profile.dob).toDateString()}
+    Birth Time: ${profile.birthTime}
+    Birth Place: ${profile.birthPlace}
     `;
 
-    // First system message for HuggingFace / AI
-    const systemMessage = `You are an astrologer AI. Use these birth details to give personalized astrology:
-${birthDetails}
-Now continue the conversation naturally.`;
-
-    // Send to Hugging Face API (example using Mistral/any LLM)
+    // Use OpenAI API
     const response = await axios.post(
-      "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.2",
+      "https://api.openai.com/v1/chat/completions",
       {
-        inputs: `${systemMessage}\nUser: ${message}\nAstrologer:`,
+        model: "gpt-4o-mini", // or "gpt-4o" for more advanced
+        messages: [
+          {
+            role: "system",
+            content: `You are an expert astrologer AI. Always use the following user birth details for analysis:\n${birthDetails}\nGive astrology-based, friendly, and clear responses.`,
+          },
+          { role: "user", content: query },
+        ],
       },
       {
         headers: {
-          Authorization: `Bearer ${process.env.HUGGINGFACE_API_KEY}`,
+          Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+          "Content-Type": "application/json",
         },
       }
     );
 
     res.json({
-      reply: response.data[0]?.generated_text || "Sorry, I couldn’t generate a reply.",
+      reply:
+        response.data.choices[0].message.content ||
+        "Sorry, I couldn’t generate a reply.",
     });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: err.message });
+    console.error("Chatbot error:", err.response?.data || err.message);
+    res.status(500).json({ error: "Failed to generate reply." });
   }
 });
 

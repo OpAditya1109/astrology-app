@@ -1,6 +1,7 @@
 {
   "dependencies": {
     "@huggingface/inference": "^4.7.1",
+    "astronomia": "^4.2.0",
     "axios": "^1.11.0",
     "bcryptjs": "^3.0.2",
     "body-parser": "^2.2.0",
@@ -12,6 +13,7 @@
     "mongoose": "^8.17.2",
     "node-fetch": "^3.3.2",
     "request": "^2.88.2",
+    "sharp": "^0.34.3",
     "socket.io": "^4.8.1"
   }
 }

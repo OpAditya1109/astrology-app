@@ -72,30 +72,32 @@ I already have your birth details:
     fetchProfile();
   }, [navigate]);
 
-  const sendMessage = async () => {
-    if (!input) return;
+const sendMessage = async () => {
+  if (!input) return;
 
-    const userMessage = { sender: "user", text: input };
-    setMessages((prev) => [...prev, userMessage]);
-    setInput("");
+  const userMessage = { sender: "user", text: input };
+  setMessages((prev) => [...prev, userMessage]);
+  setInput("");
 
-    try {
-      const token = sessionStorage.getItem("token");
-      const res = await axios.post(
-        "https://bhavanaastro.onrender.com/api/chat",
-        { query: input, profile: userProfile },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+  try {
+    const token = sessionStorage.getItem("token");
+    const res = await axios.post(
+      "http://localhost:5000/api/chatbot/chat", // backend endpoint
+      { query: input, profile: userProfile },
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
 
-      const botMessage = { sender: "bot", text: res.data.reply };
-      setMessages((prev) => [...prev, botMessage]);
-    } catch (err) {
-      setMessages((prev) => [
-        ...prev,
-        { sender: "bot", text: "⚠️ Error contacting astrologer." },
-      ]);
-    }
-  };
+    const botMessage = { sender: "bot", text: res.data.reply };
+    setMessages((prev) => [...prev, botMessage]);
+  } catch (err) {
+    console.error("Chat error:", err);
+    setMessages((prev) => [
+      ...prev,
+      { sender: "bot", text: "⚠️ Error contacting astrologer." },
+    ]);
+  }
+};
+
 
   return (
     <div className="w-[400px] mx-auto mt-6 border border-gray-300 rounded-xl p-4 flex flex-col bg-white shadow">

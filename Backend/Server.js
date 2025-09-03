@@ -130,32 +130,32 @@ io.on("connection", (socket) => {
 
 
 
-const hf = new HfInference(process.env.HF_API_KEY);
+// const hf = new HfInference(process.env.HF_API_KEY);
 
-app.post("/api/chat", async (req, res) => {
-  try {
- const userMessage = req.body.query;   // if you want to keep frontend as is
+// app.post("/api/chat", async (req, res) => {
+//   try {
+//  const userMessage = req.body.query;   // if you want to keep frontend as is
 
 
-    if (!userMessage || userMessage.trim() === "") {
-      return res.status(400).json({ error: "Message cannot be empty" });
-    }
+//     if (!userMessage || userMessage.trim() === "") {
+//       return res.status(400).json({ error: "Message cannot be empty" });
+//     }
 
-    const response = await hf.chatCompletion({
-      model: "mistralai/Mistral-7B-Instruct-v0.2",
-      messages: [
-        { role: "system", content: "You are a helpful astrology assistant." },
-        { role: "user", content: userMessage }
-      ],
-      max_tokens: 300
-    });
+//     const response = await hf.chatCompletion({
+//       model: "mistralai/Mistral-7B-Instruct-v0.2",
+//       messages: [
+//         { role: "system", content: "You are a helpful astrology assistant." },
+//         { role: "user", content: userMessage }
+//       ],
+//       max_tokens: 300
+//     });
 
-    res.json({ reply: response.choices[0].message.content });
-  } catch (err) {
-    console.error("HuggingFace Error:", err);
-    res.status(500).json({ error: err.message });
-  }
-});
+//     res.json({ reply: response.choices[0].message.content });
+//   } catch (err) {
+//     console.error("HuggingFace Error:", err);
+//     res.status(500).json({ error: err.message });
+//   }
+// });
 
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, () =>

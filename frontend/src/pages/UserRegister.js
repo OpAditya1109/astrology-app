@@ -9,6 +9,7 @@ export default function UserRegister() {
     dob: "",
     birthTime: "",
     birthPlace: "",
+    mobile: "", // ✅ added mobile
   });
 
   const handleChange = (e) =>
@@ -25,7 +26,6 @@ export default function UserRegister() {
     } catch (err) {
       alert(err.response?.data?.error || "Something went wrong");
     } finally {
-      // ✅ Clear form after submit (success or error)
       setForm({
         name: "",
         email: "",
@@ -33,6 +33,7 @@ export default function UserRegister() {
         dob: "",
         birthTime: "",
         birthPlace: "",
+        mobile: "", // ✅ reset mobile
       });
     }
   };
@@ -70,6 +71,22 @@ export default function UserRegister() {
               name="email"
               value={form.email}
               placeholder="Enter your email"
+              onChange={handleChange}
+              className="w-full mt-1 px-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-400 focus:outline-none"
+              required
+            />
+          </div>
+
+          {/* Mobile */}
+          <div>
+            <label className="block text-gray-700 font-medium">
+              Mobile Number <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="tel"
+              name="mobile"
+              value={form.mobile}
+              placeholder="Enter your mobile number"
               onChange={handleChange}
               className="w-full mt-1 px-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-400 focus:outline-none"
               required

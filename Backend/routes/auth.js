@@ -28,17 +28,19 @@ router.post("/login", async (req, res) => {
       expiresIn: "1d",
     });
 
- res.json({
+res.json({
   token,
   user: {
     id: user._id,
     email: user.email,
+    mobile: user.mobile,  // ✅ added mobile number
     role,
     birthTime: user.birthTime,
     birthPlace: user.birthPlace,
     dob: user.dob,
   },
 });
+
 
   } catch (err) {
     console.error(err);

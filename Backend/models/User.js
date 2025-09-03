@@ -4,6 +4,7 @@ const userSchema = new mongoose.Schema({
   name: String,
   email: { type: String, unique: true },
   password: String,
+  mobile: { type: String, unique: true }, // ✅ added mobile number
   dob: Date,
   birthTime: String,
   birthPlace: String,
@@ -23,7 +24,7 @@ const userSchema = new mongoose.Schema({
         amount: { type: Number, required: true },
         date: { type: Date, default: Date.now },
         description: String,
-        paymentId: String, // For reference from Razorpay
+        paymentId: String, // For reference from Razorpay or Cashfree
       },
     ],
   },
