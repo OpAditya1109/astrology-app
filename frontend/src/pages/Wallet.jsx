@@ -24,7 +24,7 @@ const Wallet = () => {
     const fetchBalance = async () => {
       try {
         const res = await axios.get(
-          `https://bhavanaastro.onrender.com/api/users/${userId}`
+    `https://bhavanaastro.onrender.com/api/users/${userId}/details`
         );
         setBalance(res.data.wallet?.balance || 0);
       } catch (err) {
