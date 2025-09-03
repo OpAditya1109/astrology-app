@@ -9,7 +9,6 @@ const Astrologer = require("./models/Astrologer");
 const { getAstrologyResponse } = require("./api/astrology");
 const panchangRoutes = require("./routes/panchang");
 const chatbotRoutes = require("./routes/chatbotRoutes");
-const { HfInference } = require("@huggingface/inference");
 
 dotenv.config();
 connectDB();
@@ -19,7 +18,6 @@ app.use(express.json());
 app.use("/api/wallet/webhook", express.text({ type: "*/*" }));
 app.use("/api/wallet/webhook", express.urlencoded({ extended: true }));
 app.use("/api/wallet/webhook", express.json());
-
 app.use(cors());
 
 // --- REST API routes ---
@@ -123,16 +121,17 @@ io.on("connection", (socket) => {
     let secondsLeft = durationMinutes * 60;
     console.log(`⏱️ Timer started for room ${roomId} (${durationMinutes} min)`);
 
-    socket.emit("timerUpdate", { secondsLeft });
+    // Emit initial value to everyone in room
+    io.to(roomId).emit("timerUpdate", { secondsLeft });
 
     activeTimers[roomId] = setInterval(() => {
       secondsLeft--;
-      socket.emit("timerUpdate", { secondsLeft });
+      io.to(roomId).emit("timerUpdate", { secondsLeft });
 
       if (secondsLeft <= 0) {
         clearInterval(activeTimers[roomId]);
         delete activeTimers[roomId];
-        socket.emit("timerEnded");
+        io.to(roomId).emit("timerEnded");
         console.log(`⏰ Timer ended for room ${roomId}`);
       }
     }, 1000);
