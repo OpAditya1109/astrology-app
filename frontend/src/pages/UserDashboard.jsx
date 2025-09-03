@@ -1,6 +1,13 @@
 import { Link } from "react-router-dom";
 
 export default function UserDashboard() {
+  // ✅ Get logged-in user from sessionStorage
+  const storedUser = sessionStorage.getItem("user");
+  const user = storedUser ? JSON.parse(storedUser) : null;
+
+  // ✅ Use name if available, else fallback
+  const userName = user?.name || "User";
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Spacer for fixed navbar if using shared Navbar */}
@@ -9,14 +16,16 @@ export default function UserDashboard() {
       {/* Dashboard Content */}
       <section className="max-w-7xl mx-auto px-6 py-12">
         <h2 className="text-3xl font-semibold text-purple-700 mb-6">
-          Welcome, User!
+          Welcome, {userName}!
         </h2>
         <p className="text-gray-600 mb-8">
-          Here’s your personalized dashboard where you can consult with astrologers, check horoscopes, shop astrology products, and manage your wallet.
+          Here’s your personalized dashboard where you can consult with astrologers, 
+          check horoscopes, shop astrology products, and manage your wallet.
         </p>
 
         {/* Dashboard Cards */}
         <div className="grid md:grid-cols-2 lg:grid-cols-5 gap-6">
+          {/* Consult Card */}
           <div className="bg-white shadow-md rounded-2xl p-6 text-center hover:shadow-xl transition">
             <h3 className="text-xl font-bold text-purple-700 mb-2">Consult Astrologers</h3>
             <p className="text-gray-500 mb-4">Book chat or call consultations with experts</p>
@@ -28,6 +37,7 @@ export default function UserDashboard() {
             </Link>
           </div>
 
+          {/* AI Astrologer */}
           <div className="bg-white shadow-md rounded-2xl p-6 text-center hover:shadow-xl transition">
             <h3 className="text-xl font-bold text-purple-700 mb-2">AI Astrologer</h3>
             <p className="text-gray-500 mb-4">Chat instantly with our AI-powered astrologer</p>
@@ -39,6 +49,7 @@ export default function UserDashboard() {
             </Link>
           </div>
 
+          {/* Horoscope */}
           <div className="bg-white shadow-md rounded-2xl p-6 text-center hover:shadow-xl transition">
             <h3 className="text-xl font-bold text-purple-700 mb-2">Horoscopes</h3>
             <p className="text-gray-500 mb-4">Check daily, weekly, and monthly horoscopes</p>
@@ -50,7 +61,7 @@ export default function UserDashboard() {
             </Link>
           </div>
 
-          {/* Wallet Card */}
+          {/* Wallet */}
           <div className="bg-white shadow-md rounded-2xl p-6 text-center hover:shadow-xl transition">
             <h3 className="text-xl font-bold text-purple-700 mb-2">Wallet</h3>
             <p className="text-gray-500 mb-4">Check balance, add funds, or redeem credits</p>
@@ -62,7 +73,7 @@ export default function UserDashboard() {
             </Link>
           </div>
 
-          {/* Shop Card */}
+          {/* Shop */}
           <div className="bg-white shadow-md rounded-2xl p-6 text-center hover:shadow-xl transition">
             <h3 className="text-xl font-bold text-purple-700 mb-2">Shop</h3>
             <p className="text-gray-500 mb-4">Browse astrology products and accessories</p>

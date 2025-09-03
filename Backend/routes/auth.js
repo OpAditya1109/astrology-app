@@ -27,19 +27,20 @@ router.post("/login", async (req, res) => {
     const token = jwt.sign({ id: user._id, role }, process.env.JWT_SECRET, {
       expiresIn: "1d",
     });
-
 res.json({
   token,
   user: {
     id: user._id,
+    name: user.name,   // ✅ added name
     email: user.email,
-    mobile: user.mobile,  // ✅ added mobile number
+    mobile: user.mobile,  // ✅ already added mobile number
     role,
     birthTime: user.birthTime,
     birthPlace: user.birthPlace,
     dob: user.dob,
   },
 });
+
 
 
   } catch (err) {
