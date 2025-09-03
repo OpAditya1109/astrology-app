@@ -17,25 +17,57 @@ const cashfree = new Cashfree(
 );
 
 // Helper to generate order ID
-const generateOrderId = () => 'WALLET_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+const generateOrderId = () =>
+  'WALLET_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
 
 // Helper to map Cashfree status to DB status
 const mapStatus = (status) => {
   switch (status) {
-    case 'PAID': return 'paid';
-    case 'FAILED': return 'failed';
-    case 'EXPIRED': return 'cancelled';
-    default: return status.toLowerCase();
+    case 'PAID':
+      return 'paid';
+    case 'FAILED':
+      return 'failed';
+    case 'EXPIRED':
+      return 'cancelled';
+    default:
+      return status.toLowerCase();
   }
 };
+
+// ✅ Prevent duplicate wallet credits
+async function creditWalletOnce(userId, amount, paymentId) {
+  const user = await User.findById(userId);
+
+  if (!user) return;
+
+  const alreadyCredited = user.wallet.transactions.some(
+    (tx) => tx.paymentId === paymentId
+  );
+
+  if (!alreadyCredited) {
+    await User.findByIdAndUpdate(userId, {
+      $inc: { 'wallet.balance': amount },
+      $push: {
+        'wallet.transactions': {
+          type: 'credit',
+          amount,
+          description: 'Wallet recharge',
+          paymentId,
+        },
+      },
+    });
+  }
+}
 
 // ------------------- TOPUP -------------------
 router.post('/topup', async (req, res) => {
   try {
     const { userId, amount, phone, name, email } = req.body;
 
-    if (!userId || !amount) return res.status(400).json({ message: 'User ID and amount are required' });
-    if (!CASHFREE_APP_ID || !CASHFREE_SECRET_KEY) return res.status(500).json({ message: 'Cashfree configuration missing' });
+    if (!userId || !amount)
+      return res.status(400).json({ message: 'User ID and amount are required' });
+    if (!CASHFREE_APP_ID || !CASHFREE_SECRET_KEY)
+      return res.status(500).json({ message: 'Cashfree configuration missing' });
 
     const orderId = generateOrderId();
 
@@ -44,7 +76,7 @@ router.post('/topup', async (req, res) => {
       userId,
       orderId,
       amount,
-      status: 'pending'
+      status: 'pending',
     });
     await transaction.save();
 
@@ -57,13 +89,13 @@ router.post('/topup', async (req, res) => {
         customer_id: `USER_${userId}`,
         customer_phone: phone || '9999999999',
         customer_name: name || 'Test User',
-        customer_email: email || 'test@example.com'
+        customer_email: email || 'test@example.com',
       },
       order_meta: {
         return_url: `https://www.astrobhavana.com/wallet-success?order_id=${orderId}`,
         notify_url: `https://bhavanaastro.onrender.com/api/wallet/webhook`,
-        payment_methods: 'cc,dc,upi'
-      }
+        payment_methods: 'cc,dc,upi',
+      },
     };
 
     const cashfreeResponse = await cashfree.PGCreateOrder(orderData);
@@ -73,17 +105,18 @@ router.post('/topup', async (req, res) => {
         success: true,
         orderId,
         paymentUrl: cashfreeResponse.data.payment_link,
-        paymentSessionId: cashfreeResponse.data.payment_session_id
+        paymentSessionId: cashfreeResponse.data.payment_session_id,
       });
     } else {
       transaction.status = 'failed';
       await transaction.save();
       throw new Error('Failed to create payment session');
     }
-
   } catch (error) {
     console.error('Wallet topup error:', error);
-    res.status(500).json({ message: 'Failed to initiate wallet top-up', error: error.message });
+    res
+      .status(500)
+      .json({ message: 'Failed to initiate wallet top-up', error: error.message });
   }
 });
 
@@ -111,32 +144,41 @@ router.post('/verify', async (req, res) => {
     res.json({ success: true, orderStatus, transaction });
   } catch (error) {
     console.error('Wallet verify error:', error);
-    res.status(500).json({ message: 'Failed to verify payment', error: error.message });
+    res
+      .status(500)
+      .json({ message: 'Failed to verify payment', error: error.message });
   }
 });
 
 // ------------------- WEBHOOK -------------------
-router.post("/webhook", async (req, res) => {
+router.post('/webhook', async (req, res) => {
   try {
-    console.log("Wallet webhook received:", req.body);
+    console.log('Wallet webhook received:', req.body);
 
     const { data } = req.body;
     if (!data || !data.order || !data.payment) {
-      return res.status(400).json({ success: false, message: "Invalid webhook payload" });
+      return res
+        .status(400)
+        .json({ success: false, message: 'Invalid webhook payload' });
     }
 
     const orderId = data.order.order_id;
     const orderAmount = data.order.order_amount;
-    const orderStatus = data.payment.payment_status === "SUCCESS" ? "PAID" : data.payment.payment_status;
+    const orderStatus =
+      data.payment.payment_status === 'SUCCESS'
+        ? 'PAID'
+        : data.payment.payment_status;
 
     const paymentId = data.payment.cf_payment_id;
-    const paymentMethod = data.payment.payment_group || "unknown";
+    const paymentMethod = data.payment.payment_group || 'unknown';
     const paymentTime = data.payment.payment_time;
     const paymentMessage = data.payment.payment_message;
 
     let transaction = await WalletTransaction.findOne({ orderId });
     if (!transaction) {
-      return res.status(404).json({ success: false, message: "Transaction not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: 'Transaction not found' });
     }
 
     transaction.status = mapStatus(orderStatus);
@@ -147,25 +189,24 @@ router.post("/webhook", async (req, res) => {
 
     await transaction.save();
 
-    // ✅ Credit wallet if paid
-    if (orderStatus === "PAID") {
-      await User.findByIdAndUpdate(transaction.userId, {
-        $inc: { "wallet.balance": orderAmount },
-        $push: {
-          "wallet.transactions": {
-            type: "credit",
-            amount: orderAmount,
-            description: "Wallet recharge",
-            paymentId,
-          },
-        },
-      });
+    // ✅ Credit wallet if paid (only once per paymentId)
+    if (orderStatus === 'PAID') {
+      await creditWalletOnce(transaction.userId, orderAmount, paymentId);
     }
 
-    res.json({ success: true, message: "Webhook processed", orderId, status: orderStatus });
+    res.json({
+      success: true,
+      message: 'Webhook processed',
+      orderId,
+      status: orderStatus,
+    });
   } catch (error) {
-    console.error("Wallet webhook error:", error);
-    res.status(500).json({ success: false, message: "Failed to process webhook", error: error.message });
+    console.error('Wallet webhook error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to process webhook',
+      error: error.message,
+    });
   }
 });
 
@@ -187,35 +228,28 @@ router.get('/status/:orderId', async (req, res) => {
     const paymentDetails = cfResponse.data.payment_details || {};
 
     // Update DB if status changed
-    if (cfStatus === "PAID") {
-      transaction.status = "paid";
+    if (cfStatus === 'PAID') {
+      transaction.status = 'paid';
       transaction.paymentId = paymentDetails.payment_id || transaction.paymentId;
       transaction.paymentMethod = paymentDetails.payment_method || transaction.paymentMethod;
       transaction.paymentTime = paymentDetails.payment_time || transaction.paymentTime;
-      transaction.paymentMessage = paymentDetails.payment_message || transaction.paymentMessage;
+      transaction.paymentMessage =
+        paymentDetails.payment_message || transaction.paymentMessage;
       await transaction.save();
 
-      // ✅ Credit wallet
-      await User.findByIdAndUpdate(transaction.userId, {
-        $inc: { "wallet.balance": transaction.amount },
-        $push: {
-          "wallet.transactions": {
-            type: "credit",
-            amount: transaction.amount,
-            description: "Wallet recharge",
-            paymentId: transaction.paymentId,
-          },
-        },
-      });
-    } else if (cfStatus === "FAILED") {
-      transaction.status = "failed";
+      // ✅ Credit wallet only once
+      await creditWalletOnce(transaction.userId, transaction.amount, transaction.paymentId);
+    } else if (cfStatus === 'FAILED') {
+      transaction.status = 'failed';
       await transaction.save();
     }
 
     res.json({ success: true, transaction });
   } catch (error) {
     console.error('Wallet status error:', error);
-    res.status(500).json({ message: 'Failed to get transaction status', error: error.message });
+    res
+      .status(500)
+      .json({ message: 'Failed to get transaction status', error: error.message });
   }
 });
 
