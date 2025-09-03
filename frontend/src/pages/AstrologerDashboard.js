@@ -17,7 +17,7 @@ export default function AstrologerDashboard() {
     const fetchData = async () => {
       try {
         const res = await axios.get(
-          `https://bhavanaastro.onrender.com/api/astrologers/${astrologerId}`
+          `https://bhavanaastro.onrender.com/api/Consult-astrologers/${astrologerId}`
         );
         setAstrologer(res.data);
       } catch (err) {
@@ -47,7 +47,7 @@ export default function AstrologerDashboard() {
   const saveSettings = async () => {
     try {
       await axios.put(
-        `https://bhavanaastro.onrender.com/api/astrologers/update-rates-online/${astrologerId}`,
+        `https://bhavanaastro.onrender.com/api/Consult-astrologers/update-rates-online/${astrologerId}`,
         { rates: astrologer.rates, online: astrologer.online }
       );
       alert("Settings updated successfully!");
