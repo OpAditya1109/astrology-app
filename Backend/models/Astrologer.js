@@ -2,7 +2,6 @@ const mongoose = require("mongoose");
 
 const astrologerSchema = new mongoose.Schema(
   {
-  
     name: { type: String, required: true },
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true },
@@ -15,7 +14,13 @@ const astrologerSchema = new mongoose.Schema(
     languagesKnown: [String], // e.g., ["English", "Hindi"]
     categories: [String], // e.g., ["Love", "Career", "Health"]
 
-    // New role field with default
+    // 📸 New profile photo field
+    photo: {
+      type: String,
+      default: "", // if no photo uploaded
+    },
+
+    // Role field
     role: {
       type: String,
       enum: ["astrologer"],

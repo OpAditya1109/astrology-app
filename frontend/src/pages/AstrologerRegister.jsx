@@ -65,6 +65,8 @@ const AstrologerRegister = () => {
     categories: [],
   });
 
+  const [photo, setPhoto] = useState(null); // 📸 state for profile photo
+
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
@@ -76,12 +78,28 @@ const AstrologerRegister = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const res = await axios.post("https://bhavanaastro.onrender.com/api/astrologers/register", {
-        ...form,
-        systemsKnown: form.systemsKnown.map((s) => s.value),
-        languagesKnown: form.languagesKnown.map((l) => l.value),
-        categories: form.categories.map((c) => c.value),
+      const formData = new FormData();
+
+      // Append text fields
+      Object.keys(form).forEach((key) => {
+        if (Array.isArray(form[key])) {
+          form[key].forEach((item) => formData.append(key, item.value));
+        } else {
+          formData.append(key, form[key]);
+        }
       });
+
+      // Append photo
+      if (photo) {
+        formData.append("photo", photo);
+      }
+
+      const res = await axios.post(
+        "https://bhavanaastro.onrender.com/api/astrologers/register",
+        formData,
+        { headers: { "Content-Type": "multipart/form-data" } }
+      );
+
       alert(res.data.message || "Registration successful");
     } catch (err) {
       alert(err.response?.data?.error || "Error occurred");
@@ -199,7 +217,9 @@ const AstrologerRegister = () => {
               isMulti
               options={systemsOptions}
               value={form.systemsKnown}
-              onChange={(selected) => handleMultiSelectChange(selected, "systemsKnown")}
+              onChange={(selected) =>
+                handleMultiSelectChange(selected, "systemsKnown")
+              }
               className="react-select-container"
               classNamePrefix="react-select"
             />
@@ -214,7 +234,9 @@ const AstrologerRegister = () => {
               isMulti
               options={languageOptions}
               value={form.languagesKnown}
-              onChange={(selected) => handleMultiSelectChange(selected, "languagesKnown")}
+              onChange={(selected) =>
+                handleMultiSelectChange(selected, "languagesKnown")
+              }
               className="react-select-container"
               classNamePrefix="react-select"
             />
@@ -229,7 +251,9 @@ const AstrologerRegister = () => {
               isMulti
               options={categoryOptions}
               value={form.categories}
-              onChange={(selected) => handleMultiSelectChange(selected, "categories")}
+              onChange={(selected) =>
+                handleMultiSelectChange(selected, "categories")
+              }
               className="react-select-container"
               classNamePrefix="react-select"
             />
@@ -265,6 +289,19 @@ const AstrologerRegister = () => {
             />
           </div>
 
+          {/* Profile Photo */}
+          <div>
+            <label className="block mb-1 font-semibold">
+              Profile Photo <span className="text-gray-500">(optional)</span>
+            </label>
+            <input
+              type="file"
+              accept="image/*"
+              onChange={(e) => setPhoto(e.target.files[0])}
+              className="w-full border rounded-xl px-3 py-2 focus:ring-2 focus:ring-orange-400 outline-none"
+            />
+          </div>
+
           {/* Submit */}
           <button
             type="submit"
@@ -276,7 +313,10 @@ const AstrologerRegister = () => {
           {/* Login Redirect */}
           <p className="text-center mt-4 text-sm">
             Already have an account?{" "}
-            <a href="/login" className="text-orange-600 font-semibold hover:underline">
+            <a
+              href="/login"
+              className="text-orange-600 font-semibold hover:underline"
+            >
               Login here
             </a>
           </p>
