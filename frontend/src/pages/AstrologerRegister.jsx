@@ -327,3 +327,4 @@ const AstrologerRegister = () => {
 };
 
 export default AstrologerRegister;
+ 
