@@ -26,7 +26,7 @@ app.use(cors());
 app.use("/api/users", require("./routes/userRoutes"));
 app.use("/api/astrologers", require("./routes/astrologerRoutes"));
 app.use("/api/auth", require("./routes/auth"));
-app.use("/api/Consult-astrologers", require("./routes/astrologers"));
+  app.use("/api/Consult-astrologers", require("./routes/astrologers"));
 app.use("/api/consultations", require("./routes/consultationRoutes"));
 app.use("/api/ai-astrologer", require("./routes/aiRoutes"));
 app.use("/api", panchangRoutes);
