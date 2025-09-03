@@ -45,4 +45,18 @@ router.get("/", async (req, res) => {
   }
 });
 
+router.put("/update-rates-online/:id", async (req, res) => {
+  try {
+    const { rates, online } = req.body;
+    const astrologer = await Astrologer.findByIdAndUpdate(
+      req.params.id,
+      { rates, online },
+      { new: true }
+    );
+    res.json(astrologer);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Server error" });
+  }
+});
 module.exports = router;

@@ -7,30 +7,28 @@ const astrologerSchema = new mongoose.Schema(
     password: { type: String, required: true },
     gender: String,
     mobile: String,
-    experience: Number, // in years
+    experience: Number,
     city: String,
     country: String,
-    systemsKnown: [String], // e.g., ["Vedic", "KP", "Numerology"]
-    languagesKnown: [String], // e.g., ["English", "Hindi"]
-    categories: [String], // e.g., ["Love", "Career", "Health"]
+    systemsKnown: [String],
+    languagesKnown: [String],
+    categories: [String],
+    photo: { type: String, default: "" },
+    role: { type: String, enum: ["astrologer"], default: "astrologer" },
+    isAI: { type: Boolean, default: false },
 
-    // 📸 New profile photo field
-    photo: {
-      type: String,
-      default: "", // if no photo uploaded
+    // ✅ Rates for different modes
+    rates: {
+      chat: { type: Number, default: 0 },
+      video: { type: Number, default: 0 },
+      audio: { type: Number, default: 0 },
     },
 
-    // Role field
-    role: {
-      type: String,
-      enum: ["astrologer"],
-      default: "astrologer",
-    },
-
-    // AI flag
-    isAI: {
-      type: Boolean,
-      default: false,
+    // ✅ Online availability
+    online: {
+      chat: { type: Boolean, default: false },
+      video: { type: Boolean, default: false },
+      audio: { type: Boolean, default: false },
     },
   },
   { timestamps: true }

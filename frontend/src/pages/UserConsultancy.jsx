@@ -12,7 +12,7 @@ export default function UserConsultancy() {
   const [consultations, setConsultations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [startingConsultationId, setStartingConsultationId] = useState(null);
-  const [showFilters, setShowFilters] = useState(false); // Toggle for mobile
+  const [showFilters, setShowFilters] = useState(false);
 
   const navigate = useNavigate();
 
@@ -112,24 +112,34 @@ export default function UserConsultancy() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col md:flex-row">
-      {/* Mobile filter button */}
-      <div className="md:hidden p-4 bg-white shadow flex justify-between items-center">
-        <h2 className="text-lg font-semibold text-purple-700">Filters</h2>
-        <button
-          onClick={() => setShowFilters(!showFilters)}
-          className="px-3 py-2 bg-purple-600 text-white rounded-lg"
-        >
-          {showFilters ? "Close" : "Show"}
-        </button>
-      </div>
+    <div className="min-h-screen bg-gray-50 flex">
+      {/* Mobile overlay */}
+      {showFilters && (
+        <div
+          className="fixed inset-0 bg-black opacity-50 z-10 md:hidden"
+          onClick={() => setShowFilters(false)}
+        ></div>
+      )}
 
       {/* Sidebar */}
       <aside
-        className={`bg-white shadow-md p-6 md:w-64 md:sticky md:top-0 md:h-screen transform md:transform-none transition-transform duration-300 ease-in-out
-          ${showFilters ? "translate-x-0" : "-translate-x-full"} md:translate-x-0 fixed z-20 top-0 left-0 h-full w-64`}
+        className={`bg-white shadow-md p-6 w-64 z-20
+          md:sticky md:top-0 md:h-screen
+          transform md:transform-none transition-transform duration-300 ease-in-out
+          fixed top-0 left-0 h-full
+          ${showFilters ? "translate-x-0" : "-translate-x-full"} md:translate-x-0`}
       >
-        <h2 className="text-xl font-semibold mb-4 text-purple-700">Filters</h2>
+        <div className="md:hidden flex justify-between items-center mb-4">
+          <h2 className="text-lg font-semibold text-purple-700">Filters</h2>
+          <button
+            onClick={() => setShowFilters(false)}
+            className="px-3 py-2 bg-purple-600 text-white rounded-lg"
+          >
+            Close
+          </button>
+        </div>
+
+        <h2 className="text-xl font-semibold mb-4 text-purple-700 hidden md:block">Filters</h2>
 
         <div className="mb-4">
           <label className="block text-gray-700 mb-1">Exp (years)</label>
@@ -186,9 +196,21 @@ export default function UserConsultancy() {
         </div>
       </aside>
 
-      {/* Consultation List */}
-      <main className="flex-1 p-6 md:ml-64">
-        <h2 className="text-2xl font-semibold mb-6 text-purple-700">Consultations</h2>
+      {/* Main Content */}
+      <main className="flex-1 p-6 md:ml-0">
+        {/* Mobile Filter Toggle */}
+        <div className="md:hidden flex justify-between items-center mb-6">
+          <h2 className="text-2xl font-semibold text-purple-700">Consultations</h2>
+          <button
+            onClick={() => setShowFilters(true)}
+            className="px-3 py-2 bg-purple-600 text-white rounded-lg"
+          >
+            Show Filters
+          </button>
+        </div>
+
+        {/* Title for Desktop */}
+        <h2 className="hidden md:block text-2xl font-semibold mb-6 text-purple-700">Consultations</h2>
 
         {loading ? (
           <p className="text-gray-500">Loading astrologers...</p>
@@ -197,56 +219,48 @@ export default function UserConsultancy() {
         ) : (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filtered.map(c => (
-            <div
-  key={c._id}
-  className="bg-white shadow-md rounded-2xl p-6 hover:shadow-xl transition flex flex-col items-center text-center"
->
-  {/* Profile Photo */}
-  <img
-    src={c.photo || "https://via.placeholder.com/150"} // fallback if no photo
-    alt={c.name}
-    className="w-24 h-24 rounded-full object-cover mb-4 border-4 border-purple-200"
-  />
-
-  {/* Name & Details */}
-  <h3 className="text-xl font-bold text-purple-700 mb-1">{c.name}</h3>
-  <p className="text-sm text-gray-500 mb-2">{c.systemsKnown?.join(", ") || ""}</p>
-  <p className="text-gray-500 mb-1">Exp - {c.experience} yrs</p>
-  <p className="text-gray-500 mb-1">{c.languagesKnown?.join(", ") || ""}</p>
-  <p className="text-gray-500 mb-4">{c.categories?.join(", ") || ""}</p>
-
-  {/* Buttons */}
-  <div className="flex gap-2 flex-wrap justify-center">
-    <button
-      onClick={() => startConsultation(c._id, "Chat", "/chat")}
-      disabled={startingConsultationId === c._id}
-      className={`px-4 py-2 text-white rounded-lg ${
-        startingConsultationId === c._id
-          ? "bg-gray-400 cursor-not-allowed"
-          : "bg-purple-600 hover:bg-purple-700"
-      }`}
-    >
-      {startingConsultationId === c._id ? "Connecting..." : "Start Chat"}
-    </button>
-
-    <button
-      onClick={() => startConsultation(c._id, "Video", "/video-call")}
-      disabled={startingConsultationId === c._id}
-      className="px-4 py-2 text-white rounded-lg bg-green-600 hover:bg-green-700"
-    >
-      Start Video Call
-    </button>
-
-    <button
-      onClick={() => startConsultation(c._id, "Audio", "/video-call")}
-      disabled={startingConsultationId === c._id}
-      className="px-4 py-2 text-white rounded-lg bg-blue-600 hover:bg-blue-700"
-    >
-      Start Audio Call
-    </button>
-  </div>
-</div>
-
+              <div
+                key={c._id}
+                className="bg-white shadow-md rounded-2xl p-6 hover:shadow-xl transition flex flex-col items-center text-center"
+              >
+                <img
+                  src={c.photo || "https://via.placeholder.com/150"}
+                  alt={c.name}
+                  className="w-24 h-24 rounded-full object-cover mb-4 border-4 border-purple-200"
+                />
+                <h3 className="text-xl font-bold text-purple-700 mb-1">{c.name}</h3>
+                <p className="text-sm text-gray-500 mb-2">{c.systemsKnown?.join(", ") || ""}</p>
+                <p className="text-gray-500 mb-1">Exp - {c.experience} yrs</p>
+                <p className="text-gray-500 mb-1">{c.languagesKnown?.join(", ") || ""}</p>
+                <p className="text-gray-500 mb-4">{c.categories?.join(", ") || ""}</p>
+                <div className="flex gap-2 flex-wrap justify-center">
+                  <button
+                    onClick={() => startConsultation(c._id, "Chat", "/chat")}
+                    disabled={startingConsultationId === c._id}
+                    className={`px-4 py-2 text-white rounded-lg ${
+                      startingConsultationId === c._id
+                        ? "bg-gray-400 cursor-not-allowed"
+                        : "bg-purple-600 hover:bg-purple-700"
+                    }`}
+                  >
+                    {startingConsultationId === c._id ? "Connecting..." : "Start Chat"}
+                  </button>
+                  <button
+                    onClick={() => startConsultation(c._id, "Video", "/video-call")}
+                    disabled={startingConsultationId === c._id}
+                    className="px-4 py-2 text-white rounded-lg bg-green-600 hover:bg-green-700"
+                  >
+                    Start Video Call
+                  </button>
+                  <button
+                    onClick={() => startConsultation(c._id, "Audio", "/video-call")}
+                    disabled={startingConsultationId === c._id}
+                    className="px-4 py-2 text-white rounded-lg bg-blue-600 hover:bg-blue-700"
+                  >
+                    Start Audio Call
+                  </button>
+                </div>
+              </div>
             ))}
           </div>
         )}
