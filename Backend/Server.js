@@ -16,6 +16,10 @@ connectDB();
 
 const app = express();
 app.use(express.json());
+app.use("/api/wallet/webhook", express.text({ type: "*/*" }));
+app.use("/api/wallet/webhook", express.urlencoded({ extended: true }));
+app.use("/api/wallet/webhook", express.json());
+
 app.use(cors());
 
 // --- REST API routes ---
