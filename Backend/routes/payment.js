@@ -115,49 +115,59 @@ router.post('/verify', async (req, res) => {
 });
 
 // POST /api/wallet/webhook - handle Cashfree webhook
-// POST /api/wallet/webhook - handle Cashfree webhook
-router.post('/webhook', async (req, res) => {
+router.post("/webhook", async (req, res) => {
   try {
-    console.log('Wallet webhook received:', req.body);
+    console.log("Wallet webhook received:", req.body);
 
-    // ✅ handle both snake_case and camelCase
-    const orderId = req.body.orderId || req.body.order_id;
-    const orderStatus = req.body.orderStatus || req.body.order_status;
-    const paymentId = req.body.paymentId || req.body.payment_id;
-    const paymentMethod = req.body.paymentMethod || req.body.payment_method;
-    const paymentTime = req.body.paymentTime || req.body.payment_time;
-    const paymentMessage = req.body.paymentMessage || req.body.payment_message;
-
-    if (!orderId) {
-      return res.status(400).json({ success: false, message: 'orderId/order_id missing in webhook' });
+    const { data, type } = req.body;
+    if (!data || !data.order || !data.payment) {
+      return res.status(400).json({ success: false, message: "Invalid webhook payload" });
     }
 
-    const transaction = await WalletTransaction.findOne({ orderId });
+    const orderId = data.order.order_id;
+    const orderAmount = data.order.order_amount;
+    const orderStatus = data.payment.payment_status === "SUCCESS" ? "PAID" : data.payment.payment_status;
+
+    const paymentId = data.payment.cf_payment_id;
+    const paymentMethod = data.payment.payment_group || "unknown";
+    const paymentTime = data.payment.payment_time;
+    const paymentMessage = data.payment.payment_message;
+
+    let transaction = await WalletTransaction.findOne({ orderId });
     if (!transaction) {
-      console.error('Transaction not found for orderId:', orderId);
-      return res.status(404).json({ message: 'Transaction not found' });
+      return res.status(404).json({ success: false, message: "Transaction not found" });
     }
 
-    // ✅ update transaction
     transaction.status = mapStatus(orderStatus);
-    transaction.paymentId = paymentId || transaction.paymentId;
-    transaction.paymentMethod = paymentMethod || transaction.paymentMethod;
-    transaction.paymentTime = paymentTime || transaction.paymentTime;
-    transaction.paymentMessage = paymentMessage || transaction.paymentMessage;
+    transaction.paymentId = paymentId;
+    transaction.paymentMethod = paymentMethod;
+    transaction.paymentTime = paymentTime;
+    transaction.paymentMessage = paymentMessage;
 
     await transaction.save();
 
-    res.json({
-      success: true,
-      message: 'Webhook processed',
-      orderId,
-      status: transaction.status
-    });
+    // ✅ Also credit wallet if paid
+    if (orderStatus === "PAID") {
+      await User.findByIdAndUpdate(transaction.userId, {
+        $inc: { "wallet.balance": orderAmount },
+        $push: {
+          "wallet.transactions": {
+            type: "credit",
+            amount: orderAmount,
+            description: "Wallet recharge",
+            paymentId,
+          },
+        },
+      });
+    }
+
+    res.json({ success: true, message: "Webhook processed", orderId, status: orderStatus });
   } catch (error) {
-    console.error('Wallet webhook error:', error);
-    res.status(500).json({ message: 'Failed to process webhook', error: error.message });
+    console.error("Wallet webhook error:", error);
+    res.status(500).json({ success: false, message: "Failed to process webhook", error: error.message });
   }
 });
+
 
 
 // GET /api/wallet/status/:orderId - get transaction status
