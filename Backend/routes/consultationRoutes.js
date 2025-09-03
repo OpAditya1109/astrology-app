@@ -1,19 +1,47 @@
 const express = require("express");
 const router = express.Router();
 const Consultation = require("../models/Consultation");
+const User = require("../models/User");
+const { creditAdminWallet } = require("../controllers/adminController"); // Admin wallet helper
 
 // ➤ Create a new consultation (chat/audio/video) or return existing
 router.post("/", async (req, res) => {
   try {
-    const { userId, userName, astrologerId, topic, mode } = req.body;
+    const { userId, userName, astrologerId, topic, mode, rate } = req.body;
 
-    // Check if consultation already exists between user & astrologer
+    // 1️⃣ Fetch user
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    // 2️⃣ Deduct first 5 min
+    const first5MinCost = rate * 5;
+
+    if (user.wallet.balance < first5MinCost) {
+      return res.status(400).json({ message: "Insufficient balance" });
+    }
+
+    user.wallet.balance -= first5MinCost;
+    user.wallet.transactions.push({
+      type: "debit",
+      amount: first5MinCost,
+      description: `First 5 min ${mode} consultation`,
+    });
+    await user.save();
+
+    // 3️⃣ Credit admin wallet
+    await creditAdminWallet({
+      amount: first5MinCost,
+      description: `First 5 min payment from ${user.name}`,
+      referenceId: astrologerId,
+    });
+
+    // 4️⃣ Check if consultation already exists
     const existing = await Consultation.findOne({ userId, astrologerId });
     if (existing) {
       return res.status(200).json(existing); // return existing room
     }
 
-    // Create new consultation if none exists
+    // 5️⃣ Create new consultation
     const consultation = new Consultation({
       userId,
       astrologerId,
@@ -27,13 +55,13 @@ router.post("/", async (req, res) => {
     await consultation.save();
 
     // --- EMIT SOCKET EVENT ---
-    const io = req.app.get("io"); // Make sure you attached io in server.js
+    const io = req.app.get("io");
     io.to(astrologerId.toString()).emit("newConsultation", {
       _id: consultation._id,
       userId,
-      userName, // send user's name for frontend notification
+      userName,
       topic,
-      mode: consultation.mode, // send correct mode
+      mode: consultation.mode,
       bookedAt: consultation.bookedAt,
       status: consultation.status,
     });
@@ -51,15 +79,14 @@ router.get("/:astrologerId", async (req, res) => {
     const consultations = await Consultation.find({
       astrologerId: req.params.astrologerId,
     })
-      .populate("userId", "name email dob") // populate user's info
+      .populate("userId", "name email dob")
       .sort({ bookedAt: -1 })
-      .lean(); // convert to plain JS objects
+      .lean();
 
-    // Map to send consistent structure for frontend
     const mapped = consultations.map((c) => ({
       _id: c._id,
       userId: c.userId._id,
-      userName: c.userId.name, // get name from populated user
+      userName: c.userId.name,
       topic: c.topic,
       bookedAt: c.bookedAt,
       mode: c.mode,
