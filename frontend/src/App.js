@@ -1,7 +1,7 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Home from "./pages/Home";
 import UserRegister from "./pages/UserRegister";
-import Login from "./pages/Login"
+import Login from "./pages/Login";
 import AstrologerRegister from "./pages/AstrologerRegister";
 import Navbar from "./components/Navbar";
 import Consultancy from "./pages/Consultancy";
@@ -18,7 +18,8 @@ import AIConsultation from "./pages/AIConsultation";
 import MatchMakingForm from "./pages/MatchMakingForm";
 import VideoCall from "./pages/VideoCall";
 import WalletSuccess from "./pages/WalletSuccess";
-import Astrochat from "./pages/AstroChat"
+import Astrochat from "./pages/AstroChat";
+
 function App() {
   return (
     <Router>
@@ -26,29 +27,39 @@ function App() {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/user/register" element={<UserRegister />} />
-        <Route path="Login" element={<Login />} />
+        <Route path="/login" element={<Login />} />
         <Route path="/astrologer/register" element={<AstrologerRegister />} />
-        {/* <Route path="/astrologer/login" element={<AstrologerLogin />} /> */}
+        
+        {/* Consultancy & Shopping */}
         <Route path="/consultancy" element={<Consultancy />} />
         <Route path="/shopping" element={<Shopping />} />
+
+        {/* User Dashboard & Wallet */}
         <Route path="/user/dashboard" element={<UserDashboard />} />
         <Route path="/user/wallet" element={<Wallet />} />
         <Route path="/payment" element={<Payment />} />
         <Route path="/user/consultancy" element={<UserConsultancy />} />
+
+        {/* Astrologer Dashboard */}
         <Route path="/astrologer/dashboard" element={<AstrologerDashboard />} />
         <Route
           path="/astrologer/dashboard/consultations"
           element={<AstrologerConsultations />}
         />
+
+        {/* Chat & Video */}
         <Route path="/chat/:consultationId" element={<ChatPage />} />
-        <Route
-          path="/astrologer/chat/:consultationId"
-          element={<AstrologerChat />}
-        />
+        <Route path="/astrologer/chat/:consultationId" element={<AstrologerChat />} />
         <Route path="/video-call/:consultationId" element={<VideoCall />} />
+
+        {/* AI & Matchmaking */}
         <Route path="/ai-consultation" element={<AIConsultation />} />
         <Route path="/match-making" element={<MatchMakingForm />} />
+
+        {/* Wallet success (redirect page from Cashfree) */}
         <Route path="/wallet-success" element={<WalletSuccess />} />
+
+        {/* Astrochat */}
         <Route path="/astrochat" element={<Astrochat />} />
       </Routes>
     </Router>
