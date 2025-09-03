@@ -28,7 +28,7 @@ const Wallet = () => {
 
       // 1️⃣ Create order via backend
       const res = await axios.post(
-        "https://bhavanaastro.onrender.com/api/payment/topup",
+        "https://bhavanaastro.onrender.com/api/wallet/topup",
         {
           userId,
           amount: parseFloat(amount),
@@ -68,7 +68,7 @@ const Wallet = () => {
     try {
       setLoading(true);
       const res = await axios.post(
-        "https://bhavanaastro.onrender.com/api/payent/verify",
+        "https://bhavanaastro.onrender.com/api/wallet/verify",
         { orderId }
       );
       setStatus(res.data.orderStatus);
