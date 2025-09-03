@@ -5,18 +5,20 @@ const bcrypt = require("bcryptjs");
 // Register new user with email uniqueness across both collections
 const registerUser = async (req, res) => {
   try {
-    const { name, email,mobile, password, dob, birthTime, birthPlace } = req.body;
+    const { name, email, mobile, password, dob, birthTime, birthPlace } = req.body;
 
-    // Check if email exists in User OR Astrologer
-    const existingUser = await User.findOne({ email });
-    const existingAstrologer = await Astrologer.findOne({ email });
-    if (existingUser || existingAstrologer) {
+    // Check email across User and Astrologer
+    if (await User.findOne({ email }) || await Astrologer.findOne({ email })) {
       return res.status(400).json({ error: "Email already exists" });
     }
 
+    // Check mobile uniqueness
+    if (await User.findOne({ mobile })) {
+      return res.status(400).json({ error: "Mobile number already exists" });
+    }
+
     // Hash password
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
+    const hashedPassword = await bcrypt.hash(password, 10);
 
     // Save user
     const user = new User({
@@ -38,5 +40,6 @@ const registerUser = async (req, res) => {
     res.status(500).json({ error: "Server error" });
   }
 };
+
 
 module.exports = { registerUser };
