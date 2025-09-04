@@ -12,53 +12,57 @@ export default function ChatPage() {
   const userId = currentUser?.id || "guest";
   const roomId = consultationId;
 
- useEffect(() => {
-  if (!roomId) return;
+  useEffect(() => {
+    if (!roomId) return;
 
-  if (!socket.connected) socket.connect();
+    if (!socket.connected) socket.connect();
 
-  socket.emit("joinRoom", roomId);
+    // Join room
+    socket.emit("joinRoom", roomId);
 
-  // Fetch existing messages
-  fetch(`https://bhavanaastro.onrender.com/api/consultations/${roomId}/messages`)
-    .then((res) => res.json())
-    .then((data) => {
-      // Ensure messages is always an array
-      if (Array.isArray(data)) {
-        setMessages(data);
-      } else if (data?.messages && Array.isArray(data.messages)) {
-        setMessages(data.messages);
-      } else {
-        setMessages([]);
-      }
-    })
-    .catch(() => setMessages([]));
+    // Start consultation timer
+    socket.emit("startConsultationTimer", { roomId, durationMinutes: 5 });
 
-  const handleNewMessage = (message) => {
-    setMessages((prev) => [...prev, message]);
-  };
-  socket.on("newMessage", handleNewMessage);
+    // Fetch existing messages
+    fetch(`https://bhavanaastro.onrender.com/api/consultations/${roomId}/messages`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data)) setMessages(data);
+        else if (data?.messages && Array.isArray(data.messages)) setMessages(data.messages);
+        else setMessages([]);
+      })
+      .catch(() => setMessages([]));
 
-  const handleTimerUpdate = ({ secondsLeft }) => {
-    setSecondsLeft(secondsLeft);
-  };
-  socket.on("timerUpdate", handleTimerUpdate);
+    // New messages listener
+    const handleNewMessage = (message) => setMessages((prev) => [...prev, message]);
+    socket.on("newMessage", handleNewMessage);
 
-  const handleTimerEnd = () => {
-    alert("⏰ Consultation timer ended!");
-    setSecondsLeft(0);
-  };
-  socket.on("timerEnded", handleTimerEnd);
+    // Timer listener
+    const handleTimerUpdate = ({ secondsLeft }) => setSecondsLeft(secondsLeft);
+    socket.on("timerUpdate", handleTimerUpdate);
 
-  return () => {
-    socket.off("newMessage", handleNewMessage);
-    socket.off("timerUpdate", handleTimerUpdate);
-    socket.off("timerEnded", handleTimerEnd);
-    socket.emit("stopConsultationTimer", { roomId });
-    socket.emit("leaveRoom", roomId);
-  };
-}, [roomId]);
+    const handleTimerEnd = () => {
+      alert("⏰ Consultation timer ended!");
+      setSecondsLeft(0);
+    };
+    socket.on("timerEnded", handleTimerEnd);
 
+    // Warn user on browser/tab close
+    const handleBeforeUnload = (e) => {
+      e.preventDefault();
+      e.returnValue = "Are you sure you want to leave the chat?";
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+
+    return () => {
+      socket.off("newMessage", handleNewMessage);
+      socket.off("timerUpdate", handleTimerUpdate);
+      socket.off("timerEnded", handleTimerEnd);
+      socket.emit("stopConsultationTimer", { roomId });
+      socket.emit("leaveRoom", roomId);
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    };
+  }, [roomId]);
 
   const sendMessage = () => {
     if (!input.trim()) return;
@@ -67,7 +71,6 @@ export default function ChatPage() {
     setInput("");
   };
 
-  // Format seconds as MM:SS
   const formatTime = (sec) => {
     const m = Math.floor(sec / 60).toString().padStart(2, "0");
     const s = (sec % 60).toString().padStart(2, "0");
@@ -100,6 +103,7 @@ export default function ChatPage() {
         <input
           value={input}
           onChange={(e) => setInput(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && sendMessage()}
           className="flex-1 border rounded-lg px-3 py-2 mr-2"
           placeholder="Type your message..."
         />
