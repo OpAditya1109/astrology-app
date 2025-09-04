@@ -107,7 +107,7 @@ export default function AstrologerConsultations() {
 
   return (
     <div className="p-6">
-      <h1 className="text-2xl font-bold text-purple-700 mb-6">📅 Consultations</h1>
+      <h1 className="text-2xl font-bold text-purple-700 mb-6"> Consultations</h1>
 
       {filteredConsultations.length === 0 ? (
         <p className="text-gray-500">No consultations booked yet.</p>
