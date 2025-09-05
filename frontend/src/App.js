@@ -19,49 +19,65 @@ import MatchMakingForm from "./pages/MatchMakingForm";
 import VideoCall from "./pages/VideoCall";
 import WalletSuccess from "./pages/WalletSuccess";
 import Astrochat from "./pages/AstroChat";
+import Layout from "./pages/Footer"; // 👈 import Layout instead of Footer
+import RefundCancellation from "./pages/RefundCancellation";
+import TermsConditions from "./pages/TermsConditions";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
+import Disclaimer from "./pages/Disclaimer";
+import PricingPolicy from "./pages/PricingPolicy";
 
 function App() {
   return (
     <Router>
       <Navbar />
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/user/register" element={<UserRegister />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/astrologer/register" element={<AstrologerRegister />} />
-        
-        {/* Consultancy & Shopping */}
-        <Route path="/consultancy" element={<Consultancy />} />
-        <Route path="/shopping" element={<Shopping />} />
+      <Layout>
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/user/register" element={<UserRegister />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/astrologer/register" element={<AstrologerRegister />} />
 
-        {/* User Dashboard & Wallet */}
-        <Route path="/user/dashboard" element={<UserDashboard />} />
-        <Route path="/user/wallet" element={<Wallet />} />
-        <Route path="/payment" element={<Payment />} />
-        <Route path="/user/consultancy" element={<UserConsultancy />} />
+          {/* Consultancy & Shopping */}
+          <Route path="/consultancy" element={<Consultancy />} />
+          <Route path="/shopping" element={<Shopping />} />
 
-        {/* Astrologer Dashboard */}
-        <Route path="/astrologer/dashboard" element={<AstrologerDashboard />} />
-        <Route
-          path="/astrologer/dashboard/consultations"
-          element={<AstrologerConsultations />}
-        />
+          {/* User Dashboard & Wallet */}
+          <Route path="/user/dashboard" element={<UserDashboard />} />
+          <Route path="/user/wallet" element={<Wallet />} />
+          <Route path="/payment" element={<Payment />} />
+          <Route path="/user/consultancy" element={<UserConsultancy />} />
 
-        {/* Chat & Video */}
-        <Route path="/chat/:consultationId" element={<ChatPage />} />
-        <Route path="/astrologer/chat/:consultationId" element={<AstrologerChat />} />
-        <Route path="/video-call/:consultationId" element={<VideoCall />} />
+          {/* Astrologer Dashboard */}
+          <Route path="/astrologer/dashboard" element={<AstrologerDashboard />} />
+          <Route
+            path="/astrologer/dashboard/consultations"
+            element={<AstrologerConsultations />}
+          />
 
-        {/* AI & Matchmaking */}
-        <Route path="/ai-consultation" element={<AIConsultation />} />
-        <Route path="/match-making" element={<MatchMakingForm />} />
+          {/* Chat & Video */}
+          <Route path="/chat/:consultationId" element={<ChatPage />} />
+          <Route path="/astrologer/chat/:consultationId" element={<AstrologerChat />} />
+          <Route path="/video-call/:consultationId" element={<VideoCall />} />
 
-        {/* Wallet success (redirect page from Cashfree) */}
-        <Route path="/wallet-success" element={<WalletSuccess />} />
+          {/* AI & Matchmaking */}
+          <Route path="/ai-consultation" element={<AIConsultation />} />
+          <Route path="/match-making" element={<MatchMakingForm />} />
 
-        {/* Astrochat */}
-        <Route path="/astrochat" element={<Astrochat />} />
-      </Routes>
+          {/* Wallet success (redirect page from Cashfree) */}
+          <Route path="/wallet-success" element={<WalletSuccess />} />
+
+          {/* Astrochat */}
+          <Route path="/astrochat" element={<Astrochat />} />
+
+
+          
+<Route path="/refund-cancellation" element={<RefundCancellation />} />
+<Route path="/terms-conditions" element={<TermsConditions />} />
+<Route path="/privacy-policy" element={<PrivacyPolicy />} />
+<Route path="/disclaimer" element={<Disclaimer />} />
+<Route path="/pricing-policy" element={<PricingPolicy />} />
+        </Routes>
+      </Layout>
     </Router>
   );
 }
