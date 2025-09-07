@@ -1,56 +1,78 @@
-// routes/panchang.js
 const express = require("express");
 const axios = require("axios");
+
 const router = express.Router();
 
-const endpoints = [
-  "tithi-durations",
-  "nakshatra-durations",
-  "yoga-durations",
-  "karana-durations",
-];
-
 router.post("/panchang", async (req, res) => {
-  const { year, month, date, hours, minutes, seconds, latitude, longitude, timezone } = req.body;
-
   try {
-    const promises = endpoints.map((ep) =>
-      axios.post(
-        `https://json.freeastrologyapi.com/${ep}`,
-        {
-          year,
-          month,
-          date,
-          hours,
-          minutes,
-          seconds,
-          latitude,
-          longitude,
-          timezone,
-          config: {
-            observation_point: "topocentric",
-            ayanamsha: "lahiri",
-          },
+    const { date, lat, lon, tz, lang, time } = req.body;
+
+    const url = `https://api.vedicastroapi.com/v3-json/panchang/panchang?api_key=c40a760e-bf73-5dc3-9a08-7b603409bdb5&date=${encodeURIComponent(date)}&lat=${lat}&lon=${lon}&tz=${tz}&time=${time}&lang=${lang}`;
+
+    const { data } = await axios.get(url);
+
+    if (data?.status === 200 && data.response) {
+      const r = data.response;
+      const extracted = {
+        day: r.day?.name,
+        date: r.date,
+
+        // Tithi with start & end
+        tithi: {
+          name: r.tithi?.name,
+          type: r.tithi?.type,
+          start: r.tithi?.start,
+          end: r.tithi?.end,
+          meaning: r.tithi?.meaning,
+          special: r.tithi?.special,
+            diety: r.tithi?.diety, // ✅ add this
         },
-        {
-          headers: {
-            "Content-Type": "application/json",
-            "x-api-key": process.env.ASTRO_API_KEY,
-          },
-        }
-      )
-    );
 
-    const results = await Promise.all(promises);
-    const data = {};
-    endpoints.forEach((ep, idx) => {
-      data[ep] = results[idx].data;
-    });
+        // Nakshatra with start & end
+        nakshatra: {
+          name: r.nakshatra?.name,
+          lord: r.nakshatra?.lord,
+           diety: r.nakshatra?.diety,
+          start: r.nakshatra?.start,
+          end: r.nakshatra?.end,
+          meaning: r.nakshatra?.meaning,
+          special: r.nakshatra?.special,
+        },
 
-    res.json(data);
+        // Karana
+        karana: {
+          name: r.karana?.name,
+          type: r.karana?.type,
+          start: r.karana?.start,
+          end: r.karana?.end,
+          special: r.karana?.special,
+        },
+
+        // Yoga
+        yoga: {
+          name: r.yoga?.name,
+          start: r.yoga?.start,
+          end: r.yoga?.end,
+          meaning: r.yoga?.meaning,
+          special: r.yoga?.special,
+        },
+
+        // Month & Sun/Moon times
+        masa: `${r.advanced_details?.masa?.amanta_name} / ${r.advanced_details?.masa?.purnimanta_name}`,
+        paksha: r.advanced_details?.masa?.paksha,
+        sunrise: r.advanced_details?.sun_rise,
+        sunset: r.advanced_details?.sun_set,
+        moonrise: r.advanced_details?.moon_rise,
+        moonset: r.advanced_details?.moon_set,
+      };
+
+      return res.json(extracted);
+    } else {
+      return res.status(400).json({ error: "Invalid API response", raw: data });
+    }
   } catch (err) {
-    console.error("Error fetching Panchang:", err.message || err);
-    res.status(500).json({ error: "Failed to fetch full Panchang" });
+    console.error("❌ Panchang API error:", err.response?.data || err.message);
+    return res.status(500).json({ error: "Failed to fetch Panchang", details: err.message });
   }
 });
 
