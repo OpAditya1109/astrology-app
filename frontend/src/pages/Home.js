@@ -35,32 +35,34 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-gray-50 text-gray-800">
-      {/* Hero Banner */}
-      <section className="bg-gradient-to-r from-yellow-300 via-yellow-100 to-yellow-300 rounded-md shadow-md flex flex-col md:flex-row items-center p-4 md:p-8">
-        <div className="flex-shrink-0 mb-4 md:mb-0 md:mr-6">
-          <img
-            src={astrologerImg}
-            alt="Astrologer"
-            className="w-48 md:w-64 lg:w-72 rounded-full shadow-md"
-          />
-        </div>
 
-        <div className="text-center md:text-left">
-          <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-gray-900">
-            <span className="text-orange-600">Astro Bhavana</span> – Trusted by{" "}
-            <span className="text-black">25,000+ Families</span>
-          </h2>
-          <p className="text-base md:text-lg lg:text-xl text-gray-700 mt-2 mb-4">
-            Chat with our top astrologers for guidance and solutions.
-          </p>
-          <Link
-            to="/login"
-            className="px-6 py-2 bg-black text-white rounded-full hover:bg-gray-800 transition shadow-md inline-block text-base md:text-lg"
-          >
-            Chat Now
-          </Link>
-        </div>
-      </section>
+   
+<section className="bg-gradient-to-r from-yellow-300 via-yellow-100 to-yellow-300 rounded-md shadow-md flex flex-col md:flex-row items-center justify-center text-center p-6 md:p-12">
+  <div className="flex-shrink-0 mb-6 md:mb-0 md:mr-8">
+    <img
+      src={astrologerImg}
+      alt="Astrologer"
+      className="w-48 md:w-64 lg:w-72 rounded-full "
+    />
+  </div>
+
+  <div className="max-w-2xl">
+    <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-gray-900">
+      <span className="text-orange-600">Astro Bhavana</span> – Trusted by{" "}
+      <span className="text-black">25,000+ Families</span>
+    </h2>
+    <p className="text-base md:text-lg lg:text-xl text-gray-700 mt-3 mb-6">
+      Chat with our top astrologers for guidance and solutions.
+    </p>
+    <Link
+      to="/login"
+      className="px-8 py-3 bg-black text-white rounded-full hover:bg-gray-800 transition shadow-md text-base md:text-lg"
+    >
+      Chat Now
+    </Link>
+  </div>
+</section>
+
 
       <PanchangCard />
 

@@ -26,6 +26,7 @@ import PrivacyPolicy from "./pages/PrivacyPolicy";
 import Disclaimer from "./pages/Disclaimer";
 import PricingPolicy from "./pages/PricingPolicy";
 import DailyHoroscopes from "./pages/Horoscopes";
+import Aboutus from "./pages/About"
 function App() {
   return (
     <Router>
@@ -74,7 +75,7 @@ function App() {
 
           {/* Astrochat */}
           <Route path="/astrochat" element={<Astrochat />} />
-
+          <Route path="/aboutus" element={<Aboutus />} />
           <Route path="/Horoscopes" element={<DailyHoroscopes />} />
           <Route path="/refund-cancellation" element={<RefundCancellation />} />
           <Route path="/terms-conditions" element={<TermsConditions />} />
