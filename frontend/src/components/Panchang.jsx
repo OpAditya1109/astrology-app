@@ -37,7 +37,7 @@ export default function Panchang() {
         const currentDate = `${dd}/${mm}/${yyyy}`;
         const currentTime = `${hours}:${minutes}`;
 
-        const { data } = await axios.post("http://localhost:5000/api/panchang", {
+        const { data } = await axios.post("https://bhavanaastro.onrender.com/api/panchang", {
           date: currentDate,
           lat: "18.9582",
           lon: "72.8321",

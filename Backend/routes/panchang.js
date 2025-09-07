@@ -7,7 +7,8 @@ router.post("/panchang", async (req, res) => {
   try {
     const { date, lat, lon, tz, lang, time } = req.body;
 
-    const url = `https://api.vedicastroapi.com/v3-json/panchang/panchang?api_key=c40a760e-bf73-5dc3-9a08-7b603409bdb5&date=${encodeURIComponent(date)}&lat=${lat}&lon=${lon}&tz=${tz}&time=${time}&lang=${lang}`;
+    const apiKey = process.env.VEDIC_ASTRO_API_KEY; // ✅ use env variable
+    const url = `https://api.vedicastroapi.com/v3-json/panchang/panchang?api_key=${apiKey}&date=${encodeURIComponent(date)}&lat=${lat}&lon=${lon}&tz=${tz}&time=${time}&lang=${lang}`;
 
     const { data } = await axios.get(url);
 
@@ -17,7 +18,6 @@ router.post("/panchang", async (req, res) => {
         day: r.day?.name,
         date: r.date,
 
-        // Tithi with start & end
         tithi: {
           name: r.tithi?.name,
           type: r.tithi?.type,
@@ -25,21 +25,19 @@ router.post("/panchang", async (req, res) => {
           end: r.tithi?.end,
           meaning: r.tithi?.meaning,
           special: r.tithi?.special,
-            diety: r.tithi?.diety, // ✅ add this
+          diety: r.tithi?.diety,
         },
 
-        // Nakshatra with start & end
         nakshatra: {
           name: r.nakshatra?.name,
           lord: r.nakshatra?.lord,
-           diety: r.nakshatra?.diety,
+          diety: r.nakshatra?.diety,
           start: r.nakshatra?.start,
           end: r.nakshatra?.end,
           meaning: r.nakshatra?.meaning,
           special: r.nakshatra?.special,
         },
 
-        // Karana
         karana: {
           name: r.karana?.name,
           type: r.karana?.type,
@@ -48,7 +46,6 @@ router.post("/panchang", async (req, res) => {
           special: r.karana?.special,
         },
 
-        // Yoga
         yoga: {
           name: r.yoga?.name,
           start: r.yoga?.start,
@@ -57,7 +54,6 @@ router.post("/panchang", async (req, res) => {
           special: r.yoga?.special,
         },
 
-        // Month & Sun/Moon times
         masa: `${r.advanced_details?.masa?.amanta_name} / ${r.advanced_details?.masa?.purnimanta_name}`,
         paksha: r.advanced_details?.masa?.paksha,
         sunrise: r.advanced_details?.sun_rise,
