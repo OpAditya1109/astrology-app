@@ -6,33 +6,38 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-gray-50 text-gray-800">
       {/* Hero Banner */}
-     <section className="relative h-[320px] md:h-[280px] bg-gradient-to-r from-yellow-300 via-yellow-100 to-yellow-300 flex items-center justify-center rounded-md shadow-md overflow-hidden">
-  {/* Text Content */}
-  <div className="relative z-10 text-center md:text-left max-w-3xl px-6">
-    <h2 className="text-3xl md:text-4xl font-bold mb-4 text-gray-800">
-<span className="text-orange-600">Astro Bhavana</span> – Trusted by 25,000+ Families
+<section className="bg-gradient-to-r from-yellow-300 via-yellow-100 to-yellow-300 rounded-md shadow-md flex items-center p-6 md:p-8">
+  
+  {/* Astrologer Image */}
+  <div className="flex-shrink-0 mr-6">
+    <img
+      src={astrologerImg}
+      alt="Astrologer"
+      className="w-28 md:w-36 lg:w-40"
+    />
+  </div>
 
+  {/* Text + Button */}
+  <div>
+    <h2 className="text-xl md:text-2xl font-bold text-gray-900">
+      <span className="text-orange-600">Astro Bhavana</span> – Trusted by{" "}
+      <span className="text-black">25,000+ Families</span>
     </h2>
-    <p className="text-lg text-gray-700 mb-6">
+    <p className="text-base md:text-lg text-gray-700 mt-2 mb-4">
       Chat with our top astrologers for guidance and solutions.
     </p>
     <Link
-      to="/login"
-      className="px-6 py-3 bg-black text-white rounded-full hover:bg-gray-800 transition shadow-lg"
+      to="/chat"
+      className="px-5 py-2 bg-black text-white rounded-full hover:bg-gray-800 transition shadow-md inline-block"
     >
       Chat Now
     </Link>
   </div>
-
-  {/* Astrologer Image at Bottom */}
-  <div className="absolute bottom-0 left-4 md:left-12">
-    <img
-      src={astrologerImg}
-      alt="Astrologer"
-      className="w-40 md:w-52 lg:w-64"
-    />
-  </div>
 </section>
+
+
+
+
 
 
       <PanchangCard />
