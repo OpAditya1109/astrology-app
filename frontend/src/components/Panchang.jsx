@@ -73,7 +73,7 @@ export default function Panchang() {
       {/* Date */}
       <div className="text-center border-b p-3">
         <p className="font-semibold text-base">
-          {panchang?.day?.name}, {panchang?.date}
+          {panchang?.day?.name}{panchang?.date}
         </p>
       </div>
 
