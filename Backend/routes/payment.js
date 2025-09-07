@@ -238,7 +238,7 @@ router.get('/status/:orderId', async (req, res) => {
       await transaction.save();
 
       // ✅ Credit wallet only once
-      await creditWalletOnce(transaction.userId, transaction.amount, transaction.paymentId);
+      // await creditWalletOnce(transaction.userId, transaction.amount, transaction.paymentId);
     } else if (cfStatus === 'FAILED') {
       transaction.status = 'failed';
       await transaction.save();

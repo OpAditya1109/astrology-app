@@ -3,6 +3,7 @@
     "@huggingface/inference": "^4.7.1",
     "astronomia": "^4.2.0",
     "axios": "^1.11.0",
+    "aztro-js": "^0.1.5",
     "bcryptjs": "^3.0.2",
     "body-parser": "^2.2.0",
     "cashfree-pg": "^5.0.8",

@@ -30,7 +30,8 @@ app.use("/api/ai-astrologer", require("./routes/aiRoutes"));
 app.use("/api", panchangRoutes);
 app.use("/api/wallet", require("./routes/payment"));
 app.use("/api/chatbot", chatbotRoutes);
-
+const horoscopeRoutes = require("./routes/horoscope");
+app.use("/api/horoscope", horoscopeRoutes);
 // --- Create HTTP server ---
 const server = http.createServer(app);
 

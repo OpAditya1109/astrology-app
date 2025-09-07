@@ -25,7 +25,7 @@ import TermsConditions from "./pages/TermsConditions";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import Disclaimer from "./pages/Disclaimer";
 import PricingPolicy from "./pages/PricingPolicy";
-
+import DailyHoroscopes from "./pages/Horoscopes";
 function App() {
   return (
     <Router>
@@ -48,7 +48,10 @@ function App() {
           <Route path="/user/consultancy" element={<UserConsultancy />} />
 
           {/* Astrologer Dashboard */}
-          <Route path="/astrologer/dashboard" element={<AstrologerDashboard />} />
+          <Route
+            path="/astrologer/dashboard"
+            element={<AstrologerDashboard />}
+          />
           <Route
             path="/astrologer/dashboard/consultations"
             element={<AstrologerConsultations />}
@@ -56,7 +59,10 @@ function App() {
 
           {/* Chat & Video */}
           <Route path="/chat/:consultationId" element={<ChatPage />} />
-          <Route path="/astrologer/chat/:consultationId" element={<AstrologerChat />} />
+          <Route
+            path="/astrologer/chat/:consultationId"
+            element={<AstrologerChat />}
+          />
           <Route path="/video-call/:consultationId" element={<VideoCall />} />
 
           {/* AI & Matchmaking */}
@@ -69,13 +75,12 @@ function App() {
           {/* Astrochat */}
           <Route path="/astrochat" element={<Astrochat />} />
 
-
-          
-<Route path="/refund-cancellation" element={<RefundCancellation />} />
-<Route path="/terms-conditions" element={<TermsConditions />} />
-<Route path="/privacy-policy" element={<PrivacyPolicy />} />
-<Route path="/disclaimer" element={<Disclaimer />} />
-<Route path="/pricing-policy" element={<PricingPolicy />} />
+          <Route path="/Horoscopes" element={<DailyHoroscopes />} />
+          <Route path="/refund-cancellation" element={<RefundCancellation />} />
+          <Route path="/terms-conditions" element={<TermsConditions />} />
+          <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+          <Route path="/disclaimer" element={<Disclaimer />} />
+          <Route path="/pricing-policy" element={<PricingPolicy />} />
         </Routes>
       </Layout>
     </Router>
