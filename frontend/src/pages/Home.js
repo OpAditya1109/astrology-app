@@ -27,7 +27,7 @@ export default function Home() {
       Chat with our top astrologers for guidance and solutions.
     </p>
     <Link
-      to="/chat"
+      to="/login"
       className="px-5 py-2 bg-black text-white rounded-full hover:bg-gray-800 transition shadow-md inline-block"
     >
       Chat Now
