@@ -27,7 +27,7 @@ export default function Panchang() {
     const fetchPanchang = async () => {
       try {
         // Now backend serves today's Panchang from DB
-        const { data } = await axios.get("https://bhavanaastro.onrender.com/api/panchang/today");
+        const { data } = await axios.get("https://bhavanaastro.onrender.com/api/panchang");
         setPanchang(data);
       } catch (err) {
         console.error(err);
