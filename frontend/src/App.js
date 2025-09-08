@@ -27,6 +27,7 @@ import Disclaimer from "./pages/Disclaimer";
 import PricingPolicy from "./pages/PricingPolicy";
 import DailyHoroscopes from "./pages/Horoscopes";
 import Aboutus from "./pages/About"
+import BraceletPage from "./pages/BraceletPage"
 function App() {
   return (
     <Router>
@@ -82,6 +83,9 @@ function App() {
           <Route path="/privacy-policy" element={<PrivacyPolicy />} />
           <Route path="/disclaimer" element={<Disclaimer />} />
           <Route path="/pricing-policy" element={<PricingPolicy />} />
+
+
+          <Route path="/shop/bracelet" element={<BraceletPage />}/>
         </Routes>
       </Layout>
     </Router>

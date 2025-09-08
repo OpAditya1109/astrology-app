@@ -23,7 +23,7 @@ router.get("/panchang", async (req, res) => {
     const lon = "72.8321";
     const tz = 5.5;
     const time = `${now.getHours()}:${now.getMinutes()}`;
-    const lang = "en";
+    const lang = "hi";
     const apiKey = process.env.VEDIC_ASTRO_API_KEY;
     const url = `https://api.vedicastroapi.com/v3-json/panchang/panchang?api_key=${apiKey}&date=${dd}/${mm}/${yyyy}&lat=${lat}&lon=${lon}&tz=${tz}&time=${time}&lang=${lang}`;
 

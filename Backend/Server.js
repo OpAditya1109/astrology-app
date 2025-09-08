@@ -9,7 +9,7 @@ const Astrologer = require("./models/Astrologer");
 const { getAstrologyResponse } = require("./api/astrology");
 const panchangRoutes = require("./routes/panchang");
 const chatbotRoutes = require("./routes/chatbotRoutes");
-
+require("./cron/panchangCorn");
 dotenv.config();
 connectDB();
 
