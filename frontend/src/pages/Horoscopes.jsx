@@ -6,6 +6,14 @@ export default function DailyHoroscopes() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // get today's date
+  const today = new Date().toLocaleDateString("en-IN", {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+
   useEffect(() => {
     const fetchHoroscopes = async () => {
       try {
@@ -33,7 +41,9 @@ export default function DailyHoroscopes() {
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-6">
-      <h2 className="text-3xl font-bold text-center text-purple-700 mb-6">🌟 Daily Horoscopes</h2>
+      <h2 className="text-3xl font-bold text-center text-purple-700 mb-2">🌟 Daily Horoscopes</h2>
+      <p className="text-center text-gray-600 mb-6">{today}</p>
+
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {horoscopes.map(({ sign, horoscope }) => (
           <div
