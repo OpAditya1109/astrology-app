@@ -6,11 +6,15 @@ const router = express.Router();
 
 router.get("/panchang", async (req, res) => {
   try {
-    const now = new Date();
-    const dd = String(now.getDate()).padStart(2, "0");
-    const mm = String(now.getMonth() + 1).padStart(2, "0");
-    const yyyy = now.getFullYear();
-    const dateKey = `${yyyy}-${mm}-${dd}`;
+   // Get IST time instead of UTC
+const now = new Date();
+const istOffset = 5.5 * 60 * 60 * 1000; // +05:30 in ms
+const istTime = new Date(now.getTime() + istOffset);
+
+const dd = String(istTime.getDate()).padStart(2, "0");
+const mm = String(istTime.getMonth() + 1).padStart(2, "0");
+const yyyy = istTime.getFullYear();
+const dateKey = `${yyyy}-${mm}-${dd}`;
 
     // Check if Panchang is already in DB
     let cached = await Panchang.findOne({ date: dateKey });
