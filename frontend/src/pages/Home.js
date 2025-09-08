@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import PanchangCard from "../components/Panchang";
-import astrologerImg from "../assets/astrologer.png";
+import astrologerImg from "../assets/astrologerm.png";
 
 // Heroicons
 import { DocumentIcon, CalendarIcon, ChatBubbleLeftRightIcon, HeartIcon } from "@heroicons/react/24/outline";
