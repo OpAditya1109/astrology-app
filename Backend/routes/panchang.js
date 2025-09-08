@@ -4,7 +4,7 @@ const axios = require("axios");
 const Panchang = require("../models/Panchang");
 const router = express.Router();
 
-router.get("/", async (req, res) => {
+router.get("/panchang", async (req, res) => {
   try {
     const now = new Date();
     const dd = String(now.getDate()).padStart(2, "0");
