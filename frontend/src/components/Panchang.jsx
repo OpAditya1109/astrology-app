@@ -26,7 +26,6 @@ export default function Panchang() {
   useEffect(() => {
     const fetchPanchang = async () => {
       try {
-        // Now backend serves today's Panchang from DB
         const { data } = await axios.get("https://bhavanaastro.onrender.com/api/panchang");
         setPanchang(data);
       } catch (err) {
@@ -40,15 +39,18 @@ export default function Panchang() {
     fetchPanchang();
   }, []);
 
-  if (loading)
+  if (loading) {
     return <p className="text-center mt-2 text-gray-500 text-sm">Loading...</p>;
-  if (error)
+  }
+
+  if (error) {
     return <p className="text-center mt-2 text-red-500 text-sm">{error}</p>;
+  }
 
   const formatTime = (time) => time || "N/A";
 
   return (
-    <div className="max-w-sm mx-auto bg-white shadow-md rounded overflow-hidden text-base border">
+    <div className="max-w-lg mx-auto bg-white shadow-md rounded overflow-hidden text-base border">
       {/* Header */}
       <div className="bg-purple-700 text-white text-center p-4 border-b">
         <h2 className="font-bold text-lg">Today's Panchang</h2>

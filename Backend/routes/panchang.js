@@ -47,6 +47,7 @@ router.get("/panchang", async (req, res) => {
 
       // Save to DB
       await Panchang.create({ date: dateKey, lat, lon, tz, lang, data: extracted });
+console.log("Serving Panchang:", cached?.data);
 
       return res.json(extracted);
     } else {
