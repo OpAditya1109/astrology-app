@@ -9,7 +9,7 @@ export default function DailyHoroscopes() {
   useEffect(() => {
     const fetchHoroscopes = async () => {
       try {
-        const { data } = await axios.get("http://localhost:5000/api/horoscope/all");
+        const { data } = await axios.get("https://bhavanaastro.onrender.com/api/horoscope/all");
 
         const horoArray = Object.keys(data).map((sign) => ({
           sign,
