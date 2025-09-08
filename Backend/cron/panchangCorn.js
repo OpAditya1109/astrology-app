@@ -1,10 +1,9 @@
-// routes/panchang.js
-const express = require("express");
+// cron/panchangCron.js
+const cron = require("node-cron");
 const axios = require("axios");
 const Panchang = require("../models/Panchang");
-const router = express.Router();
 
-router.get("/", async (req, res) => {
+cron.schedule("1 0 * * *", async () => { // Runs daily at 00:01
   try {
     const now = new Date();
     const dd = String(now.getDate()).padStart(2, "0");
@@ -12,17 +11,14 @@ router.get("/", async (req, res) => {
     const yyyy = now.getFullYear();
     const dateKey = `${yyyy}-${mm}-${dd}`;
 
-    // Check if Panchang is already in DB
-    let cached = await Panchang.findOne({ date: dateKey });
-    if (cached) {
-      return res.json(cached.data);
-    }
+    // Avoid duplicate fetch
+    const exists = await Panchang.findOne({ date: dateKey });
+    if (exists) return;
 
-    // If not cached, fetch from API
-    const lat = "18.9582"; // Default Mumbai
+    const lat = "18.9582";
     const lon = "72.8321";
     const tz = 5.5;
-    const time = `${now.getHours()}:${now.getMinutes()}`;
+    const time = "00:01";
     const lang = "en";
     const apiKey = process.env.VEDIC_ASTRO_API_KEY;
     const url = `https://api.vedicastroapi.com/v3-json/panchang/panchang?api_key=${apiKey}&date=${dd}/${mm}/${yyyy}&lat=${lat}&lon=${lon}&tz=${tz}&time=${time}&lang=${lang}`;
@@ -45,17 +41,10 @@ router.get("/", async (req, res) => {
         moonset: r.advanced_details?.moon_set,
       };
 
-      // Save to DB
       await Panchang.create({ date: dateKey, lat, lon, tz, lang, data: extracted });
-
-      return res.json(extracted);
-    } else {
-      return res.status(400).json({ error: "Invalid API response" });
+      console.log("✅ Panchang cached for today");
     }
   } catch (err) {
-    console.error("❌ Panchang API error:", err.response?.data || err.message);
-    return res.status(500).json({ error: "Failed to fetch Panchang", details: err.message });
+    console.error("❌ Cron Panchang fetch failed:", err.message);
   }
 });
-
-module.exports = router;
