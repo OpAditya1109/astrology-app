@@ -18,7 +18,6 @@ function Row({ label, children }) {
   );
 }
 
-
 export default function Panchang() {
   const [panchang, setPanchang] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -27,27 +26,11 @@ export default function Panchang() {
   useEffect(() => {
     const fetchPanchang = async () => {
       try {
-        const now = new Date();
-        const dd = String(now.getDate()).padStart(2, "0");
-        const mm = String(now.getMonth() + 1).padStart(2, "0");
-        const yyyy = now.getFullYear();
-        const hours = String(now.getHours()).padStart(2, "0");
-        const minutes = String(now.getMinutes()).padStart(2, "0");
-
-        const currentDate = `${dd}/${mm}/${yyyy}`;
-        const currentTime = `${hours}:${minutes}`;
-
-        const { data } = await axios.post("https://bhavanaastro.onrender.com/api/panchang", {
-          date: currentDate,
-          lat: "18.9582",
-          lon: "72.8321",
-          tz: 5.5,
-          time: currentTime,
-          lang: "en",
-        });
-
+        // Now backend serves today's Panchang from DB
+        const { data } = await axios.get("https://bhavanaastro.onrender.com/api/panchang/today");
         setPanchang(data);
       } catch (err) {
+        console.error(err);
         setError("Failed to fetch Panchang");
       } finally {
         setLoading(false);
@@ -62,6 +45,8 @@ export default function Panchang() {
   if (error)
     return <p className="text-center mt-2 text-red-500 text-sm">{error}</p>;
 
+  const formatTime = (time) => time || "N/A";
+
   return (
     <div className="max-w-sm mx-auto bg-white shadow-md rounded overflow-hidden text-base border">
       {/* Header */}
@@ -73,7 +58,7 @@ export default function Panchang() {
       {/* Date */}
       <div className="text-center border-b p-3">
         <p className="font-semibold text-base">
-          {panchang?.day?.name}{panchang?.date}
+          {panchang?.day} {panchang?.date}
         </p>
       </div>
 
@@ -81,19 +66,19 @@ export default function Panchang() {
       <div className="grid grid-cols-2 text-center text-base border-b">
         <div className="p-3 border-r">
           🌅 Sunrise <br />
-          <BorderedText text={panchang?.sunrise || "N/A"} />
+          <BorderedText text={formatTime(panchang?.sunrise)} />
         </div>
         <div className="p-3">
           🌇 Sunset <br />
-          <BorderedText text={panchang?.sunset || "N/A"} />
+          <BorderedText text={formatTime(panchang?.sunset)} />
         </div>
         <div className="p-3 border-r border-t">
           🌙 Moonrise <br />
-          <BorderedText text={panchang?.moonrise || "N/A"} />
+          <BorderedText text={formatTime(panchang?.moonrise)} />
         </div>
         <div className="p-3 border-t">
           🌌 Moonset <br />
-          <BorderedText text={panchang?.moonset || "N/A"} />
+          <BorderedText text={formatTime(panchang?.moonset)} />
         </div>
       </div>
 
@@ -103,41 +88,39 @@ export default function Panchang() {
         <span>Purnimanta: {panchang?.masa?.split(" / ")[1] || "N/A"}</span>
       </Row>
 
-   
-
       {/* Tithi */}
       {panchang?.tithi && (
         <Row label="Tithi">
-          <BorderedText text={panchang.tithi?.name} />
+          <BorderedText text={panchang.tithi.name} />
           <span>till</span>
-          <BorderedText text={panchang.tithi?.end} />
+          <BorderedText text={formatTime(panchang.tithi.end)} />
         </Row>
       )}
 
       {/* Nakshatra */}
       {panchang?.nakshatra && (
         <Row label="Nakshatra">
-          <BorderedText text={panchang.nakshatra?.name} />
+          <BorderedText text={panchang.nakshatra.name} />
           <span>till</span>
-          <BorderedText text={panchang.nakshatra?.end} />
+          <BorderedText text={formatTime(panchang.nakshatra.end)} />
         </Row>
       )}
 
       {/* Yog */}
-      {panchang?.yog && (
+      {panchang?.yoga && (
         <Row label="Yog">
-          <BorderedText text={panchang.yog?.name} />
+          <BorderedText text={panchang.yoga.name} />
           <span>till</span>
-          <BorderedText text={panchang.yog?.end} />
+          <BorderedText text={formatTime(panchang.yoga.end)} />
         </Row>
       )}
 
       {/* Karan */}
-      {panchang?.karan && (
+      {panchang?.karana && (
         <Row label="Karan">
-          <BorderedText text={panchang.karan?.name} />
+          <BorderedText text={panchang.karana.name} />
           <span>till</span>
-          <BorderedText text={panchang.karan?.end} />
+          <BorderedText text={formatTime(panchang.karana.end)} />
         </Row>
       )}
     </div>

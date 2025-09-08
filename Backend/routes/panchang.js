@@ -1,5 +1,7 @@
+// routes/panchang.js
 const express = require("express");
 const axios = require("axios");
+const Panchang = require("../models/Panchang");
 
 const router = express.Router();
 
@@ -7,13 +9,28 @@ router.post("/panchang", async (req, res) => {
   try {
     const { date, lat, lon, tz, lang, time } = req.body;
 
-    const apiKey = process.env.VEDIC_ASTRO_API_KEY; // ✅ use env variable
+    if (!date || !lat || !lon) {
+      return res.status(400).json({ error: "Missing required parameters: date, lat, lon" });
+    }
+
+    const [dd, mm, yyyy] = date.split("/");
+    const dateKey = `${yyyy}-${mm}-${dd}`;
+
+    // Check if Panchang is already in DB
+    let cached = await Panchang.findOne({ date: dateKey });
+    if (cached) {
+      return res.json(cached.data); // Return cached Panchang
+    }
+
+    // Fetch from external API
+    const apiKey = process.env.VEDIC_ASTRO_API_KEY;
     const url = `https://api.vedicastroapi.com/v3-json/panchang/panchang?api_key=${apiKey}&date=${encodeURIComponent(date)}&lat=${lat}&lon=${lon}&tz=${tz}&time=${time}&lang=${lang}`;
 
     const { data } = await axios.get(url);
 
     if (data?.status === 200 && data.response) {
       const r = data.response;
+
       const extracted = {
         day: r.day?.name,
         date: r.date,
@@ -61,6 +78,16 @@ router.post("/panchang", async (req, res) => {
         moonrise: r.advanced_details?.moon_rise,
         moonset: r.advanced_details?.moon_set,
       };
+
+      // Save to DB for caching
+      await Panchang.create({
+        date: dateKey,
+        lat,
+        lon,
+        tz,
+        lang,
+        data: extracted,
+      });
 
       return res.json(extracted);
     } else {
