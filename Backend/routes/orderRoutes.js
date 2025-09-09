@@ -116,6 +116,45 @@ router.post("/verify", async (req, res) => {
     res.status(500).json({ message: "Failed to verify order", error: error.message });
   }
 });
+router.post("/retry-payment", async (req, res) => {
+  try {
+    const { orderId } = req.body;
+    const order = await Order.findOne({ orderId });
+    if (!order) return res.status(404).json({ message: "Order not found" });
+
+    if (order.status === "paid") {
+      return res.status(400).json({ message: "Order already paid" });
+    }
+
+    const orderData = {
+      order_amount: order.amount,
+      order_currency: "INR",
+      order_id: order.orderId,
+      customer_details: {
+        customer_id: `USER_${order.userId}`,
+        customer_phone: order.phone,
+        customer_name: order.name,
+        customer_email: order.email,
+      },
+      order_meta: {
+        return_url: `https://www.astrobhavana.com/order-success?order_id=${order.orderId}`,
+        notify_url: `https://bhavanaastro.onrender.com/api/orders/webhook`,
+      },
+    };
+
+    const cfResponse = await cashfree.PGCreateOrder(orderData);
+
+    if (cfResponse.data.payment_session_id) {
+      res.json({ paymentSessionId: cfResponse.data.payment_session_id });
+    } else {
+      throw new Error("Failed to create payment session");
+    }
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Failed to retry payment", error: error.message });
+  }
+});
+
 
 // ---------------- WEBHOOK ----------------
 router.post("/webhook", async (req, res) => {
