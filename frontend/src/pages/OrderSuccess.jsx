@@ -1,24 +1,39 @@
 import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import axios from "axios";
 
 const OrderSuccess = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [order, setOrder] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Get order details from location state (passed from checkout/order page)
-    if (location.state && location.state.order) {
-      setOrder(location.state.order);
-    } else {
-      // If no order info, redirect to home
-      navigate("/", { replace: true });
-    }
-  }, [location, navigate]);
+    const query = new URLSearchParams(location.search);
+    const order_id = query.get("order_id");
 
-  if (!order) {
-    return null; // or a loader
-  }
+    if (!order_id) {
+      navigate("/", { replace: true });
+      return;
+    }
+
+    const fetchOrder = async () => {
+      try {
+        const res = await axios.post("https://bhavanaastro.onrender.com/api/orders/verify", { orderId: order_id });
+        setOrder(res.data.order);
+      } catch (err) {
+        console.error(err);
+        navigate("/", { replace: true });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchOrder();
+  }, [location.search, navigate]);
+
+  if (loading) return <p className="text-center mt-10">Loading...</p>;
+  if (!order) return null;
 
   return (
     <div className="max-w-2xl mx-auto mt-10 p-6 bg-white shadow-lg rounded-xl">

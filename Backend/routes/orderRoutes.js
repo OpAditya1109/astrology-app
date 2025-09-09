@@ -65,8 +65,9 @@ router.post("/create-order", async (req, res) => {
         customer_email: email,
       },
       order_meta: {
-        return_url: `https://www.astrobhavana.com/order-success?order_id=${orderId}`,
-        notify_url: `https://yourbackend.com/api/orders/webhook`,
+    return_url: `https://www.astrobhavana.com/order-success?order_id=${orderId}`,
+
+        notify_url: `https://bhavanaastro.onrender.com/api/orders/webhook`,
       },
     };
 
