@@ -35,6 +35,7 @@ import RudrakshaPage from "./pages/RudrakshaPage"
 import MalaPage from "./pages/MalaPage"
 import GemstonePage from "./pages/GemstonePage"
 import YantraPage from "./pages/YantraPage"
+import MiscPage from "./pages/MiscPage"
 function App() {
   return (
     <Router>
@@ -96,7 +97,9 @@ function App() {
           <Route path="/shop/rudraksha" element={<RudrakshaPage />} />
 <Route path="/shop/mala" element={<MalaPage />} />
 <Route path="/shop/gemstone" element={<GemstonePage />} />
-<Route path="/yantra" element={<YantraPage />} />
+<Route path="/shop/yantra" element={<YantraPage />} />
+<Route path="/shop/misc" element={<MiscPage />} />
+
 
 
             <Route path="/product/:id" element={<ProductDetail />} />
