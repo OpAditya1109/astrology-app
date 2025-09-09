@@ -30,6 +30,7 @@ import Aboutus from "./pages/About"
 import BraceletPage from "./pages/BraceletPage"
 import ProductDetail from "./pages/ProductDetail";
 import Checkout from "./pages/Checkout";
+import OrderSuccess from "./pages/OrderSuccess";
 function App() {
   return (
     <Router>
@@ -90,6 +91,7 @@ function App() {
           <Route path="/shop/bracelet" element={<BraceletPage />}/>
             <Route path="/product/:id" element={<ProductDetail />} />
                <Route path="/checkout/:id" element={<Checkout />} />
+                <Route path="/order-success" element={<OrderSuccess />} />
         </Routes>
       </Layout>
     </Router>

@@ -28,27 +28,44 @@ const mapStatus = (status) => {
 // ---------------- CREATE ORDER ----------------
 router.post("/create-order", async (req, res) => {
   try {
-    const { userId, productId, amount, name, email, phone } = req.body;
-    if (!userId || !productId || !amount)
+    const { userId, productId, amount, name, email, phone, address, city, state, pincode } = req.body;
+
+    if (!userId || !productId || !amount || !name || !email || !phone || !address || !city || !state || !pincode) {
       return res.status(400).json({ message: "Missing required fields" });
+    }
 
     const orderId = generateOrderId();
 
-    const order = new Order({ userId, productId, orderId, amount, status: "pending" });
+    // Save full order info in DB
+    const order = new Order({
+      userId,
+      productId,
+      orderId,
+      amount,
+      status: "pending",
+      name,
+      email,
+      phone,
+      address,
+      city,
+      state,
+      pincode,
+    });
     await order.save();
 
+    // Prepare Cashfree order
     const orderData = {
       order_amount: amount,
       order_currency: "INR",
       order_id: orderId,
       customer_details: {
         customer_id: `USER_${userId}`,
-        customer_phone: phone || "9999999999",
-        customer_name: name || "Test User",
-        customer_email: email || "test@example.com",
+        customer_phone: phone,
+        customer_name: name,
+        customer_email: email,
       },
       order_meta: {
-        return_url: `https://www.yourdomain.com/order-success?order_id=${orderId}`,
+        return_url: `https://www.astrobhavana.com/order-success?order_id=${orderId}`,
         notify_url: `https://yourbackend.com/api/orders/webhook`,
       },
     };
