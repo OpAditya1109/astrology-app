@@ -1,56 +1,68 @@
 import React from "react";
 
+import moneyMagnet from "../assets/product/Bracelets/money-magnet.webp";
+import roseQuartz from "../assets/product/Bracelets/rose-quartz.webp";
+import greenAventurine from "../assets/product/Bracelets/Green-Aventurine.jpg";
+import amethyst from "../assets/product/Bracelets/Amethyst-Bracelet.jpg";
+import sulemani from "../assets/product/Bracelets/Sulemani-Hakik.avif";
+import clearQuartz from "../assets/product/Bracelets/Clear-Quartz.jfif";
+import blackTourmaline from "../assets/product/Bracelets/Black-Tourmaline.jpg";
+import yellowTigerEye from "../assets/product/Bracelets/Yellow-TigerEye.jpg";
+
+
+
 export default function BraceletPage() {
-  const products = [
-    {
-      name: "Natural Money Magnet Stone Bracelet",
-      img: "/product/bracelets/money-magnet.webp",
-      price: "₹599",
-      desc: "Attracts wealth, prosperity, and abundance into your life.",
-    },
-    {
-      name: "Natural Rose Quartz Bracelet",
-      img: "/product/bracelets/rose-quartz.webp",
-      price: "₹599",
-      desc: "Stone of love, harmony, and emotional healing.",
-    },
-    {
-      name: "Green Aventurine Bracelet",
-      img: "/product/bracelets/Green-Aventurine.jpg",
-      price: "₹599",
-      desc: "Known as the stone of luck and opportunity.",
-    },
-    {
-      name: "Natural Amethyst Bracelet",
-      img: "/product/bracelets/Amethyst-Bracelet.jpg",
-      price: "₹599",
-      desc: "Promotes peace, calm, and spiritual awareness.",
-    },
-    {
-      name: "Natural Sulemani Hakik Bracelet",
-      img: "/product/bracelets/Sulemani-Hakik.avif",
-      price: "₹599",
-      desc: "Protects from negativity and balances energy.",
-    },
-    {
-      name: "Natural Clear Quartz (Spatic) Bracelet",
-      img: "/product/bracelets/Clear-Quartz.jfif",
-      price: "₹599",
-      desc: "Powerful healing stone, enhances clarity and focus.",
-    },
-    {
-      name: "Natural Black Tourmaline Bracelet",
-      img: "/product/bracelets/Black-Tourmaline.jpg",
-      price: "₹599",
-      desc: "Strong protection stone against negative energies.",
-    },
-    {
-      name: "Natural Yellow Tiger Eye Bracelet",
-      img: "/product/bracelets/Yellow-TigerEye.jpg",
-      price: "₹599",
-      desc: "Boosts confidence, courage, and decision making.",
-    },
-  ];
+const products = [
+  {
+    name: "Natural Money Magnet Stone Bracelet",
+    img: moneyMagnet,
+    price: "₹599",
+    desc: "Attracts wealth, prosperity, and abundance into your life.",
+  },
+  {
+    name: "Natural Rose Quartz Bracelet",
+    img: roseQuartz,
+    price: "₹599",
+    desc: "Stone of love, harmony, and emotional healing.",
+  },
+  {
+    name: "Green Aventurine Bracelet",
+    img: greenAventurine,
+    price: "₹599",
+    desc: "Known as the stone of luck and opportunity.",
+  },
+  {
+    name: "Natural Amethyst Bracelet",
+    img: amethyst,
+    price: "₹599",
+    desc: "Promotes peace, calm, and spiritual awareness.",
+  },
+  {
+    name: "Natural Sulemani Hakik Bracelet",
+    img: sulemani,
+    price: "₹599",
+    desc: "Protects from negativity and balances energy.",
+  },
+  {
+    name: "Natural Clear Quartz (Spatic) Bracelet",
+    img: clearQuartz,
+    price: "₹599",
+    desc: "Powerful healing stone, enhances clarity and focus.",
+  },
+  {
+    name: "Natural Black Tourmaline Bracelet",
+    img: blackTourmaline,
+    price: "₹599",
+    desc: "Strong protection stone against negative energies.",
+  },
+  {
+    name: "Natural Yellow Tiger Eye Bracelet",
+    img: yellowTigerEye,
+    price: "₹599",
+    desc: "Boosts confidence, courage, and decision making.",
+  },
+];
+
 
   return (
     <div className="min-h-screen bg-green-50 p-6">

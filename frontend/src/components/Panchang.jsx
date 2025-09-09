@@ -53,8 +53,8 @@ export default function Panchang() {
     <div className="max-w-lg mx-auto bg-white shadow-md rounded overflow-hidden text-base border">
       {/* Header */}
       <div className="bg-purple-700 text-white text-center p-4 border-b">
-        <h2 className="font-bold text-lg">Today's Panchang</h2>
-        <p className="text-sm mt-1">Mumbai, Maharashtra, India</p>
+        <h2 className="font-bold text-lg">आज का पंचांग</h2>
+        <p className="text-sm mt-1">मुंबई, महाराष्ट्र, भारत</p>
       </div>
 
       {/* Date */}
@@ -67,61 +67,61 @@ export default function Panchang() {
       {/* Sun & Moon Timings */}
       <div className="grid grid-cols-2 text-center text-base border-b">
         <div className="p-3 border-r">
-          🌅 Sunrise <br />
+          🌅 सूर्योदय <br />
           <BorderedText text={formatTime(panchang?.sunrise)} />
         </div>
         <div className="p-3">
-          🌇 Sunset <br />
+          🌇 सूर्यास्त <br />
           <BorderedText text={formatTime(panchang?.sunset)} />
         </div>
         <div className="p-3 border-r border-t">
-          🌙 Moonrise <br />
+          🌙 चन्द्र उदय <br />
           <BorderedText text={formatTime(panchang?.moonrise)} />
         </div>
         <div className="p-3 border-t">
-          🌌 Moonset <br />
+          🌌 चन्द्र अस्त <br />
           <BorderedText text={formatTime(panchang?.moonset)} />
         </div>
       </div>
 
       {/* Month */}
-      <Row label="Month">
-        <span>Amanta: {panchang?.masa?.split(" / ")[0] || "N/A"}</span>
-        <span>Purnimanta: {panchang?.masa?.split(" / ")[1] || "N/A"}</span>
+      <Row label="माह">
+        <span>अमांत: {panchang?.masa?.split(" / ")[0] || "N/A"}</span>
+        <span>पूर्णिमांत: {panchang?.masa?.split(" / ")[1] || "N/A"}</span>
       </Row>
 
       {/* Tithi */}
       {panchang?.tithi && (
-        <Row label="Tithi">
+        <Row label="तिथि">
           <BorderedText text={panchang.tithi.name} />
-          <span>till</span>
+          <span>तक</span>
           <BorderedText text={formatTime(panchang.tithi.end)} />
         </Row>
       )}
 
       {/* Nakshatra */}
       {panchang?.nakshatra && (
-        <Row label="Nakshatra">
+        <Row label="नक्षत्र">
           <BorderedText text={panchang.nakshatra.name} />
-          <span>till</span>
+          <span>तक</span>
           <BorderedText text={formatTime(panchang.nakshatra.end)} />
         </Row>
       )}
 
       {/* Yog */}
       {panchang?.yoga && (
-        <Row label="Yog">
+        <Row label="योग">
           <BorderedText text={panchang.yoga.name} />
-          <span>till</span>
+          <span>तक</span>
           <BorderedText text={formatTime(panchang.yoga.end)} />
         </Row>
       )}
 
       {/* Karan */}
       {panchang?.karana && (
-        <Row label="Karan">
+        <Row label="करण">
           <BorderedText text={panchang.karana.name} />
-          <span>till</span>
+          <span>तक</span>
           <BorderedText text={formatTime(panchang.karana.end)} />
         </Row>
       )}
