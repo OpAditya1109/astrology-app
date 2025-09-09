@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { load } from "@cashfreepayments/cashfree-js";
+import axios from "axios";
 
 const OrderPayment = () => {
   const navigate = useNavigate();
 
+  // Dummy product for sandbox
   const dummyProduct = {
     id: "PROD001",
     name: "Rose Quartz Bracelet",
@@ -21,11 +24,12 @@ const OrderPayment = () => {
     pincode: "",
   });
   const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState(false);
+  const [orderId, setOrderId] = useState(null);
+  const [status, setStatus] = useState(null);
   const [error, setError] = useState("");
   const [loginMessage, setLoginMessage] = useState("");
 
-  // Load user from sessionStorage
+  // Check user login status
   useEffect(() => {
     const storedUser = sessionStorage.getItem("user");
     if (storedUser) {
@@ -50,34 +54,63 @@ const OrderPayment = () => {
     setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError("");
-    setSuccess(false);
-
-    if (!formData.address || !formData.city || !formData.state || !formData.pincode) {
-      setError("Please fill all address fields");
+  const handlePayNow = async () => {
+    const { name, email, phone, address, city, state, pincode } = formData;
+    if (!name || !email || !phone || !address || !city || !state || !pincode) {
+      setError("Please fill all delivery details");
       return;
     }
+
+    setError("");
+    setStatus(null);
 
     try {
       setLoading(true);
 
-      console.log("Order submitted:", {
-        userId: user._id,
-        productId: dummyProduct.id,
-        amount: dummyProduct.price,
-        ...formData,
-      });
+      // Create order on backend
+      const res = await axios.post(
+        "https://bhavanaastro.onrender.com/api/orders/create-order",
+        {
+          userId: user._id, // Use logged-in user ID
+          productId: dummyProduct.id,
+          amount: dummyProduct.price,
+          name,
+          email,
+          phone,
+          address,
+          city,
+          state,
+          pincode,
+        }
+      );
 
-      // Simulate success response
-      setTimeout(() => {
-        setSuccess(true);
-        setLoading(false);
-      }, 1000);
+      const { orderId, paymentSessionId } = res.data;
+      setOrderId(orderId);
+
+      // Load Cashfree JS SDK and initiate checkout
+      const cashfree = await load({ mode: "production" });
+      await cashfree.checkout({ paymentSessionId, redirectTarget: "_self" });
     } catch (err) {
       console.error(err);
-      setError("Failed to submit order");
+      setError("Failed to initiate payment. Check backend or network.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerify = async () => {
+    if (!orderId) return;
+    try {
+      setLoading(true);
+      const res = await axios.post(
+        "https://bhavanaastro.onrender.com/api/orders/verify",
+        { orderId }
+      );
+      setStatus(res.data.orderStatus);
+    } catch (err) {
+      console.error(err);
+      setError("Failed to verify payment");
+    } finally {
       setLoading(false);
     }
   };
@@ -91,86 +124,86 @@ const OrderPayment = () => {
   }
 
   return (
-    <div className="max-w-lg mx-auto mt-6 p-6 bg-white shadow-xl rounded-2xl">
-      <h2 className="text-lg font-semibold mb-2">{dummyProduct.name}</h2>
+    <div className="max-w-lg mx-auto mt-6 p-6 bg-white shadow-xl rounded-2xl space-y-3">
+      <h2 className="text-lg font-semibold">{dummyProduct.name}</h2>
       <p className="text-xl font-bold mb-4">₹{dummyProduct.price}</p>
 
-      <form onSubmit={handleSubmit} className="space-y-3">
-        <input
-          type="text"
-          name="name"
-          placeholder="Name"
-          value={formData.name}
-          onChange={handleChange}
-          className="w-full p-2 border rounded"
-          required
-        />
-        <input
-          type="email"
-          name="email"
-          placeholder="Email"
-          value={formData.email}
-          onChange={handleChange}
-          className="w-full p-2 border rounded"
-          required
-        />
-        <input
-          type="text"
-          name="phone"
-          placeholder="Phone"
-          value={formData.phone}
-          onChange={handleChange}
-          className="w-full p-2 border rounded"
-          required
-        />
-        <input
-          type="text"
-          name="address"
-          placeholder="Address"
-          value={formData.address}
-          onChange={handleChange}
-          className="w-full p-2 border rounded"
-          required
-        />
-        <input
-          type="text"
-          name="city"
-          placeholder="City"
-          value={formData.city}
-          onChange={handleChange}
-          className="w-full p-2 border rounded"
-          required
-        />
-        <input
-          type="text"
-          name="state"
-          placeholder="State"
-          value={formData.state}
-          onChange={handleChange}
-          className="w-full p-2 border rounded"
-          required
-        />
-        <input
-          type="text"
-          name="pincode"
-          placeholder="Pincode"
-          value={formData.pincode}
-          onChange={handleChange}
-          className="w-full p-2 border rounded"
-          required
-        />
+      <input
+        type="text"
+        name="name"
+        placeholder="Name"
+        value={formData.name}
+        onChange={handleChange}
+        className="w-full p-2 border rounded"
+      />
+      <input
+        type="email"
+        name="email"
+        placeholder="Email"
+        value={formData.email}
+        onChange={handleChange}
+        className="w-full p-2 border rounded"
+      />
+      <input
+        type="text"
+        name="phone"
+        placeholder="Phone"
+        value={formData.phone}
+        onChange={handleChange}
+        className="w-full p-2 border rounded"
+      />
+      <input
+        type="text"
+        name="address"
+        placeholder="Address"
+        value={formData.address}
+        onChange={handleChange}
+        className="w-full p-2 border rounded"
+      />
+      <input
+        type="text"
+        name="city"
+        placeholder="City"
+        value={formData.city}
+        onChange={handleChange}
+        className="w-full p-2 border rounded"
+      />
+      <input
+        type="text"
+        name="state"
+        placeholder="State"
+        value={formData.state}
+        onChange={handleChange}
+        className="w-full p-2 border rounded"
+      />
+      <input
+        type="text"
+        name="pincode"
+        placeholder="Pincode"
+        value={formData.pincode}
+        onChange={handleChange}
+        className="w-full p-2 border rounded"
+      />
 
+      <button
+        onClick={handlePayNow}
+        disabled={loading}
+        className="w-full bg-green-600 text-white px-5 py-2 rounded-lg"
+      >
+        {loading ? "Processing..." : "Pay Now"}
+      </button>
+
+      {orderId && (
         <button
-          type="submit"
-          disabled={loading}
-          className="w-full bg-green-600 text-white px-5 py-2 rounded-lg"
+          onClick={handleVerify}
+          className="w-full mt-2 bg-blue-600 text-white px-5 py-2 rounded-lg"
         >
-          {loading ? "Submitting..." : "Submit Order"}
+          Verify Payment
         </button>
-      </form>
+      )}
 
-      {success && <p className="mt-3 text-green-600 font-medium">Order submitted successfully!</p>}
-      {error && <p className="mt-3 text-red-500 font-medium">{error}</p>}
+      {status && <p className="mt-3 font-medium">Status: {status}</p>}
+      {error && <p className="mt-2 text-red-500">{error}</p>}
     </div>
   );
 };
