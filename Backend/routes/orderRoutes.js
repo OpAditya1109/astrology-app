@@ -116,44 +116,34 @@ router.post("/verify", async (req, res) => {
     res.status(500).json({ message: "Failed to verify order", error: error.message });
   }
 });
+// Backend route for retry payment
 router.post("/retry-payment", async (req, res) => {
   try {
     const { orderId } = req.body;
     const order = await Order.findOne({ orderId });
     if (!order) return res.status(404).json({ message: "Order not found" });
 
-    if (order.status === "paid") {
-      return res.status(400).json({ message: "Order already paid" });
+    // Fetch existing Cashfree order
+    const cfResponse = await cashfree.PGFetchOrder(orderId);
+
+    // If payment is already successful
+    if (cfResponse.data.order_status === "PAID") {
+      return res.status(400).json({ message: "Payment already completed" });
     }
 
-    const orderData = {
-      order_amount: order.amount,
-      order_currency: "INR",
-      order_id: order.orderId,
-      customer_details: {
-        customer_id: `USER_${order.userId}`,
-        customer_phone: order.phone,
-        customer_name: order.name,
-        customer_email: order.email,
-      },
-      order_meta: {
-        return_url: `https://www.astrobhavana.com/order-success?order_id=${order.orderId}`,
-        notify_url: `https://bhavanaastro.onrender.com/api/orders/webhook`,
-      },
-    };
-
-    const cfResponse = await cashfree.PGCreateOrder(orderData);
-
-    if (cfResponse.data.payment_session_id) {
-      res.json({ paymentSessionId: cfResponse.data.payment_session_id });
-    } else {
-      throw new Error("Failed to create payment session");
+    // If payment is pending, return existing payment_session_id
+    const paymentSessionId = cfResponse.data.payment_session_id;
+    if (!paymentSessionId) {
+      return res.status(400).json({ message: "No active payment session available" });
     }
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Failed to retry payment", error: error.message });
+
+    res.json({ paymentSessionId });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Failed to fetch order for retry", error: err.message });
   }
 });
+
 
 
 // ---------------- WEBHOOK ----------------
