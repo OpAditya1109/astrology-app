@@ -54,49 +54,54 @@ const OrderPayment = () => {
     setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
-  const handlePayNow = async () => {
-    const { name, email, phone, address, city, state, pincode } = formData;
-    if (!name || !email || !phone || !address || !city || !state || !pincode) {
-      setError("Please fill all delivery details");
-      return;
-    }
+const handlePayNow = async () => {
+  const { name, email, phone, address, city, state, pincode } = formData;
+  if (!name || !email || !phone || !address || !city || !state || !pincode) {
+    setError("Please fill all delivery details");
+    return;
+  }
 
-    setError("");
-    setStatus(null);
+  setError("");
+  setStatus(null);
 
-    try {
-      setLoading(true);
+  try {
+    setLoading(true);
 
-      // Create order on backend
-      const res = await axios.post(
-        "https://bhavanaastro.onrender.com/api/orders/create-order",
-        {
-          userId: user._id, // Use logged-in user ID
-          productId: dummyProduct.id,
-          amount: dummyProduct.price,
-          name,
-          email,
-          phone,
-          address,
-          city,
-          state,
-          pincode,
-        }
-      );
+    // Log the payload before sending
+    const payload = {
+      userId: user._id, // Use logged-in user ID
+      productId: dummyProduct.id,
+      amount: dummyProduct.price,
+      name,
+      email,
+      phone,
+      address,
+      city,
+      state,
+      pincode,
+    };
+    console.log("Sending order payload:", payload); // <-- Add this
 
-      const { orderId, paymentSessionId } = res.data;
-      setOrderId(orderId);
+    // Create order on backend
+    const res = await axios.post(
+      "https://bhavanaastro.onrender.com/api/orders/create-order",
+      payload
+    );
 
-      // Load Cashfree JS SDK and initiate checkout
-      const cashfree = await load({ mode: "production" });
-      await cashfree.checkout({ paymentSessionId, redirectTarget: "_self" });
-    } catch (err) {
-      console.error(err);
-      setError("Failed to initiate payment. Check backend or network.");
-    } finally {
-      setLoading(false);
-    }
-  };
+    const { orderId, paymentSessionId } = res.data;
+    setOrderId(orderId);
+
+    // Load Cashfree JS SDK and initiate checkout
+    const cashfree = await load({ mode: "production" });
+    await cashfree.checkout({ paymentSessionId, redirectTarget: "_self" });
+  } catch (err) {
+    console.error(err);
+    setError("Failed to initiate payment. Check backend or network.");
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   const handleVerify = async () => {
     if (!orderId) return;
