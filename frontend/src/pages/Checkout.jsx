@@ -66,7 +66,7 @@ const OrderPayment = () => {
       setLoading(true);
 
       const payload = {
-        userId: user._id, // user id from session
+        userId: user.id, // user id from session
         productId: product.id,
         amount: product.price,
         name,
