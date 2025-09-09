@@ -69,7 +69,7 @@ const handlePayNow = async () => {
 
     // Log the payload before sending
     const payload = {
-      userId: user._id, // Use logged-in user ID
+      userId: user.id, // Use logged-in user ID
       productId: dummyProduct.id,
       amount: dummyProduct.price,
       name,
