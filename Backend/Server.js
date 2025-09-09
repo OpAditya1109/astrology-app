@@ -9,12 +9,14 @@ const Astrologer = require("./models/Astrologer");
 const { getAstrologyResponse } = require("./api/astrology");
 const panchangRoutes = require("./routes/panchang");
 const chatbotRoutes = require("./routes/chatbotRoutes");
+const orderRoute =require("./routes/orderRoutes")
 require("./cron/panchangCorn");
 dotenv.config();
 connectDB();
 
 const app = express();
 app.use(express.json());
+
 app.use("/api/wallet/webhook", express.text({ type: "*/*" }));
 app.use("/api/wallet/webhook", express.urlencoded({ extended: true }));
 app.use("/api/wallet/webhook", express.json());
@@ -30,7 +32,10 @@ app.use("/api/ai-astrologer", require("./routes/aiRoutes"));
 app.use("/api", panchangRoutes);
 app.use("/api/wallet", require("./routes/payment"));
 app.use("/api/chatbot", chatbotRoutes);
+app.use("/api/orders", orderRoute);
+
 const horoscopeRoutes = require("./routes/horoscope");
+
 app.use("/api/horoscope", horoscopeRoutes);
 // --- Create HTTP server ---
 const server = http.createServer(app);

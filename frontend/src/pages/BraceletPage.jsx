@@ -1,69 +1,8 @@
 import React from "react";
-
-import moneyMagnet from "../assets/product/Bracelets/money-magnet.webp";
-import roseQuartz from "../assets/product/Bracelets/rose-quartz.webp";
-import greenAventurine from "../assets/product/Bracelets/Green-Aventurine.jpg";
-import amethyst from "../assets/product/Bracelets/Amethyst-Bracelet.jpg";
-import sulemani from "../assets/product/Bracelets/Sulemani-Hakik.avif";
-import clearQuartz from "../assets/product/Bracelets/Clear-Quartz.jfif";
-import blackTourmaline from "../assets/product/Bracelets/Black-Tourmaline.jpg";
-import yellowTigerEye from "../assets/product/Bracelets/Yellow-TigerEye.jpg";
-
-
+import { Link } from "react-router-dom"; // ✅ import Link
+import products from "../data/product";
 
 export default function BraceletPage() {
-const products = [
-  {
-    name: "Natural Money Magnet Stone Bracelet",
-    img: moneyMagnet,
-    price: "₹599",
-    desc: "Attracts wealth, prosperity, and abundance into your life.",
-  },
-  {
-    name: "Natural Rose Quartz Bracelet",
-    img: roseQuartz,
-    price: "₹599",
-    desc: "Stone of love, harmony, and emotional healing.",
-  },
-  {
-    name: "Green Aventurine Bracelet",
-    img: greenAventurine,
-    price: "₹599",
-    desc: "Known as the stone of luck and opportunity.",
-  },
-  {
-    name: "Natural Amethyst Bracelet",
-    img: amethyst,
-    price: "₹599",
-    desc: "Promotes peace, calm, and spiritual awareness.",
-  },
-  {
-    name: "Natural Sulemani Hakik Bracelet",
-    img: sulemani,
-    price: "₹599",
-    desc: "Protects from negativity and balances energy.",
-  },
-  {
-    name: "Natural Clear Quartz (Spatic) Bracelet",
-    img: clearQuartz,
-    price: "₹599",
-    desc: "Powerful healing stone, enhances clarity and focus.",
-  },
-  {
-    name: "Natural Black Tourmaline Bracelet",
-    img: blackTourmaline,
-    price: "₹599",
-    desc: "Strong protection stone against negative energies.",
-  },
-  {
-    name: "Natural Yellow Tiger Eye Bracelet",
-    img: yellowTigerEye,
-    price: "₹599",
-    desc: "Boosts confidence, courage, and decision making.",
-  },
-];
-
-
   return (
     <div className="min-h-screen bg-green-50 p-6">
       {/* Header */}
@@ -76,9 +15,10 @@ const products = [
 
       {/* Products Grid */}
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-8 max-w-6xl mx-auto">
-        {products.map((product, i) => (
-          <div
-            key={i}
+        {products.map((product) => (
+          <Link
+            key={product.id}
+            to={`/product/${product.id}`} // ✅ link to product detail page
             className="relative bg-white shadow-md rounded-xl p-4 flex flex-col items-center hover:shadow-lg transition group"
           >
             {/* Image Container with Hover Description */}
@@ -98,11 +38,15 @@ const products = [
             <h3 className="mt-3 text-sm font-semibold text-gray-800 text-center">
               {product.name}
             </h3>
-            <p className="text-purple-700 font-bold mt-1">{product.price}</p>
-            <button className="mt-3 bg-purple-700 text-white px-3 py-1 rounded-lg text-sm hover:bg-purple-800 transition">
-              Add to Cart
-            </button>
-          </div>
+
+            {/* Price Section */}
+            <div className="mt-1 flex items-center gap-2">
+              <span className="text-gray-500 line-through text-sm">
+                {product.oldPrice}
+              </span>
+              <span className="text-purple-700 font-bold">{product.price}</span>
+            </div>
+          </Link>
         ))}
       </div>
     </div>
