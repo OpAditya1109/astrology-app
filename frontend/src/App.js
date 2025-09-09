@@ -31,6 +31,10 @@ import BraceletPage from "./pages/BraceletPage"
 import ProductDetail from "./pages/ProductDetail";
 import Checkout from "./pages/Checkout";
 import OrderSuccess from "./pages/OrderSuccess";
+import RudrakshaPage from "./pages/RudrakshaPage"
+import MalaPage from "./pages/MalaPage"
+import GemstonePage from "./pages/GemstonePage"
+import YantraPage from "./pages/YantraPage"
 function App() {
   return (
     <Router>
@@ -89,6 +93,12 @@ function App() {
 
 
           <Route path="/shop/bracelet" element={<BraceletPage />}/>
+          <Route path="/shop/rudraksha" element={<RudrakshaPage />} />
+<Route path="/shop/mala" element={<MalaPage />} />
+<Route path="/shop/gemstone" element={<GemstonePage />} />
+<Route path="/yantra" element={<YantraPage />} />
+
+
             <Route path="/product/:id" element={<ProductDetail />} />
                <Route path="/checkout/:id" element={<Checkout />} />
                 <Route path="/order-success" element={<OrderSuccess />} />
