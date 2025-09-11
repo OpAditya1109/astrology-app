@@ -1,9 +1,10 @@
 import React from "react";
-import { Link } from "react-router-dom"; // ✅ import Link
+import { Link } from "react-router-dom"; 
 import products from "../data/product";
 
 export default function BraceletPage() {
-   const braceletProducts = products.filter((p) => p.category === "bracelet");
+  const braceletProducts = products.filter((p) => p.category === "bracelet");
+
   return (
     <div className="min-h-screen bg-green-50 p-6">
       {/* Header */}
@@ -16,10 +17,10 @@ export default function BraceletPage() {
 
       {/* Products Grid */}
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-8 max-w-6xl mx-auto">
-        {products.map((product) => (
+        {braceletProducts.map((product) => (
           <Link
             key={product.id}
-            to={`/product/${product.id}`} // ✅ link to product detail page
+            to={`/product/${product.id}`} 
             className="relative bg-white shadow-md rounded-xl p-4 flex flex-col items-center hover:shadow-lg transition group"
           >
             {/* Image Container with Hover Description */}
