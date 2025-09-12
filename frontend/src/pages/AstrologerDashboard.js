@@ -1,7 +1,6 @@
 // src/pages/astrologer/Dashboard.js
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { FaWallet, FaUserFriends, FaStar, FaCalendarAlt } from "react-icons/fa";
 import axios from "axios";
 
 export default function AstrologerDashboard() {
@@ -62,45 +61,6 @@ export default function AstrologerDashboard() {
       <h1 className="text-2xl font-bold text-purple-700 mb-6">
         Astrologer Dashboard
       </h1>
-
-      {/* Overview Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
-        <div className="bg-white shadow-md rounded-xl p-5 flex items-center gap-4">
-          <FaWallet className="text-purple-600 text-3xl" />
-          <div>
-            <h2 className="text-lg font-semibold">Wallet Balance</h2>
-            <p className="text-gray-600">₹ 5,200</p>
-          </div>
-        </div>
-
-        <div className="bg-white shadow-md rounded-xl p-5 flex items-center gap-4">
-          <FaUserFriends className="text-green-600 text-3xl" />
-          <div>
-            <h2 className="text-lg font-semibold">Consultations</h2>
-            <p className="text-gray-600">12 Active</p>
-          </div>
-        </div>
-
-        <div className="bg-white shadow-md rounded-xl p-5 flex items-center gap-4">
-          <FaStar className="text-yellow-500 text-3xl" />
-          <div>
-            <h2 className="text-lg font-semibold">Rating</h2>
-            <p className="text-gray-600">4.8 / 5</p>
-          </div>
-        </div>
-
-        <div className="bg-white shadow-md rounded-xl p-5 flex items-center gap-4">
-          <FaCalendarAlt className="text-blue-600 text-3xl" />
-          <div>
-            <h2 className="text-lg font-semibold">Availability</h2>
-            <p className="text-gray-600">
-              {astrologer.online.chat || astrologer.online.video || astrologer.online.audio
-                ? "Online"
-                : "Offline"}
-            </p>
-          </div>
-        </div>
-      </div>
 
       {/* Consultation Settings */}
       <div className="bg-white shadow-md rounded-xl p-6 mb-6">
