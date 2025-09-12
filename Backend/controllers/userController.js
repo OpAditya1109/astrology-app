@@ -22,7 +22,7 @@ async function generateKundali(user) {
       lon: user.city.lon,
       tz: 5.5,
       lang: "en",
-      api_key: process.env.VEDIC_API_KEY, // use .env
+      api_key: process.env.VEDIC_CHART_API_KEY,
       div: "D1",
       style: "north",
       color: "black",
@@ -32,9 +32,18 @@ async function generateKundali(user) {
     const response = await fetch(url);
     const svgString = await response.text();
 
-    const pngBuffer = await sharp(Buffer.from(svgString))
-      .flatten({ background: "#ffffff" }) // white background
-      .png()
+    // Remove XML headers/DOCTYPE (Sharp dislikes these)
+    const cleanedSvg = svgString
+      .replace(/<\?xml.*?\?>/, "")
+      .replace(/<!DOCTYPE.*?>/, "")
+      .trim();
+
+    const svgBuffer = Buffer.from(cleanedSvg, "utf-8");
+
+    // Convert SVG to PNG with white background
+    const pngBuffer = await sharp(svgBuffer)
+      .flatten({ background: "#ffffff" })
+      .toFormat("png")
       .toBuffer();
 
     // Upload to Cloudinary and return URL
@@ -53,6 +62,7 @@ async function generateKundali(user) {
     return null;
   }
 }
+
 
 const registerUser = async (req, res) => {
   try {
