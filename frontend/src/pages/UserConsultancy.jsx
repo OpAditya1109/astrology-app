@@ -78,6 +78,7 @@ export default function UserConsultancy() {
           topic: mode === "Chat" ? "General Chat" : `${mode} Call`,
           mode,
           rate, // send rate so backend can calculate first5MinCost
+          kundaliUrl: currentUser.kundaliUrl || null,
         },
         { headers: { Authorization: `Bearer ${token}` } }
       );

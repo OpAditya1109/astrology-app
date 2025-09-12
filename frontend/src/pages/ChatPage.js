@@ -7,6 +7,9 @@ export default function ChatPage() {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [secondsLeft, setSecondsLeft] = useState(0);
+  const [modalImg, setModalImg] = useState(null); // Kundali modal
+  const [consultationEnded, setConsultationEnded] = useState(false); // flag to disable input
+  const [isEnding, setIsEnding] = useState(false); // prevent beforeunload alert during auto redirect
 
   const currentUser = JSON.parse(sessionStorage.getItem("user"));
   const userId = currentUser?.id || "guest";
@@ -34,7 +37,7 @@ export default function ChatPage() {
         ).toLocaleDateString("en-IN")}\n🕒 Birth Time: ${
           userData.birthTime || "-"
         }\n📍 Birth Place: ${userData.birthPlace || "-"}`,
-        kundaliUrl: userData.kundaliUrl || null, // ✅ FIXED (directly use kundaliUrl from session user)
+        kundaliUrl: userData.kundaliUrl || null,
         system: true,
       };
       socket.emit("sendMessage", { roomId, ...introMessage });
@@ -47,7 +50,6 @@ export default function ChatPage() {
     )
       .then((res) => res.json())
       .then((data) => {
-             console.log("Fetched messages:", data);
         if (Array.isArray(data)) setMessages(data);
         else if (data?.messages && Array.isArray(data.messages))
           setMessages(data.messages);
@@ -55,31 +57,25 @@ export default function ChatPage() {
       })
       .catch(() => setMessages([]));
 
-    // Listeners
-    const handleNewMessage = (message) =>
-      setMessages((prev) => [...prev, message]);
-    socket.on("newMessage", handleNewMessage);
-
+    // Socket listeners
+    const handleNewMessage = (message) => setMessages((prev) => [...prev, message]);
     const handleTimerUpdate = ({ secondsLeft }) => setSecondsLeft(secondsLeft);
-    socket.on("timerUpdate", handleTimerUpdate);
-
-    const handleTimerEnd = () => {
-      endConsultation("⏰ Consultation timer ended!");
-    };
-
+    const handleTimerEnd = () => endConsultation("⏰ Consultation timer ended!");
     const handleConsultationEnded = ({ consultationId: endedId }) => {
-      if (endedId === roomId) {
-        endConsultation("⏰ Consultation has been ended by the astrologer!");
-      }
+      if (endedId === roomId) endConsultation("⏰ Consultation has been ended by the astrologer!");
     };
 
+    socket.on("newMessage", handleNewMessage);
+    socket.on("timerUpdate", handleTimerUpdate);
     socket.on("timerEnded", handleTimerEnd);
     socket.on("consultationEnded", handleConsultationEnded);
 
-    // Warn before leaving
+    // Warn before leaving only if not ending automatically
     const handleBeforeUnload = (e) => {
-      e.preventDefault();
-      e.returnValue = "Are you sure you want to leave the chat?";
+      if (!isEnding) {
+        e.preventDefault();
+        e.returnValue = "Are you sure you want to leave the chat?";
+      }
     };
     window.addEventListener("beforeunload", handleBeforeUnload);
 
@@ -92,24 +88,21 @@ export default function ChatPage() {
       socket.emit("leaveRoom", roomId);
       window.removeEventListener("beforeunload", handleBeforeUnload);
     };
-  }, [roomId]);
+  }, [roomId, isEnding]);
 
-  // Centralized end consultation logic
+  // End consultation
   const endConsultation = async (alertMessage) => {
+    setIsEnding(true);
     alert(alertMessage);
     setSecondsLeft(0);
+    setConsultationEnded(true);
 
     try {
       const token = sessionStorage.getItem("token");
-
-      await fetch(
-        `https://bhavanaastro.onrender.com/api/consultations/${roomId}`,
-        {
-          method: "DELETE",
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-
+      await fetch(`https://bhavanaastro.onrender.com/api/consultations/${roomId}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
       socket.emit("consultationEnded", { consultationId: roomId });
     } catch (err) {
       console.error("Failed to delete consultation:", err);
@@ -119,20 +112,21 @@ export default function ChatPage() {
     socket.emit("leaveRoom", roomId);
     socket.disconnect();
 
-    window.location.href = "/user/consultancy";
+    // Auto redirect after 3 seconds so user can see "Consultation Ended" message
+    setTimeout(() => {
+      window.location.href = "/user/consultancy";
+    }, 3000);
   };
 
   const sendMessage = () => {
-    if (!input.trim() || secondsLeft <= 0) return;
+    if (!input.trim() || secondsLeft <= 0 || consultationEnded) return;
     const newMsg = { sender: userId, text: input };
     socket.emit("sendMessage", { roomId, ...newMsg });
     setInput("");
   };
 
   const formatTime = (sec) => {
-    const m = Math.floor(sec / 60)
-      .toString()
-      .padStart(2, "0");
+    const m = Math.floor(sec / 60).toString().padStart(2, "0");
     const s = (sec % 60).toString().padStart(2, "0");
     return `${m}:${s}`;
   };
@@ -141,9 +135,7 @@ export default function ChatPage() {
     <div className="h-screen flex flex-col bg-gray-50">
       <header className="bg-purple-700 text-white p-4 text-lg font-semibold flex justify-between items-center">
         <span>Chat Room ({consultationId})</span>
-        <span className="bg-purple-900 px-3 py-1 rounded">
-          {formatTime(secondsLeft)}
-        </span>
+        <span className="bg-purple-900 px-3 py-1 rounded">{formatTime(secondsLeft)}</span>
       </header>
 
       <div className="flex-1 overflow-y-auto p-4 space-y-2">
@@ -158,37 +150,56 @@ export default function ChatPage() {
                 : "bg-gray-200 text-gray-800"
             }`}
           >
-            {/* text */}
             {msg.text}
-
-            {/* kundali image */}
             {msg.kundaliUrl && (
               <img
                 src={msg.kundaliUrl}
                 alt="Kundali"
-                className="mt-2 rounded-lg border max-w-full"
+                className="mt-2 rounded-lg border max-w-full cursor-pointer"
+                onClick={() => setModalImg(msg.kundaliUrl)}
               />
             )}
           </div>
         ))}
+
+        {consultationEnded && (
+          <div className="text-center text-red-600 font-semibold mt-2">
+            ⏰ Consultation has ended
+          </div>
+        )}
       </div>
 
+      {/* Input */}
       <div className="p-4 flex border-t bg-white">
         <input
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && sendMessage()}
-          disabled={secondsLeft <= 0}
+          disabled={secondsLeft <= 0 || consultationEnded}
           className="flex-1 border rounded-lg px-3 py-2 mr-2 disabled:bg-gray-200"
         />
         <button
           onClick={sendMessage}
-          disabled={secondsLeft <= 0}
+          disabled={secondsLeft <= 0 || consultationEnded}
           className="bg-purple-600 text-white px-4 py-2 rounded-lg disabled:opacity-50"
         >
           Send
         </button>
       </div>
+
+      {/* Modal for Kundali */}
+      {modalImg && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50"
+          onClick={() => setModalImg(null)}
+        >
+          <img
+            src={modalImg}
+            alt="Kundali Large"
+            className="max-h-[90vh] max-w-[90vw] rounded-lg shadow-lg"
+          />
+        </div>
+      )}
     </div>
   );
 }

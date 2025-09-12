@@ -8,6 +8,8 @@ export default function AstrologerChat() {
   const { consultationId } = useParams();
   const [messages, setMessages] = useState([]);
   const [text, setText] = useState("");
+  const [modalImg, setModalImg] = useState(null);
+
   const messagesEndRef = useRef(null);
 
   const user = JSON.parse(sessionStorage.getItem("user"));
@@ -71,7 +73,8 @@ export default function AstrologerChat() {
                     <img
                       src={m.kundaliUrl}
                       alt="Kundali"
-                      className="mt-2 rounded-lg border max-w-full"
+                      className="mt-2 rounded-lg border max-w-full cursor-pointer"
+                      onClick={() => setModalImg(m.kundaliUrl)}
                     />
                   )}
                 </div>
@@ -93,7 +96,8 @@ export default function AstrologerChat() {
                   <img
                     src={m.kundaliUrl}
                     alt="Kundali"
-                    className="mt-2 rounded-lg border max-w-full"
+                    className="mt-2 rounded-lg border max-w-full cursor-pointer"
+                    onClick={() => setModalImg(m.kundaliUrl)}
                   />
                 )}
               </div>
@@ -120,6 +124,20 @@ export default function AstrologerChat() {
           Send
         </button>
       </div>
+
+      {/* Kundali Modal */}
+      {modalImg && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50"
+          onClick={() => setModalImg(null)}
+        >
+          <img
+            src={modalImg}
+            alt="Kundali Large"
+            className="max-h-[90vh] max-w-[90vw] rounded-lg shadow-lg"
+          />
+        </div>
+      )}
     </div>
   );
 }
