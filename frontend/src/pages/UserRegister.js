@@ -37,7 +37,7 @@ export default function UserRegister() {
     e.preventDefault();
     try {
       const res = await axios.post(
-        "https://bhavanaastro.onrender.com/api/users/register",
+        "http://localhost:5000/api/users/register",
         form
       );
       alert(res.data.message);
