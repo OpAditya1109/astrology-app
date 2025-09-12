@@ -6,6 +6,7 @@ const Astrologer = require("../models/Astrologer");
 
 const router = express.Router();
 
+
 // ✅ LOGIN API
 router.post("/login", async (req, res) => {
   try {
@@ -27,26 +28,32 @@ router.post("/login", async (req, res) => {
     const token = jwt.sign({ id: user._id, role }, process.env.JWT_SECRET, {
       expiresIn: "1d",
     });
-res.json({
-  token,
-  user: {
-    id: user._id,
-    name: user.name,   // ✅ added name
-    email: user.email,
-    mobile: user.mobile,  // ✅ already added mobile number
-    role,
-    birthTime: user.birthTime,
-    birthPlace: user.birthPlace,
-    dob: user.dob,
-  },
-});
 
+    // ✅ Extract latest kundali URL
+    let kundaliUrl = null;
+    if (user.kundlis && user.kundlis.length > 0) {
+      kundaliUrl = user.kundlis[user.kundlis.length - 1].url;
+    }
 
-
+    res.json({
+      token,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        mobile: user.mobile,
+        role,
+        birthTime: user.birthTime,
+        birthPlace: user.birthPlace,
+        dob: user.dob,
+        kundaliUrl, // ✅ include kundali url
+      },
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Server error" });
   }
 });
+
 
 module.exports = router;
