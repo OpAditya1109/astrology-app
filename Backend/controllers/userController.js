@@ -104,7 +104,7 @@ const registerUser = async (req, res) => {
       kundlis: [],
     });
 
-    // Generate kundali PNG (Cloudinary upload skipped)
+  
    // Generate kundali PNG and upload
 const kundaliUrl = await generateKundali(user);
 if (kundaliUrl) {
