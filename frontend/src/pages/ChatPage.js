@@ -31,7 +31,10 @@ export default function ChatPage() {
         sender: userData.id,
         text: `👤 Name: ${userData.name}\n📅 DOB: ${new Date(
           userData.dob
-        ).toLocaleDateString("en-IN")}\n🕒 Birth Time: ${userData.birthTime || "-"}\n📍 Birth Place: ${userData.birthPlace || "-"}`,
+        ).toLocaleDateString("en-IN")}\n🕒 Birth Time: ${
+          userData.birthTime || "-"
+        }\n📍 Birth Place: ${userData.birthPlace || "-"}`,
+        kundaliUrl: userData.kundaliUrl || null, // ✅ FIXED (directly use kundaliUrl from session user)
         system: true,
       };
       socket.emit("sendMessage", { roomId, ...introMessage });
@@ -39,28 +42,31 @@ export default function ChatPage() {
     }
 
     // Fetch existing messages
-    fetch(`https://bhavanaastro.onrender.com/api/consultations/${roomId}/messages`)
+    fetch(
+      `https://bhavanaastro.onrender.com/api/consultations/${roomId}/messages`
+    )
       .then((res) => res.json())
       .then((data) => {
+             console.log("Fetched messages:", data);
         if (Array.isArray(data)) setMessages(data);
-        else if (data?.messages && Array.isArray(data.messages)) setMessages(data.messages);
+        else if (data?.messages && Array.isArray(data.messages))
+          setMessages(data.messages);
         else setMessages([]);
       })
       .catch(() => setMessages([]));
 
     // Listeners
-    const handleNewMessage = (message) => setMessages((prev) => [...prev, message]);
+    const handleNewMessage = (message) =>
+      setMessages((prev) => [...prev, message]);
     socket.on("newMessage", handleNewMessage);
 
     const handleTimerUpdate = ({ secondsLeft }) => setSecondsLeft(secondsLeft);
     socket.on("timerUpdate", handleTimerUpdate);
 
-    // Timer end
     const handleTimerEnd = () => {
       endConsultation("⏰ Consultation timer ended!");
     };
 
-    // If astrologer ends consultation manually
     const handleConsultationEnded = ({ consultationId: endedId }) => {
       if (endedId === roomId) {
         endConsultation("⏰ Consultation has been ended by the astrologer!");
@@ -91,29 +97,28 @@ export default function ChatPage() {
   // Centralized end consultation logic
   const endConsultation = async (alertMessage) => {
     alert(alertMessage);
-    setSecondsLeft(0); // stop timer
+    setSecondsLeft(0);
 
     try {
       const token = sessionStorage.getItem("token");
 
-      // DELETE consultation from backend
-      await fetch(`https://bhavanaastro.onrender.com/api/consultations/${roomId}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      await fetch(
+        `https://bhavanaastro.onrender.com/api/consultations/${roomId}`,
+        {
+          method: "DELETE",
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
 
-      // Notify everyone in room
       socket.emit("consultationEnded", { consultationId: roomId });
     } catch (err) {
       console.error("Failed to delete consultation:", err);
     }
 
-    // Disconnect user from socket room
     socket.emit("stopConsultationTimer", { roomId });
     socket.emit("leaveRoom", roomId);
     socket.disconnect();
 
-    // Redirect to consultation summary page
     window.location.href = "/user/consultancy";
   };
 
@@ -125,7 +130,9 @@ export default function ChatPage() {
   };
 
   const formatTime = (sec) => {
-    const m = Math.floor(sec / 60).toString().padStart(2, "0");
+    const m = Math.floor(sec / 60)
+      .toString()
+      .padStart(2, "0");
     const s = (sec % 60).toString().padStart(2, "0");
     return `${m}:${s}`;
   };
@@ -134,7 +141,9 @@ export default function ChatPage() {
     <div className="h-screen flex flex-col bg-gray-50">
       <header className="bg-purple-700 text-white p-4 text-lg font-semibold flex justify-between items-center">
         <span>Chat Room ({consultationId})</span>
-        <span className="bg-purple-900 px-3 py-1 rounded">{formatTime(secondsLeft)}</span>
+        <span className="bg-purple-900 px-3 py-1 rounded">
+          {formatTime(secondsLeft)}
+        </span>
       </header>
 
       <div className="flex-1 overflow-y-auto p-4 space-y-2">
@@ -149,7 +158,17 @@ export default function ChatPage() {
                 : "bg-gray-200 text-gray-800"
             }`}
           >
+            {/* text */}
             {msg.text}
+
+            {/* kundali image */}
+            {msg.kundaliUrl && (
+              <img
+                src={msg.kundaliUrl}
+                alt="Kundali"
+                className="mt-2 rounded-lg border max-w-full"
+              />
+            )}
           </div>
         ))}
       </div>

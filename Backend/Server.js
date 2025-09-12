@@ -79,33 +79,42 @@ io.on("connection", (socket) => {
   });
 
   // --- Chat messages ---
-  socket.on("sendMessage", async ({ roomId, sender, text }) => {
-    try {
-      const consultation = await Consultation.findById(roomId);
-      if (!consultation) return console.log("❌ Consultation not found:", roomId);
+  socket.on("sendMessage", async ({ roomId, sender, text, kundaliUrl }) => {
+  try {
+    const consultation = await Consultation.findById(roomId);
+    if (!consultation) return console.log("❌ Consultation not found:", roomId);
 
-      const newMessage = { sender, text, senderModel: "User", createdAt: new Date() };
-      consultation.messages.push(newMessage);
+    const newMessage = { 
+      sender, 
+      text, 
+      senderModel: "User", 
+      kundaliUrl: kundaliUrl || null,   // ✅ add kundaliUrl
+      createdAt: new Date() 
+    };
+
+    consultation.messages.push(newMessage);
+    await consultation.save();
+    io.to(roomId).emit("newMessage", newMessage);
+
+    const astrologer = await Astrologer.findById(consultation.astrologerId);
+    if (astrologer && astrologer.isAI) {
+      const aiReply = await getAstrologyResponse(text);
+      const aiMessage = {
+        sender: astrologer._id,
+        senderModel: "Astrologer",
+        text: aiReply,
+        kundaliUrl: kundaliUrl || null, // ✅ forward same kundali
+        createdAt: new Date(),
+      };
+      consultation.messages.push(aiMessage);
       await consultation.save();
-      io.to(roomId).emit("newMessage", newMessage);
-
-      const astrologer = await Astrologer.findById(consultation.astrologerId);
-      if (astrologer && astrologer.isAI) {
-        const aiReply = await getAstrologyResponse(text);
-        const aiMessage = {
-          sender: astrologer._id,
-          senderModel: "Astrologer",
-          text: aiReply,
-          createdAt: new Date(),
-        };
-        consultation.messages.push(aiMessage);
-        await consultation.save();
-        io.to(roomId).emit("newMessage", aiMessage);
-      }
-    } catch (error) {
-      console.error("❌ Error sending message:", error.message);
+      io.to(roomId).emit("newMessage", aiMessage);
     }
-  });
+  } catch (error) {
+    console.error("❌ Error sending message:", error.message);
+  }
+});
+
 
   // --- VIDEO CALL SIGNALING ---
   socket.on("call-user", ({ to, offer }) => {
