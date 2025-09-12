@@ -56,21 +56,43 @@ io.on("connection", (socket) => {
   console.log("⚡ New client connected:", socket.id);
 
   // --- Join user room for chat/video ---
-  socket.on("joinRoom", async (roomId) => {
-    socket.join(roomId);
-    console.log(`📌 User ${socket.id} joined room: ${roomId}`);
+// --- Join user room for chat/video ---
+socket.on("joinRoom", async (roomId) => {
+  socket.join(roomId);
+  console.log(`📌 User ${socket.id} joined room: ${roomId}`);
 
-    // Send list of existing peers
-    try {
-      const sockets = await io.in(roomId).fetchSockets();
-      const peers = sockets.filter((s) => s.id !== socket.id).map((s) => s.id);
-      if (peers.length) socket.emit("existing-peers", { peers });
-    } catch (e) {
-      console.error("fetchSockets failed:", e);
+  // Send list of existing peers
+  try {
+    const sockets = await io.in(roomId).fetchSockets();
+    const peers = sockets.filter((s) => s.id !== socket.id).map((s) => s.id);
+    if (peers.length) socket.emit("existing-peers", { peers });
+  } catch (e) {
+    console.error("fetchSockets failed:", e);
+  }
+
+  socket.to(roomId).emit("peer-joined", { socketId: socket.id });
+
+  // --- Send system message (e.g., Kundali intro) ---
+  try {
+    const consultation = await Consultation.findById(roomId);
+    if (consultation && consultation.kundaliUrl) {
+      const systemMessage = {
+        sender: "system",
+        text: "📜 Kundali is ready for this consultation",
+        kundaliUrl: consultation.kundaliUrl, // Kundali image stored in DB
+        system: true,
+        createdAt: new Date(),
+      };
+      consultation.messages.push(systemMessage);
+      await consultation.save();
+
+      io.to(roomId).emit("newMessage", systemMessage);
     }
+  } catch (err) {
+    console.error("❌ Failed to send system message:", err.message);
+  }
+});
 
-    socket.to(roomId).emit("peer-joined", { socketId: socket.id });
-  });
 
   // --- Join astrologer room ---
   socket.on("joinAstrologerRoom", (astrologerId) => {

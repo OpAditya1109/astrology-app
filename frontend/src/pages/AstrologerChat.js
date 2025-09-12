@@ -10,72 +10,96 @@ export default function AstrologerChat() {
   const [text, setText] = useState("");
   const messagesEndRef = useRef(null);
 
-  // ✅ store user once instead of parsing every time
   const user = JSON.parse(sessionStorage.getItem("user"));
   const senderId = user?.id;
 
   useEffect(() => {
     if (!consultationId) return;
 
-    // ✅ Join room
+    // Join room
     socket.emit("joinRoom", consultationId);
 
-    // ✅ Load chat history
+    // Load chat history
     fetch(`https://bhavanaastro.onrender.com/api/consultations/${consultationId}/messages`)
       .then((res) => res.json())
-      .then((data) => setMessages(data));
+      .then((data) => {
+        let msgs = [];
+        if (Array.isArray(data)) msgs = data;
+        else if (data?.messages && Array.isArray(data.messages)) msgs = data.messages;
+        setMessages(msgs);
+      })
+      .catch(() => setMessages([]));
 
-    // ✅ Listen for incoming messages
- socket.on("newMessage", (msg) => {
-  setMessages((prev) => [...prev, msg]);
-});
+    // Listen for new messages
+    const handleNewMessage = (msg) => setMessages((prev) => [...prev, msg]);
+    socket.on("newMessage", handleNewMessage);
 
     return () => {
-      socket.off("newMessage");
-      socket.emit("leaveRoom", consultationId); // optional cleanup
+      socket.off("newMessage", handleNewMessage);
+      socket.emit("leaveRoom", consultationId);
     };
   }, [consultationId]);
 
-  // ✅ Auto-scroll on new message
+  // Auto-scroll
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-const sendMessage = () => {
-  if (!text.trim()) return;
-  socket.emit("sendMessage", { roomId: consultationId, sender: senderId, text });
-  setText("");
-};
-
+  const sendMessage = () => {
+    if (!text.trim()) return;
+    socket.emit("sendMessage", { roomId: consultationId, sender: senderId, text });
+    setText("");
+  };
 
   return (
     <div className="h-screen flex flex-col bg-gray-50">
       {/* Header */}
       <header className="bg-purple-700 text-white p-4 text-lg font-semibold">
         Chat Room ({consultationId})
-        
       </header>
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-4 space-y-2">
-        {messages.map((m, i) => (
-          <div
-            key={i}
-            className={`flex ${
-              m.sender === senderId ? "justify-end" : "justify-start"
-            }`}
-          >
-            <div
-              className={`px-3 py-2 rounded-lg max-w-xs break-words ${
-                m.sender === senderId
-                  ? "bg-purple-600 text-white"
-                  : "bg-gray-200 text-gray-800"
-              }`}
-            >
-              {m.text}
+        {messages.map((m, i) => {
+          // system messages (like Kundali intro)
+          if (m.system) {
+            return (
+              <div key={i} className="flex justify-center">
+                <div className="px-3 py-2 rounded-lg max-w-xs break-words bg-yellow-100 text-gray-800 text-center text-sm">
+                  {m.text}
+                  {m.kundaliUrl && (
+                    <img
+                      src={m.kundaliUrl}
+                      alt="Kundali"
+                      className="mt-2 rounded-lg border max-w-full"
+                    />
+                  )}
+                </div>
+              </div>
+            );
+          }
+
+          // normal messages
+          const isSender = m.sender === senderId;
+          return (
+            <div key={i} className={`flex ${isSender ? "justify-end" : "justify-start"}`}>
+              <div
+                className={`px-3 py-2 rounded-lg max-w-xs break-words ${
+                  isSender ? "bg-purple-600 text-white" : "bg-gray-200 text-gray-800"
+                }`}
+              >
+                {m.text}
+                {m.kundaliUrl && (
+                  <img
+                    src={m.kundaliUrl}
+                    alt="Kundali"
+                    className="mt-2 rounded-lg border max-w-full"
+                  />
+                )}
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
         <div ref={messagesEndRef} />
       </div>
 
