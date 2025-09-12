@@ -1,8 +1,59 @@
 const User = require("../models/User");
-const Astrologer = require("../models/Astrologer"); // needed for uniqueness check
+const Astrologer = require("../models/Astrologer");
 const bcrypt = require("bcryptjs");
+const fetch = require("node-fetch");
+const cloudinary = require("cloudinary").v2;
+const sharp = require("sharp");
 
-// Register new user with email uniqueness across both collections
+// Configure Cloudinary
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
+
+// Helper to generate kundali and get Cloudinary URL
+async function generateKundali(user) {
+  try {
+    const params = new URLSearchParams({
+      dob: user.dob,
+      tob: user.birthTime,
+      lat: user.city.lat,
+      lon: user.city.lon,
+      tz: 5.5,
+      lang: "en",
+      api_key: process.env.VEDIC_API_KEY, // use .env
+      div: "D1",
+      style: "north",
+      color: "black",
+    });
+
+    const url = `https://api.vedicastroapi.com/v3-json/horoscope/chart-image?${params.toString()}`;
+    const response = await fetch(url);
+    const svgString = await response.text();
+
+    const pngBuffer = await sharp(Buffer.from(svgString))
+      .flatten({ background: "#ffffff" }) // white background
+      .png()
+      .toBuffer();
+
+    // Upload to Cloudinary and return URL
+    return new Promise((resolve, reject) => {
+      const stream = cloudinary.uploader.upload_stream(
+        { folder: "kundalis", public_id: `${user.name}_${Date.now()}` },
+        (err, result) => {
+          if (err) return reject(err);
+          resolve(result.secure_url);
+        }
+      );
+      stream.end(pngBuffer);
+    });
+  } catch (err) {
+    console.error("❌ Kundali generation error:", err);
+    return null;
+  }
+}
+
 const registerUser = async (req, res) => {
   try {
     const {
@@ -18,12 +69,10 @@ const registerUser = async (req, res) => {
       lon,
     } = req.body;
 
-    // Check email across User and Astrologer
+    // Email/mobile uniqueness check
     if ((await User.findOne({ email })) || (await Astrologer.findOne({ email }))) {
       return res.status(400).json({ error: "Email already exists" });
     }
-
-    // Check mobile uniqueness
     if (await User.findOne({ mobile })) {
       return res.status(400).json({ error: "Mobile number already exists" });
     }
@@ -31,7 +80,7 @@ const registerUser = async (req, res) => {
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Save user
+    // Create user object
     const user = new User({
       name,
       email,
@@ -40,13 +89,15 @@ const registerUser = async (req, res) => {
       dob,
       birthTime,
       birthPlace,
+      city: { name: city, lat: lat, lon: lon },
       kundlis: [],
-      city: {
-        name: city,
-        lat: lat,
-        lon: lon,
-      },
     });
+
+    // Generate kundali URL
+    const kundaliUrl = await generateKundali(user);
+    if (kundaliUrl) {
+      user.kundlis.push({ url: kundaliUrl, createdAt: new Date() });
+    }
 
     await user.save();
 
