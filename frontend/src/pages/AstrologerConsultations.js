@@ -127,9 +127,8 @@ export default function AstrologerConsultations() {
                   <FaUserCircle className="text-purple-600 text-4xl" />
                   <div>
                     <h2 className="font-semibold text-lg">{c.userName || "User"}</h2>
-                    <p className="text-gray-600 text-sm">
-                      DOB: {c.dob ? new Date(c.dob).toLocaleDateString() : "-"}
-                    </p>
+        
+
                     <p className="text-gray-600 text-sm">
                       Topic: <span className="font-medium">{c.topic || "-"}</span>
                     </p>
