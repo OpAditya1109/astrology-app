@@ -1,6 +1,6 @@
 import { useParams } from "react-router-dom";
 import { useState, useEffect } from "react";
-import socket from "./socket"; // import shared socket
+import socket from "./socket"; // shared socket instance
 
 export default function ChatPage() {
   const { consultationId } = useParams();
@@ -23,6 +23,21 @@ export default function ChatPage() {
     // Start consultation timer
     socket.emit("startConsultationTimer", { roomId, durationMinutes: 5 });
 
+    // Send intro message only once per consultation
+    const userData = JSON.parse(sessionStorage.getItem("user"));
+    const introSentKey = `introSent_${roomId}`;
+    if (userData && !sessionStorage.getItem(introSentKey)) {
+      const introMessage = {
+        sender: userData.id,
+        text: `👤 Name: ${userData.name}\n📅 DOB: ${new Date(
+          userData.dob
+        ).toLocaleDateString("en-IN")}\n🕒 Birth Time: ${userData.birthTime || "-"}\n📍 Birth Place: ${userData.birthPlace || "-"}`,
+        system: true,
+      };
+      socket.emit("sendMessage", { roomId, ...introMessage });
+      sessionStorage.setItem(introSentKey, "true");
+    }
+
     // Fetch existing messages
     fetch(`https://bhavanaastro.onrender.com/api/consultations/${roomId}/messages`)
       .then((res) => res.json())
@@ -33,21 +48,29 @@ export default function ChatPage() {
       })
       .catch(() => setMessages([]));
 
-    // New messages listener
+    // Listeners
     const handleNewMessage = (message) => setMessages((prev) => [...prev, message]);
     socket.on("newMessage", handleNewMessage);
 
-    // Timer listener
     const handleTimerUpdate = ({ secondsLeft }) => setSecondsLeft(secondsLeft);
     socket.on("timerUpdate", handleTimerUpdate);
 
+    // Timer end
     const handleTimerEnd = () => {
-      alert("⏰ Consultation timer ended!");
-      setSecondsLeft(0);
+      endConsultation("⏰ Consultation timer ended!");
     };
-    socket.on("timerEnded", handleTimerEnd);
 
-    // Warn user on browser/tab close
+    // If astrologer ends consultation manually
+    const handleConsultationEnded = ({ consultationId: endedId }) => {
+      if (endedId === roomId) {
+        endConsultation("⏰ Consultation has been ended by the astrologer!");
+      }
+    };
+
+    socket.on("timerEnded", handleTimerEnd);
+    socket.on("consultationEnded", handleConsultationEnded);
+
+    // Warn before leaving
     const handleBeforeUnload = (e) => {
       e.preventDefault();
       e.returnValue = "Are you sure you want to leave the chat?";
@@ -58,14 +81,44 @@ export default function ChatPage() {
       socket.off("newMessage", handleNewMessage);
       socket.off("timerUpdate", handleTimerUpdate);
       socket.off("timerEnded", handleTimerEnd);
+      socket.off("consultationEnded", handleConsultationEnded);
       socket.emit("stopConsultationTimer", { roomId });
       socket.emit("leaveRoom", roomId);
       window.removeEventListener("beforeunload", handleBeforeUnload);
     };
   }, [roomId]);
 
+  // Centralized end consultation logic
+  const endConsultation = async (alertMessage) => {
+    alert(alertMessage);
+    setSecondsLeft(0); // stop timer
+
+    try {
+      const token = sessionStorage.getItem("token");
+
+      // DELETE consultation from backend
+      await fetch(`https://bhavanaastro.onrender.com/api/consultations/${roomId}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      // Notify everyone in room
+      socket.emit("consultationEnded", { consultationId: roomId });
+    } catch (err) {
+      console.error("Failed to delete consultation:", err);
+    }
+
+    // Disconnect user from socket room
+    socket.emit("stopConsultationTimer", { roomId });
+    socket.emit("leaveRoom", roomId);
+    socket.disconnect();
+
+    // Redirect to consultation summary page
+    window.location.href = "/user/consultancy";
+  };
+
   const sendMessage = () => {
-    if (!input.trim()) return;
+    if (!input.trim() || secondsLeft <= 0) return;
     const newMsg = { sender: userId, text: input };
     socket.emit("sendMessage", { roomId, ...newMsg });
     setInput("");
@@ -89,7 +142,9 @@ export default function ChatPage() {
           <div
             key={i}
             className={`p-2 rounded-lg max-w-xs break-words ${
-              msg.sender === userId
+              msg.system
+                ? "bg-yellow-100 text-gray-800 mx-auto text-sm text-center"
+                : msg.sender === userId
                 ? "bg-purple-600 text-white ml-auto"
                 : "bg-gray-200 text-gray-800"
             }`}
@@ -104,12 +159,13 @@ export default function ChatPage() {
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && sendMessage()}
-          className="flex-1 border rounded-lg px-3 py-2 mr-2"
-          placeholder="Type your message..."
+          disabled={secondsLeft <= 0}
+          className="flex-1 border rounded-lg px-3 py-2 mr-2 disabled:bg-gray-200"
         />
         <button
           onClick={sendMessage}
-          className="bg-purple-600 text-white px-4 py-2 rounded-lg"
+          disabled={secondsLeft <= 0}
+          className="bg-purple-600 text-white px-4 py-2 rounded-lg disabled:opacity-50"
         >
           Send
         </button>

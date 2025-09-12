@@ -4,13 +4,19 @@ const userSchema = new mongoose.Schema({
   name: String,
   email: { type: String, unique: true },
   password: String,
-  mobile: { type: String, unique: true }, // ✅ added mobile number
+  mobile: { type: String, unique: true },
   dob: Date,
   birthTime: String,
   birthPlace: String,
   kundlis: [Object],
 
-  // New role field with default
+  // City with latitude and longitude
+  city: {
+    name: String,       // e.g., "Pune"
+    lat: Number,        // e.g., 18.516726
+    lon: Number,        // e.g., 73.856255
+  },
+
   role: {
     type: String,
     enum: ["user"],
@@ -24,7 +30,7 @@ const userSchema = new mongoose.Schema({
         amount: { type: Number, required: true },
         date: { type: Date, default: Date.now },
         description: String,
-        paymentId: String, // For reference from Razorpay or Cashfree
+        paymentId: String,
       },
     ],
   },

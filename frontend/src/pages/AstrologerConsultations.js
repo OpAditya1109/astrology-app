@@ -85,7 +85,6 @@ export default function AstrologerConsultations() {
       "Are you sure you want to end this consultation? This will delete it."
     );
     if (!confirmEnd) return;
-
     try {
       const token = sessionStorage.getItem("token");
       await axios.delete(

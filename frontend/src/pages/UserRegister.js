@@ -1,5 +1,6 @@
 import { useState } from "react";
 import axios from "axios";
+import cities from "../data/cities_sorted.json"; // adjust path
 
 export default function UserRegister() {
   const [form, setForm] = useState({
@@ -9,11 +10,28 @@ export default function UserRegister() {
     dob: "",
     birthTime: "",
     birthPlace: "",
-    mobile: "", // ✅ added mobile
+    city: "",   // city name
+    lat: null,  // latitude
+    lon: null,  // longitude
+    mobile: "",
   });
 
   const handleChange = (e) =>
     setForm({ ...form, [e.target.name]: e.target.value });
+
+  // When a city is selected from dropdown
+  const handleCityChange = (e) => {
+    const selectedCity = cities.find((c) => c.city === e.target.value);
+    if (selectedCity) {
+      setForm({
+        ...form,
+        birthPlace: selectedCity.city,
+        city: selectedCity.city,
+        lat: selectedCity.latitude,
+        lon: selectedCity.longitude,
+      });
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -33,7 +51,10 @@ export default function UserRegister() {
         dob: "",
         birthTime: "",
         birthPlace: "",
-        mobile: "", // ✅ reset mobile
+        city: "",
+        lat: null,
+        lon: null,
+        mobile: "",
       });
     }
   };
@@ -139,19 +160,25 @@ export default function UserRegister() {
             />
           </div>
 
-          {/* Birth Place */}
+          {/* Birth Place Dropdown */}
           <div>
             <label className="block text-gray-700 font-medium">
               Birth Place <span className="text-red-500">*</span>
             </label>
-            <input
+            <select
               name="birthPlace"
               value={form.birthPlace}
-              placeholder="Enter birth place"
-              onChange={handleChange}
+              onChange={handleCityChange}
               className="w-full mt-1 px-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-400 focus:outline-none"
               required
-            />
+            >
+              <option value="">Select your city</option>
+              {cities.map((c) => (
+                <option key={c.city} value={c.city}>
+                  {c.city}, {c.state}
+                </option>
+              ))}
+            </select>
           </div>
 
           {/* Submit Button */}
@@ -163,7 +190,6 @@ export default function UserRegister() {
           </button>
         </form>
 
-        {/* Login Redirect */}
         <p className="text-center text-gray-600 mt-4">
           Already have an account?{" "}
           <a href="/login" className="text-purple-600 font-medium hover:underline">
