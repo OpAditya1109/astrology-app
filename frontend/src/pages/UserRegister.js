@@ -1,6 +1,6 @@
 import { useState } from "react";
 import axios from "axios";
-import cities from "../data/cities_sorted.json"; // adjust path
+import cities from "../cities_minified.json"; // adjust path
 
 export default function UserRegister() {
   const [form, setForm] = useState({
