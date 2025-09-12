@@ -5,10 +5,21 @@ const bcrypt = require("bcryptjs");
 // Register new user with email uniqueness across both collections
 const registerUser = async (req, res) => {
   try {
-    const { name, email, mobile, password, dob, birthTime, birthPlace } = req.body;
+    const {
+      name,
+      email,
+      mobile,
+      password,
+      dob,
+      birthTime,
+      birthPlace,
+      city,
+      lat,
+      lon,
+    } = req.body;
 
     // Check email across User and Astrologer
-    if (await User.findOne({ email }) || await Astrologer.findOne({ email })) {
+    if ((await User.findOne({ email })) || (await Astrologer.findOne({ email }))) {
       return res.status(400).json({ error: "Email already exists" });
     }
 
@@ -30,6 +41,11 @@ const registerUser = async (req, res) => {
       birthTime,
       birthPlace,
       kundlis: [],
+      city: {
+        name: city,
+        lat: lat,
+        lon: lon,
+      },
     });
 
     await user.save();
@@ -40,6 +56,5 @@ const registerUser = async (req, res) => {
     res.status(500).json({ error: "Server error" });
   }
 };
-
 
 module.exports = { registerUser };
