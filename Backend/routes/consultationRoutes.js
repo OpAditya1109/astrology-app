@@ -7,7 +7,7 @@ const { creditAdminWallet } = require("../controllers/adminController"); // Admi
 // ➤ Create a new consultation (chat/audio/video) or return existing
 router.post("/", async (req, res) => {
   try {
-    const { userId, userName, astrologerId, topic, mode, rate } = req.body;
+    const { userId, userName, astrologerId, topic, mode, rate, kundaliUrl } = req.body;
 
     // 1️⃣ Fetch user
     const user = await User.findById(userId);
@@ -15,7 +15,6 @@ router.post("/", async (req, res) => {
 
     // 2️⃣ Deduct first 5 min
     const first5MinCost = rate * 5;
-
     if (user.wallet.balance < first5MinCost) {
       return res.status(400).json({ message: "Insufficient balance" });
     }
@@ -37,9 +36,7 @@ router.post("/", async (req, res) => {
 
     // 4️⃣ Check if consultation already exists
     const existing = await Consultation.findOne({ userId, astrologerId });
-    if (existing) {
-      return res.status(200).json(existing); // return existing room
-    }
+    if (existing) return res.status(200).json(existing);
 
     // 5️⃣ Create new consultation
     const consultation = new Consultation({
@@ -50,6 +47,7 @@ router.post("/", async (req, res) => {
       bookedAt: new Date(),
       messages: [],
       status: "ongoing",
+      kundaliUrl: kundaliUrl || null, // ✅ store kundali URL
     });
 
     await consultation.save();
@@ -64,6 +62,7 @@ router.post("/", async (req, res) => {
       mode: consultation.mode,
       bookedAt: consultation.bookedAt,
       status: consultation.status,
+      kundaliUrl: consultation.kundaliUrl, // ✅ send kundali to astrologer
     });
 
     res.status(201).json(consultation);
@@ -72,6 +71,7 @@ router.post("/", async (req, res) => {
     res.status(500).json({ error: "Failed to create consultation" });
   }
 });
+
 
 // ➤ Get all consultations for an astrologer
 router.get("/:astrologerId", async (req, res) => {

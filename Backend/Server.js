@@ -35,6 +35,23 @@ app.use("/api/chatbot", chatbotRoutes);
 app.use("/api/orders", orderRoute);
 
 const horoscopeRoutes = require("./routes/horoscope");
+async function sendSystemMessage(roomId, text, kundaliUrl = null) {
+  const consultation = await Consultation.findById(roomId);
+  if (!consultation) return;
+
+  const systemMessage = {
+    sender: "system",
+    text,
+    kundaliUrl,
+    system: true,
+    createdAt: new Date(),
+  };
+
+  consultation.messages.push(systemMessage);
+  await consultation.save();
+
+  io.to(roomId).emit("newMessage", systemMessage);
+}
 
 app.use("/api/horoscope", horoscopeRoutes);
 // --- Create HTTP server ---

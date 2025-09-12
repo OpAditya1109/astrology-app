@@ -17,8 +17,8 @@ const consultationSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-     enum: ["pending", "completed", "cancelled", "ongoing"],
-    default: "Pending",
+    enum: ["pending", "completed", "cancelled", "ongoing"],
+    default: "pending",
   },
   bookedAt: {
     type: Date,
@@ -37,12 +37,20 @@ const consultationSchema = new mongoose.Schema({
     default: "Chat",
   },
 
+  // ✅ Kundali URL at consultation level
+  kundaliUrl: {
+    type: String,
+    default: null,
+  },
+
   // 💬 Chat messages for this consultation
   messages: [
     {
       sender: { type: mongoose.Schema.Types.ObjectId, refPath: 'messages.senderModel' },
       senderModel: { type: String, enum: ['User', 'Astrologer'] }, // track sender type
       text: String,
+      kundaliUrl: { type: String, default: null }, // optional kundali per message (for system msgs)
+      system: { type: Boolean, default: false }, // to identify system messages
       createdAt: { type: Date, default: Date.now },
     }
   ]
