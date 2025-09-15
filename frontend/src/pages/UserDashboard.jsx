@@ -1,4 +1,10 @@
 import { Link } from "react-router-dom";
+import consultImg from "../assets/consult.png";
+import aiImg from "../assets/ai.png";
+import horoscopeImg from "../assets/horoscope.png";
+import walletImg from "../assets/wallet.png";
+import shopImg from "../assets/shop.png";
+import coursesImg from "../assets/course.png";
 
 export default function UserDashboard() {
   // ✅ Get logged-in user from sessionStorage
@@ -7,6 +13,52 @@ export default function UserDashboard() {
 
   // ✅ Use name if available, else fallback
   const userName = user?.name || "User";
+
+  // ✅ Service cards data (easier to map)
+ const services = [
+  {
+    title: "Consult Astrologers",
+    desc: "Book chat or call consultations with experts",
+    link: "/user/consultancy",
+    image: consultImg,
+    button: "Consult Now",
+  },
+  {
+    title: "AI Astrologer",
+    desc: "Chat instantly with our AI-powered astrologer",
+    link: "/astrochat",
+    image: aiImg,
+    button: "Chat with AI",
+  },
+  {
+    title: "Horoscopes",
+    desc: "Check daily, weekly, and monthly horoscopes",
+    link: "/user/horoscope",
+    image: horoscopeImg,
+    button: "View Horoscopes",
+  },
+  {
+    title: "Wallet",
+    desc: "Check balance, add funds, or redeem credits",
+    link: "/user/wallet",
+    image: walletImg,
+    button: "Go to Wallet",
+  },
+  {
+    title: "Shop",
+    desc: "Browse astrology products and accessories",
+    link: "/shopping",
+    image: shopImg,
+    button: "Go to Shop",
+  },
+  {
+    title: "Courses",
+    desc: "Learn astrology, Reiki, Vastu, and more",
+    link: "/courses",
+    image: coursesImg,
+    button: "Explore Courses",
+  },
+];
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -25,77 +77,28 @@ export default function UserDashboard() {
 
         {/* Dashboard Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {/* Consult Card */}
-          <div className="bg-white shadow-md rounded-2xl p-6 text-center hover:shadow-xl transition">
-            <h3 className="text-xl font-bold text-purple-700 mb-2">Consult Astrologers</h3>
-            <p className="text-gray-500 mb-4">Book chat or call consultations with experts</p>
-            <Link
-              to="/user/consultancy"
-              className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
+          {services.map((service, index) => (
+            <div
+              key={index}
+              className="bg-white shadow-md rounded-2xl p-6 text-center hover:shadow-xl transition flex flex-col"
             >
-              Consult Now
-            </Link>
-          </div>
-
-          {/* AI Astrologer */}
-          <div className="bg-white shadow-md rounded-2xl p-6 text-center hover:shadow-xl transition">
-            <h3 className="text-xl font-bold text-purple-700 mb-2">AI Astrologer</h3>
-            <p className="text-gray-500 mb-4">Chat instantly with our AI-powered astrologer</p>
-            <Link
-              to="/astrochat"
-              className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
-            >
-              Chat with AI
-            </Link>
-          </div>
-
-          {/* Horoscope */}
-          <div className="bg-white shadow-md rounded-2xl p-6 text-center hover:shadow-xl transition">
-            <h3 className="text-xl font-bold text-purple-700 mb-2">Horoscopes</h3>
-            <p className="text-gray-500 mb-4">Check daily, weekly, and monthly horoscopes</p>
-            <Link
-              to="/user/horoscope"
-              className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
-            >
-              View Horoscopes
-            </Link>
-          </div>
-
-          {/* Wallet */}
-          <div className="bg-white shadow-md rounded-2xl p-6 text-center hover:shadow-xl transition">
-            <h3 className="text-xl font-bold text-purple-700 mb-2">Wallet</h3>
-            <p className="text-gray-500 mb-4">Check balance, add funds, or redeem credits</p>
-            <Link
-              to="/user/wallet"
-              className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
-            >
-              Go to Wallet
-            </Link>
-          </div>
-
-          {/* Shop */}
-          <div className="bg-white shadow-md rounded-2xl p-6 text-center hover:shadow-xl transition">
-            <h3 className="text-xl font-bold text-purple-700 mb-2">Shop</h3>
-            <p className="text-gray-500 mb-4">Browse astrology products and accessories</p>
-            <Link
-              to="/shopping"
-              className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
-            >
-              Go to Shop
-            </Link>
-          </div>
-
-          {/* Courses */}
-          <div className="bg-white shadow-md rounded-2xl p-6 text-center hover:shadow-xl transition">
-            <h3 className="text-xl font-bold text-purple-700 mb-2">Courses</h3>
-            <p className="text-gray-500 mb-4">Learn astrology, Reiki, Vastu, and more</p>
-            <Link
-              to="/courses"
-              className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
-            >
-              Explore Courses
-            </Link>
-          </div>
+              <img
+                src={service.image}
+                alt={service.title}
+                 className="h-66 w-66 object-cover mb-4"
+              />
+              <h3 className="text-xl font-bold text-purple-700 mb-2">
+                {service.title}
+              </h3>
+              <p className="text-gray-500 mb-4 flex-grow">{service.desc}</p>
+              <Link
+                to={service.link}
+                className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
+              >
+                {service.button}
+              </Link>
+            </div>
+          ))}
         </div>
       </section>
     </div>
