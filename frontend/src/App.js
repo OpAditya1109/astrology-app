@@ -36,6 +36,9 @@ import MalaPage from "./pages/MalaPage"
 import GemstonePage from "./pages/GemstonePage"
 import YantraPage from "./pages/YantraPage"
 import MiscPage from "./pages/MiscPage"
+import EducationPage from "./pages/EducationPage";
+import CourseDetail from "./pages/CourseDetail";
+
 function App() {
   return (
     <Router>
@@ -105,6 +108,11 @@ function App() {
             <Route path="/product/:id" element={<ProductDetail />} />
                <Route path="/checkout/:id" element={<Checkout />} />
                 <Route path="/order-success" element={<OrderSuccess />} />
+
+
+                <Route path="/education" element={<EducationPage />} />
+<Route path="/course/:id" element={<CourseDetail />} />
+
         </Routes>
       </Layout>
     </Router>

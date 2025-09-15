@@ -10,6 +10,7 @@ const { getAstrologyResponse } = require("./api/astrology");
 const panchangRoutes = require("./routes/panchang");
 const chatbotRoutes = require("./routes/chatbotRoutes");
 const orderRoute =require("./routes/orderRoutes")
+const enquiryRoutes = require("./routes/enquiryRoutes")
 require("./cron/panchangCorn");
 dotenv.config();
 connectDB();
@@ -33,6 +34,7 @@ app.use("/api", panchangRoutes);
 app.use("/api/wallet", require("./routes/payment"));
 app.use("/api/chatbot", chatbotRoutes);
 app.use("/api/orders", orderRoute);
+app.use("/api/enquiries", enquiryRoutes);
 
 const horoscopeRoutes = require("./routes/horoscope");
 async function sendSystemMessage(roomId, text, kundaliUrl = null) {
