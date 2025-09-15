@@ -46,7 +46,7 @@ export default function Home() {
       title: "Courses",
       desc: "Join certified astrology & healing courses",
       image: courseImg,
-      link: "/education",
+      link: "/occult",
     },
   ];
 

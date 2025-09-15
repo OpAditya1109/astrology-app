@@ -54,7 +54,7 @@ export default function UserDashboard() {
   {
     title: "Courses",
     desc: "Learn astrology, Reiki, Vastu, and more",
-    link: "/courses",
+    link: "/occult",
     image: coursesImg,
     button: "Explore Courses",
   },

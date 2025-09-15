@@ -110,7 +110,7 @@ function App() {
                 <Route path="/order-success" element={<OrderSuccess />} />
 
 
-                <Route path="/education" element={<EducationPage />} />
+                <Route path="/occult" element={<EducationPage />} />
 <Route path="/course/:id" element={<CourseDetail />} />
 
         </Routes>
