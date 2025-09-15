@@ -20,11 +20,11 @@ export default function UserDashboard() {
         </h2>
         <p className="text-gray-600 mb-8">
           Here’s your personalized dashboard where you can consult with astrologers, 
-          check horoscopes, shop astrology products, and manage your wallet.
+          check horoscopes, shop astrology products, explore courses, and manage your wallet.
         </p>
 
         {/* Dashboard Cards */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-5 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {/* Consult Card */}
           <div className="bg-white shadow-md rounded-2xl p-6 text-center hover:shadow-xl transition">
             <h3 className="text-xl font-bold text-purple-700 mb-2">Consult Astrologers</h3>
@@ -84,13 +84,20 @@ export default function UserDashboard() {
               Go to Shop
             </Link>
           </div>
+
+          {/* Courses */}
+          <div className="bg-white shadow-md rounded-2xl p-6 text-center hover:shadow-xl transition">
+            <h3 className="text-xl font-bold text-purple-700 mb-2">Courses</h3>
+            <p className="text-gray-500 mb-4">Learn astrology, Reiki, Vastu, and more</p>
+            <Link
+              to="/courses"
+              className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
+            >
+              Explore Courses
+            </Link>
+          </div>
         </div>
       </section>
-
-      {/* Footer */}
-      <footer className="bg-white border-t py-6 mt-12 text-center text-gray-500">
-        © {new Date().getFullYear()} AstroBhavana. All rights reserved.
-      </footer>
     </div>
   );
 }

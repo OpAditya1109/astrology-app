@@ -19,7 +19,7 @@ export default function EducationPage() {
             <img
               src={course.image}
               alt={course.title}
-              loading="lazy"
+            
               className="w-full h-66 object-cover rounded-xl mb-4"
             />
             <h2 className="text-2xl font-semibold text-purple-700 mb-2">{course.title}</h2>

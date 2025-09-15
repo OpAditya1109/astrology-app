@@ -92,12 +92,32 @@ export default function Navbar() {
 
         {/* Mobile Dropdown Menu */}
         {isMenuOpen && (
-          <div className="md:hidden bg-white shadow-md px-6 py-4 flex flex-col gap-4">
+          <div className="md:hidden bg-white shadow-md px-6 py-6 flex flex-col gap-4">
+            {/* 🔹 Main Services Always Visible */}
+            <Link to="/kundli" className="text-gray-700 hover:text-purple-700 font-medium" onClick={() => setIsMenuOpen(false)}>
+              Free Kundli
+            </Link>
+            <Link to="/horoscopes" className="text-gray-700 hover:text-purple-700 font-medium" onClick={() => setIsMenuOpen(false)}>
+              Daily Horoscope
+            </Link>
+            <Link to="/login" className="text-gray-700 hover:text-purple-700 font-medium" onClick={() => setIsMenuOpen(false)}>
+              Consult Astrologers
+            </Link>
+            <Link to="/match-making" className="text-gray-700 hover:text-purple-700 font-medium" onClick={() => setIsMenuOpen(false)}>
+              Matchmaking
+            </Link>
+            <Link to="/shop" className="text-gray-700 hover:text-purple-700 font-medium" onClick={() => setIsMenuOpen(false)}>
+              Shop
+            </Link>
+            <Link to="/education" className="text-gray-700 hover:text-purple-700 font-medium" onClick={() => setIsMenuOpen(false)}>
+              Courses
+            </Link>
+
+            <hr className="my-2 border-gray-200" />
+
+            {/* 🔹 Auth Links */}
             {!isLoggedIn ? (
               <>
-                <Link to="/" className="text-gray-700 hover:text-purple-700 font-medium" onClick={() => setIsMenuOpen(false)}>
-                  Home
-                </Link>
                 <Link to="/login" className="text-gray-700 hover:text-purple-700 font-medium" onClick={() => setIsMenuOpen(false)}>
                   Login
                 </Link>
