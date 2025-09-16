@@ -4,7 +4,8 @@ const User = require("../models/User");
 const Astrologer = require("../models/Astrologer");
 const Order = require("../models/Order");
 const Enquiry = require("../models/Enquiry");
-const WalletTransaction = require("../models/WalletTransaction"); // ✅ new import
+const WalletTransaction = require("../models/WalletTransaction");
+const Admin = require("../models/Admin"); // ✅ import Admin
 
 const router = express.Router();
 
@@ -25,29 +26,38 @@ function verifyAdmin(req, res, next) {
 // ✅ Admin Dashboard Stats
 router.get("/dashboard", verifyAdmin, async (req, res) => {
   try {
+    // Counts
     const usersCount = await User.countDocuments();
     const astrologersCount = await Astrologer.countDocuments();
     const ordersCount = await Order.countDocuments();
     const enquiriesCount = await Enquiry.countDocuments();
-    const walletTxCount = await WalletTransaction.countDocuments(); // ✅
+    const walletTxCount = await WalletTransaction.countDocuments();
 
+    // Latest records
     const latestUsers = await User.find().sort({ createdAt: -1 }).limit(5);
     const latestAstrologers = await Astrologer.find().sort({ createdAt: -1 }).limit(5);
     const latestOrders = await Order.find().sort({ createdAt: -1 }).limit(5);
     const latestEnquiries = await Enquiry.find().sort({ createdAt: -1 }).limit(5);
-    const latestWalletTx = await WalletTransaction.find().sort({ createdAt: -1 }).limit(5); // ✅
+    const latestWalletTx = await WalletTransaction.find().sort({ createdAt: -1 }).limit(5);
+
+    // ✅ Get admin balance and wallet transactions
+    const admin = await Admin.findOne(); // assuming only 1 admin
+    const adminBalance = admin?.wallet?.balance || 0;
+    const adminTransactions = admin?.wallet?.transactions || [];
 
     res.json({
       usersCount,
       astrologersCount,
       ordersCount,
       enquiriesCount,
-      walletTxCount, // ✅
+      walletTxCount,
       latestUsers: latestUsers || [],
       latestAstrologers: latestAstrologers || [],
       latestOrders: latestOrders || [],
       latestEnquiries: latestEnquiries || [],
-      latestWalletTx: latestWalletTx || [], // ✅
+      latestWalletTx: latestWalletTx || [],
+      adminBalance, // ✅ include admin wallet balance
+      adminTransactions, // ✅ include admin wallet transactions
     });
   } catch (err) {
     console.error(err);

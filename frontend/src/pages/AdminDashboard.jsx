@@ -16,7 +16,9 @@ export default function AdminDashboard() {
           latestUsers: res.data.latestUsers || [],
           latestAstrologers: res.data.latestAstrologers || [],
           latestOrders: res.data.latestOrders || [],
-          latestEnquiries: res.data.latestEnquiries || [], // ✅ safe fallback
+          latestEnquiries: res.data.latestEnquiries || [],
+          latestWalletTx: res.data.latestWalletTx || [],
+          adminTransactions: res.data.adminTransactions || [],
         })
       )
       .catch((err) => console.error(err));
@@ -29,28 +31,61 @@ export default function AdminDashboard() {
       <h1 className="text-3xl font-bold mb-6">Admin Dashboard</h1>
 
       {/* Stats Cards */}
-    <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
-  <div className="bg-white p-4 rounded shadow">
-    <h2 className="text-xl font-semibold">Users</h2>
-    <p className="text-2xl">{stats.usersCount}</p>
-  </div>
-  <div className="bg-white p-4 rounded shadow">
-    <h2 className="text-xl font-semibold">Astrologers</h2>
-    <p className="text-2xl">{stats.astrologersCount}</p>
-  </div>
-  <div className="bg-white p-4 rounded shadow">
-    <h2 className="text-xl font-semibold">Orders</h2>
-    <p className="text-2xl">{stats.ordersCount}</p>
-  </div>
-  <div className="bg-white p-4 rounded shadow">
-    <h2 className="text-xl font-semibold">Enquiries</h2>
-    <p className="text-2xl">{stats.enquiriesCount}</p>
-  </div>
-  <div className="bg-white p-4 rounded shadow">
-    <h2 className="text-xl font-semibold">Wallet Tx</h2>
-    <p className="text-2xl">{stats.walletTxCount}</p>
-  </div>
-</div>
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
+        <div className="bg-white p-4 rounded shadow">
+          <h2 className="text-xl font-semibold">Users</h2>
+          <p className="text-2xl">{stats.usersCount}</p>
+        </div>
+        <div className="bg-white p-4 rounded shadow">
+          <h2 className="text-xl font-semibold">Astrologers</h2>
+          <p className="text-2xl">{stats.astrologersCount}</p>
+        </div>
+        <div className="bg-white p-4 rounded shadow">
+          <h2 className="text-xl font-semibold">Orders</h2>
+          <p className="text-2xl">{stats.ordersCount}</p>
+        </div>
+        <div className="bg-white p-4 rounded shadow">
+          <h2 className="text-xl font-semibold">Enquiries</h2>
+          <p className="text-2xl">{stats.enquiriesCount}</p>
+        </div>
+        <div className="bg-white p-4 rounded shadow">
+          <h2 className="text-xl font-semibold">Wallet Tx</h2>
+          <p className="text-2xl">{stats.walletTxCount}</p>
+        </div>
+      </div>
+
+      {/* Admin Wallet Balance */}
+      <div className="bg-white p-4 rounded shadow mb-8">
+        <h2 className="text-xl font-semibold mb-4">Admin Wallet Balance</h2>
+        <p className="text-2xl">₹{stats.adminBalance}</p>
+      </div>
+
+      {/* Admin Wallet Transactions */}
+      <div className="bg-white p-4 rounded shadow mb-8">
+        <h2 className="text-xl font-semibold mb-4">Admin Wallet Transactions</h2>
+        <table className="w-full border">
+          <thead>
+            <tr className="bg-gray-200">
+              <th className="p-2 border">Type</th>
+              <th className="p-2 border">Amount</th>
+              <th className="p-2 border">Date</th>
+              <th className="p-2 border">Description</th>
+              <th className="p-2 border">Reference ID</th>
+            </tr>
+          </thead>
+          <tbody>
+            {(stats.adminTransactions || []).map((t, index) => (
+              <tr key={index}>
+                <td className="p-2 border">{t.type}</td>
+                <td className="p-2 border">₹{t.amount}</td>
+                <td className="p-2 border">{new Date(t.date).toLocaleString()}</td>
+                <td className="p-2 border">{t.description || "-"}</td>
+                <td className="p-2 border">{t.referenceId || "-"}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
 
       {/* Latest Users */}
       <div className="bg-white p-4 rounded shadow mb-8">
@@ -124,7 +159,7 @@ export default function AdminDashboard() {
       </div>
 
       {/* Latest Enquiries */}
-      <div className="bg-white p-4 rounded shadow">
+      <div className="bg-white p-4 rounded shadow mb-8">
         <h2 className="text-xl font-semibold mb-4">Latest Enquiries</h2>
         <table className="w-full border">
           <thead>
@@ -147,31 +182,33 @@ export default function AdminDashboard() {
           </tbody>
         </table>
       </div>
-      <div className="bg-white p-4 rounded shadow">
-  <h2 className="text-xl font-semibold mb-4">Latest Wallet Transactions</h2>
-  <table className="w-full border">
-    <thead>
-      <tr className="bg-gray-200">
-        <th className="p-2 border">Order ID</th>
-        <th className="p-2 border">User ID</th>
-        <th className="p-2 border">Amount</th>
-        <th className="p-2 border">Status</th>
-        <th className="p-2 border">Payment Method</th>
-      </tr>
-    </thead>
-    <tbody>
-      {(stats.latestWalletTx || []).map((w) => (
-        <tr key={w._id}>
-          <td className="p-2 border">{w.orderId}</td>
-          <td className="p-2 border">{w.userId}</td>
-          <td className="p-2 border">₹{w.amount}</td>
-          <td className="p-2 border">{w.status}</td>
-          <td className="p-2 border">{w.paymentMethod || "-"}</td>
-        </tr>
-      ))}
-    </tbody>
-  </table>
-</div>
+
+      {/* Latest Wallet Transactions */}
+      <div className="bg-white p-4 rounded shadow mb-8">
+        <h2 className="text-xl font-semibold mb-4">Latest Wallet Transactions</h2>
+        <table className="w-full border">
+          <thead>
+            <tr className="bg-gray-200">
+              <th className="p-2 border">Order ID</th>
+              <th className="p-2 border">User ID</th>
+              <th className="p-2 border">Amount</th>
+              <th className="p-2 border">Status</th>
+              <th className="p-2 border">Payment Method</th>
+            </tr>
+          </thead>
+          <tbody>
+            {(stats.latestWalletTx || []).map((w) => (
+              <tr key={w._id}>
+                <td className="p-2 border">{w.orderId}</td>
+                <td className="p-2 border">{w.userId}</td>
+                <td className="p-2 border">₹{w.amount}</td>
+                <td className="p-2 border">{w.status}</td>
+                <td className="p-2 border">{w.paymentMethod || "-"}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
