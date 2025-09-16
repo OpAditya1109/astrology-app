@@ -13,18 +13,19 @@ export default function Login() {
         password,
       });
 
- sessionStorage.setItem("token", data.token);
-sessionStorage.setItem("user", JSON.stringify(data.user));
-
-
+      sessionStorage.setItem("token", data.token);
+      sessionStorage.setItem("user", JSON.stringify(data.user));
 
       // ✅ Redirect based on role
-   if (data.user.role === "user") {
-  window.location.href = "/user/dashboard";
-} else {
-  window.location.href = "/astrologer/dashboard";
-}
-
+      if (data.user.role === "user") {
+        window.location.href = "/user/dashboard";
+      } else if (data.user.role === "astrologer") {
+        window.location.href = "/astrologer/dashboard";
+      } else if (data.user.role === "admin") {
+        window.location.href = "/admin/dashboard"; // ✅ admin redirect
+      } else {
+        alert("Unknown role. Contact support.");
+      }
     } catch (err) {
       alert(err.response?.data?.message || "Login failed");
     }

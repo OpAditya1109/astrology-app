@@ -3,6 +3,7 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
 const Astrologer = require("../models/Astrologer");
+const Admin = require("../models/Admin"); // ✅ import Admin model
 
 const router = express.Router();
 
@@ -18,6 +19,10 @@ router.post("/login", async (req, res) => {
     if (!user) {
       user = await Astrologer.findOne({ email });
       role = "astrologer";
+    }
+     if (!user) {
+      user = await Admin.findOne({ email });
+      role = "admin";
     }
 
     if (!user) return res.status(400).json({ message: "User not found" });
