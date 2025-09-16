@@ -3,6 +3,7 @@ import axios from "axios";
 
 export default function AdminDashboard() {
   const [stats, setStats] = useState(null);
+  const [showAllAdminTx, setShowAllAdminTx] = useState(false); // toggle for see more
 
   useEffect(() => {
     const token = sessionStorage.getItem("token");
@@ -25,6 +26,10 @@ export default function AdminDashboard() {
   }, []);
 
   if (!stats) return <p className="text-center mt-10">Loading...</p>;
+
+  const adminTxToShow = showAllAdminTx
+    ? stats.adminTransactions
+    : stats.adminTransactions.slice(0, 5);
 
   return (
     <div className="p-6 bg-gray-100 min-h-screen">
@@ -74,7 +79,7 @@ export default function AdminDashboard() {
             </tr>
           </thead>
           <tbody>
-            {(stats.adminTransactions || []).map((t, index) => (
+            {adminTxToShow.map((t, index) => (
               <tr key={index}>
                 <td className="p-2 border">{t.type}</td>
                 <td className="p-2 border">₹{t.amount}</td>
@@ -85,6 +90,14 @@ export default function AdminDashboard() {
             ))}
           </tbody>
         </table>
+        {stats.adminTransactions.length > 5 && (
+          <button
+            className="mt-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+            onClick={() => setShowAllAdminTx(!showAllAdminTx)}
+          >
+            {showAllAdminTx ? "Show Less" : "See More"}
+          </button>
+        )}
       </div>
 
       {/* Latest Users */}
