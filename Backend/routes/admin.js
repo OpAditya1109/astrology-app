@@ -2,7 +2,9 @@ const express = require("express");
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
 const Astrologer = require("../models/Astrologer");
-const Order = require("../models/Order"); // ✅ import order model
+const Order = require("../models/Order");
+const Enquiry = require("../models/Enquiry");
+const WalletTransaction = require("../models/WalletTransaction"); // ✅ new import
 
 const router = express.Router();
 
@@ -20,25 +22,32 @@ function verifyAdmin(req, res, next) {
   });
 }
 
-
 // ✅ Admin Dashboard Stats
 router.get("/dashboard", verifyAdmin, async (req, res) => {
   try {
     const usersCount = await User.countDocuments();
     const astrologersCount = await Astrologer.countDocuments();
     const ordersCount = await Order.countDocuments();
+    const enquiriesCount = await Enquiry.countDocuments();
+    const walletTxCount = await WalletTransaction.countDocuments(); // ✅
 
     const latestUsers = await User.find().sort({ createdAt: -1 }).limit(5);
     const latestAstrologers = await Astrologer.find().sort({ createdAt: -1 }).limit(5);
     const latestOrders = await Order.find().sort({ createdAt: -1 }).limit(5);
+    const latestEnquiries = await Enquiry.find().sort({ createdAt: -1 }).limit(5);
+    const latestWalletTx = await WalletTransaction.find().sort({ createdAt: -1 }).limit(5); // ✅
 
     res.json({
       usersCount,
       astrologersCount,
       ordersCount,
+      enquiriesCount,
+      walletTxCount, // ✅
       latestUsers: latestUsers || [],
       latestAstrologers: latestAstrologers || [],
       latestOrders: latestOrders || [],
+      latestEnquiries: latestEnquiries || [],
+      latestWalletTx: latestWalletTx || [], // ✅
     });
   } catch (err) {
     console.error(err);
