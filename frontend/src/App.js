@@ -38,6 +38,7 @@ import YantraPage from "./pages/YantraPage"
 import MiscPage from "./pages/MiscPage"
 import EducationPage from "./pages/EducationPage";
 import CourseDetail from "./pages/CourseDetail";
+import AdminDashboard from "./pages/AdminDashboard";
 
 function App() {
   return (
@@ -112,6 +113,7 @@ function App() {
 
                 <Route path="/occult" element={<EducationPage />} />
 <Route path="/course/:id" element={<CourseDetail />} />
+        <Route path="/admin/dashboard" element={<AdminDashboard />} />
 
         </Routes>
       </Layout>

@@ -35,6 +35,7 @@ app.use("/api/wallet", require("./routes/payment"));
 app.use("/api/chatbot", chatbotRoutes);
 app.use("/api/orders", orderRoute);
 app.use("/api/enquiries", enquiryRoutes);
+app.use("/api/admin", require("./routes/admin"));
 
 const horoscopeRoutes = require("./routes/horoscope");
 async function sendSystemMessage(roomId, text, kundaliUrl = null) {
