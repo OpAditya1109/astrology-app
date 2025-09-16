@@ -2,6 +2,7 @@ const express = require("express");
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
 const Astrologer = require("../models/Astrologer");
+const Order = require("../models/Order"); // ✅ import order model
 
 const router = express.Router();
 
@@ -20,16 +21,24 @@ function verifyAdmin(req, res, next) {
 }
 
 // ✅ Admin Dashboard Stats
+// ✅ Admin Dashboard Stats
 router.get("/dashboard", verifyAdmin, async (req, res) => {
   try {
     const usersCount = await User.countDocuments();
     const astrologersCount = await Astrologer.countDocuments();
+    const ordersCount = await Order.countDocuments();
+
     const latestUsers = await User.find().sort({ createdAt: -1 }).limit(5);
+    const latestAstrologers = await Astrologer.find().sort({ createdAt: -1 }).limit(5);
+    const latestOrders = await Order.find().sort({ createdAt: -1 }).limit(5);
 
     res.json({
       usersCount,
       astrologersCount,
-      latestUsers,
+      ordersCount,
+      latestUsers: latestUsers || [],
+      latestAstrologers: latestAstrologers || [],
+      latestOrders: latestOrders || [],
     });
   } catch (err) {
     console.error(err);
