@@ -40,7 +40,7 @@ export default function Home() {
       title: "Shop",
       desc: "Explore spiritual products & remedies",
       image: shopImg,
-      link: "/shop",
+      link: "/shopping",
     },
     {
       title: "Courses",

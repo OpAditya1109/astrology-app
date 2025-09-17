@@ -106,7 +106,7 @@ export default function Navbar() {
             <Link to="/match-making" className="text-gray-700 hover:text-purple-700 font-medium" onClick={() => setIsMenuOpen(false)}>
               Matchmaking
             </Link>
-            <Link to="/shop" className="text-gray-700 hover:text-purple-700 font-medium" onClick={() => setIsMenuOpen(false)}>
+            <Link to="/shopping" className="text-gray-700 hover:text-purple-700 font-medium" onClick={() => setIsMenuOpen(false)}>
               Shop
             </Link>
             <Link to="/occult" className="text-gray-700 hover:text-purple-700 font-medium" onClick={() => setIsMenuOpen(false)}>
