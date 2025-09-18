@@ -197,9 +197,6 @@ router.post('/webhook', async (req, res) => {
 });
 
 
-const axios = require('axios');
-
-
 router.get('/status/:orderId', async (req, res) => {
   try {
     const { orderId } = req.params;
@@ -244,33 +241,8 @@ router.get('/status/:orderId', async (req, res) => {
       console.log(`Transaction cancelled: ${orderId}`);
 
     } else if (['PENDING', 'ACTIVE', 'INITIATED'].includes(cfStatus)) {
-      // Terminate pending order using REST API
-      try {
-        console.log(`Attempting to terminate pending order: ${orderId}`);
-
-        const terminateUrl = `https://www.cashfree.com/pg/orders/${orderId}`;
-        const terminateRes = await axios.patch(
-          terminateUrl,
-          { order_status: 'TERMINATED' },
-          {
-            headers: {
-              'x-api-version': '2022-09-01', // production API version
-              'x-client-id': process.env.CASHFREE_APP_ID,
-              'x-client-secret': process.env.CASHFREE_SECRET_KEY,
-              'Content-Type': 'application/json',
-            },
-          }
-        );
-
-        console.log(`Terminate Response for ${orderId}:`, terminateRes.data);
-
-        transaction.status = 'cancelled';
-        transaction.paymentMessage = 'Order terminated due to inactivity';
-        await transaction.save();
-        console.log(`Pending transaction terminated: ${orderId}`);
-      } catch (terminateError) {
-        console.error(`Error terminating pending order ${orderId}:`, terminateError.response?.data || terminateError.message);
-      }
+      // Pending orders remain pending; do not terminate
+      console.log(`Transaction is still pending: ${orderId}`);
     }
 
     res.json({ success: true, transaction });

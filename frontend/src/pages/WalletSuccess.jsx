@@ -11,7 +11,7 @@ export default function WalletSuccess() {
   const [transaction, setTransaction] = useState(null);
   const [error, setError] = useState("");
 
-  // Fetch transaction status and terminate if pending
+  // Fetch transaction status
   useEffect(() => {
     const fetchStatus = async () => {
       try {
@@ -26,26 +26,7 @@ export default function WalletSuccess() {
         );
 
         if (data.success && data.transaction) {
-          const tx = data.transaction;
-
-          // If pending, call termination API
-          if (tx.status === "pending") {
-            try {
-              await axios.post(
-                `https://bhavanaastro.onrender.com/api/wallet/terminate`,
-                { orderId }
-              );
-              tx.status = "cancelled";
-              tx.paymentMessage = "Order terminated due to inactivity";
-            } catch (terminateError) {
-              console.error("Error terminating order:", terminateError);
-            }
-          }
-
-          setTransaction(tx);
-
-          // Auto redirect after 5 seconds
-         
+          setTransaction(data.transaction);
         } else {
           setError("Unable to fetch transaction status");
         }
@@ -57,9 +38,9 @@ export default function WalletSuccess() {
     };
 
     fetchStatus();
-  }, [orderId, navigate]);
+  }, [orderId]);
 
-  // Block back & redirect to home
+  // Block back button & redirect to home
   useEffect(() => {
     const handlePopState = () => {
       navigate("/", { replace: true });
@@ -124,7 +105,7 @@ export default function WalletSuccess() {
       ? "We are still waiting for confirmation. Do not refresh or go back."
       : transaction.status === "failed"
       ? "Your transaction could not be processed."
-      : "Your order has been terminated. No wallet credit has been made.";
+      : "Your order has been cancelled. No wallet credit has been made.";
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen p-6 pointer-events-none opacity-90">
