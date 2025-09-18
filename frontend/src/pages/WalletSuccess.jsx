@@ -45,29 +45,19 @@ export default function WalletSuccess() {
     fetchStatus();
   }, [orderId, navigate]);
 
-  // Block back & refresh AFTER transaction loads
+  // Block back & redirect to home
   useEffect(() => {
-    if (!transaction) return;
+    const handlePopState = () => {
+      navigate("/", { replace: true }); // Redirect to home
+    };
 
-    if (["paid", "failed", "cancelled"].includes(transaction.status)) {
-      // Block browser back
-      window.history.pushState(null, "", window.location.href);
-      const handlePopState = () => window.history.pushState(null, "", window.location.href);
-      window.addEventListener("popstate", handlePopState);
+    window.history.pushState(null, "", window.location.href); // Push current state
+    window.addEventListener("popstate", handlePopState);
 
-      // Block refresh
-      const handleBeforeUnload = (e) => {
-        e.preventDefault();
-        e.returnValue = "";
-      };
-      window.addEventListener("beforeunload", handleBeforeUnload);
-
-      return () => {
-        window.removeEventListener("popstate", handlePopState);
-        window.removeEventListener("beforeunload", handleBeforeUnload);
-      };
-    }
-  }, [transaction]);
+    return () => {
+      window.removeEventListener("popstate", handlePopState);
+    };
+  }, [navigate]);
 
   if (loading) {
     return (
