@@ -249,7 +249,7 @@ router.get('/status/:orderId', async (req, res) => {
       // Terminate pending order
       try {
         console.log(`Attempting to terminate pending order: ${orderId}`);
-        const terminateRes = await cashfree.PGTerminateOrder({ order_id: orderId });
+        const terminateRes = await cashfree.PGTerminateOrder({ orderId });
         console.log(`Terminate response for ${orderId}:`, terminateRes.data);
 
         transaction.status = 'cancelled';
