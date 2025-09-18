@@ -1,41 +1,48 @@
-import React, { createContext, useState, useContext, useEffect } from "react";
+import React, { createContext, useContext, useState } from "react";
 
 const AuthContext = createContext();
-export const useAuth = () => useContext(AuthContext);
 
 export const AuthProvider = ({ children }) => {
-  const [auth, setAuth] = useState({
-    token: null,
-    role: null,
-    userId: null,
+  const [auth, setAuth] = useState(() => {
+    const stored =
+      localStorage.getItem("auth") || sessionStorage.getItem("auth");
+    return stored ? JSON.parse(stored) : null;
   });
-
-  // Load from localStorage on mount
-  useEffect(() => {
-    const storedAuth = localStorage.getItem("auth");
-    if (storedAuth) {
-      setAuth(JSON.parse(storedAuth));
-    }
-  }, []);
 
   const login = (data) => {
     const newAuth = {
       token: data.token,
-      role: data.role,
-      userId: data.userId,
+      user: {
+        id: data.user.id || data.user._id,
+        name: data.user.name,
+        email: data.user.email,
+        mobile: data.user.mobile,
+        role: data.user.role,
+        birthTime: data.user.birthTime,
+        birthPlace: data.user.birthPlace,
+        dob: data.user.dob,
+        kundaliUrl: data.user.kundaliUrl,
+      },
     };
+
     setAuth(newAuth);
-    localStorage.setItem("auth", JSON.stringify(newAuth)); // persist
+
+    // Save to storage
+    localStorage.setItem("auth", JSON.stringify(newAuth));
+    sessionStorage.setItem("auth", JSON.stringify(newAuth));
   };
 
   const logout = () => {
-    setAuth({ token: null, role: null, userId: null });
+    setAuth(null);
     localStorage.removeItem("auth");
+    sessionStorage.removeItem("auth");
   };
 
   return (
-    <AuthContext.Provider value={{ ...auth, login, logout }}>
+    <AuthContext.Provider value={{ auth, login, logout }}>
       {children}
     </AuthContext.Provider>
   );
 };
+
+export const useAuth = () => useContext(AuthContext);

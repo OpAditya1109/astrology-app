@@ -1,23 +1,29 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "../Context/AuthContext";
 
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-  const { login, token, role } = useAuth(); // ✅ get token & role too
 
-  // 🚀 Redirect if already logged in
+  // Auto-redirect if already logged in
   useEffect(() => {
-    if (token && role) {
-      if (role === "user") navigate("/user/dashboard");
-      else if (role === "astrologer") navigate("/astrologer/dashboard");
-      else if (role === "admin") navigate("/admin/dashboard");
+    const storedUser =
+      JSON.parse(sessionStorage.getItem("user")) ||
+      JSON.parse(localStorage.getItem("user"));
+
+    if (storedUser?.role) {
+      redirectByRole(storedUser.role);
     }
-  }, [token, role, navigate]);
+  }, [navigate]);
+
+  const redirectByRole = (role) => {
+    if (role === "user") navigate("/user/dashboard");
+    else if (role === "astrologer") navigate("/astrologer/dashboard");
+    else if (role === "admin") navigate("/admin/dashboard");
+  };
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -28,16 +34,24 @@ export default function Login() {
         { email, password }
       );
 
-      login({
+      // Save user + token in sessionStorage & localStorage
+      const userData = {
         token: data.token,
+        id: data.user._id || data.user.id,
+        name: data.user.name,
+        email: data.user.email,
+        mobile: data.user.mobile,
         role: data.user.role,
-        userId: data.user.id,
-      });
+        birthTime: data.user.birthTime,
+        birthPlace: data.user.birthPlace,
+        dob: data.user.dob,
+        kundaliUrl: data.user.kundaliUrl,
+      };
 
-      // redirect by role
-      if (data.user.role === "user") navigate("/user/dashboard");
-      else if (data.user.role === "astrologer") navigate("/astrologer/dashboard");
-      else if (data.user.role === "admin") navigate("/admin/dashboard");
+      sessionStorage.setItem("user", JSON.stringify(userData));
+      localStorage.setItem("user", JSON.stringify(userData));
+
+      redirectByRole(userData.role);
     } catch (err) {
       alert(err.response?.data?.message || "Login failed");
     } finally {
