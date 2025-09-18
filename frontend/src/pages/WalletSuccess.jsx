@@ -33,9 +33,12 @@ export default function WalletSuccess() {
         if (data.success && data.transaction) {
           setTransaction(data.transaction);
 
-          // 🚫 If already completed (paid/failed), disable further action
-          if (["paid", "failed"].includes(data.transaction.status)) {
-            console.log("Transaction already completed. User cannot replay payment.");
+          // 🚫 Lock page if transaction is completed
+          if (["paid", "failed", "cancelled"].includes(data.transaction.status)) {
+            console.log("Transaction completed. User cannot retry payment.");
+
+            // Optional: redirect to wallet after 5 sec automatically
+            setTimeout(() => navigate("/user/wallet"), 5000);
           }
         } else {
           setError("Unable to fetch transaction status");
@@ -48,7 +51,7 @@ export default function WalletSuccess() {
     };
 
     fetchStatus();
-  }, [orderId]);
+  }, [orderId, navigate]);
 
   if (loading) {
     return (
@@ -95,6 +98,8 @@ export default function WalletSuccess() {
       ? "text-red-600"
       : transaction.status === "pending"
       ? "text-yellow-600"
+      : transaction.status === "cancelled"
+      ? "text-gray-600"
       : "text-gray-600";
 
   const statusText =
@@ -104,17 +109,26 @@ export default function WalletSuccess() {
       ? "Payment Failed ❌"
       : transaction.status === "pending"
       ? "Payment Pending ⏳"
+      : transaction.status === "cancelled"
+      ? "Payment Cancelled ⚠️"
       : `Payment Status: ${transaction.status}`;
+
+  const statusMessage =
+    transaction.status === "paid"
+      ? "Your wallet has been credited."
+      : transaction.status === "pending"
+      ? "We are still waiting for confirmation. Do not refresh or go back."
+      : transaction.status === "failed"
+      ? "Your transaction could not be processed."
+      : transaction.status === "cancelled"
+      ? "You have cancelled this transaction. No wallet credit has been made."
+      : "";
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen p-6">
       <div className={statusColor + " text-center"}>
         <h2 className="text-2xl font-bold">{statusText}</h2>
-        {transaction.status === "paid" && <p className="mt-2">Your wallet has been credited.</p>}
-        {transaction.status === "pending" && (
-          <p className="mt-2">We are still waiting for confirmation. Do not refresh or go back.</p>
-        )}
-        {transaction.status === "failed" && <p className="mt-2">Your transaction could not be processed.</p>}
+        {statusMessage && <p className="mt-2">{statusMessage}</p>}
       </div>
 
       {/* Transaction details */}
