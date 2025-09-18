@@ -11,22 +11,8 @@ export default function WalletSuccess() {
   const [transaction, setTransaction] = useState(null);
   const [error, setError] = useState("");
 
+  // Fetch transaction status
   useEffect(() => {
-    // 1️⃣ Block browser back
-    window.history.pushState(null, "", window.location.href);
-    window.onpopstate = () => {
-      window.history.pushState(null, "", window.location.href);
-    };
-
-    // 2️⃣ Prevent page reload
-    const handleBeforeUnload = (e) => {
-      if (transaction && ["paid", "failed", "cancelled"].includes(transaction.status)) {
-        e.preventDefault();
-        e.returnValue = ""; // Chrome requires returnValue to be set
-      }
-    };
-    window.addEventListener("beforeunload", handleBeforeUnload);
-
     const fetchStatus = async () => {
       try {
         if (!orderId) {
@@ -42,7 +28,7 @@ export default function WalletSuccess() {
         if (data.success && data.transaction) {
           setTransaction(data.transaction);
 
-          // 3️⃣ Auto redirect after 5s if completed
+          // Auto redirect if completed
           if (["paid", "failed", "cancelled"].includes(data.transaction.status)) {
             setTimeout(() => navigate("/user/wallet"), 5000);
           }
@@ -57,11 +43,31 @@ export default function WalletSuccess() {
     };
 
     fetchStatus();
+  }, [orderId, navigate]);
 
-    return () => {
-      window.removeEventListener("beforeunload", handleBeforeUnload);
-    };
-  }, [orderId, navigate, transaction]);
+  // Block back & refresh AFTER transaction loads
+  useEffect(() => {
+    if (!transaction) return;
+
+    if (["paid", "failed", "cancelled"].includes(transaction.status)) {
+      // Block browser back
+      window.history.pushState(null, "", window.location.href);
+      const handlePopState = () => window.history.pushState(null, "", window.location.href);
+      window.addEventListener("popstate", handlePopState);
+
+      // Block refresh
+      const handleBeforeUnload = (e) => {
+        e.preventDefault();
+        e.returnValue = "";
+      };
+      window.addEventListener("beforeunload", handleBeforeUnload);
+
+      return () => {
+        window.removeEventListener("popstate", handlePopState);
+        window.removeEventListener("beforeunload", handleBeforeUnload);
+      };
+    }
+  }, [transaction]);
 
   if (loading) {
     return (
@@ -77,12 +83,6 @@ export default function WalletSuccess() {
       <div className="flex flex-col items-center justify-center min-h-screen text-red-600">
         <h2 className="text-xl font-semibold">Payment Error</h2>
         <p className="mt-2">{error}</p>
-        <button
-          className="mt-4 bg-blue-600 text-white px-4 py-2 rounded"
-          onClick={() => navigate("/user/wallet")}
-        >
-          Go to Wallet
-        </button>
       </div>
     );
   }
@@ -91,12 +91,6 @@ export default function WalletSuccess() {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen text-yellow-600">
         <h2 className="text-xl font-semibold">Transaction not found</h2>
-        <button
-          className="mt-4 bg-blue-600 text-white px-4 py-2 rounded"
-          onClick={() => navigate("/user/wallet")}
-        >
-          Go to Wallet
-        </button>
       </div>
     );
   }
@@ -129,14 +123,13 @@ export default function WalletSuccess() {
       : "You have cancelled this transaction. No wallet credit has been made.";
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen p-6">
+    <div className="flex flex-col items-center justify-center min-h-screen p-6 pointer-events-none opacity-90">
       <div className={statusColor + " text-center"}>
         <h2 className="text-2xl font-bold">{statusText}</h2>
         <p className="mt-2">{statusMessage}</p>
       </div>
 
-      {/* Transaction details */}
-      <div className="mt-6 bg-white shadow-md rounded-lg p-4 w-full max-w-md pointer-events-none opacity-90">
+      <div className="mt-6 bg-white shadow-md rounded-lg p-4 w-full max-w-md">
         <h3 className="text-lg font-semibold mb-3">Transaction Details</h3>
         <p><strong>Order ID:</strong> {transaction.orderId}</p>
         <p><strong>Amount:</strong> ₹{transaction.amount}</p>
@@ -146,13 +139,6 @@ export default function WalletSuccess() {
         {transaction.paymentTime && <p><strong>Time:</strong> {transaction.paymentTime}</p>}
         {transaction.paymentMessage && <p><strong>Message:</strong> {transaction.paymentMessage}</p>}
       </div>
-
-      <button
-        className="mt-6 bg-blue-600 text-white px-4 py-2 rounded cursor-not-allowed"
-        disabled
-      >
-        Back to Wallet
-      </button>
     </div>
   );
 }
