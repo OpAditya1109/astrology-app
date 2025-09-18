@@ -36,15 +36,11 @@ const mapStatus = (status) => {
 
 // Prevent duplicate wallet credits
 async function creditWalletOnce(userId, amount, paymentId) {
-  const user = await User.findById(userId);
-  if (!user) return;
+  if (!paymentId) return; // Safety check
 
-  const alreadyCredited = user.wallet.transactions.some(
-    (tx) => tx.paymentId === paymentId
-  );
-
-  if (!alreadyCredited) {
-    await User.findByIdAndUpdate(userId, {
+  const result = await User.updateOne(
+    { _id: userId, 'wallet.transactions.paymentId': { $ne: paymentId } }, // Atomic check
+    {
       $inc: { 'wallet.balance': amount },
       $push: {
         'wallet.transactions': {
@@ -52,12 +48,16 @@ async function creditWalletOnce(userId, amount, paymentId) {
           amount,
           description: 'Wallet recharge',
           paymentId,
+          date: new Date()
         },
       },
-    });
-    console.log(`Wallet credited for user ${userId}: ₹${amount}`);
+    }
+  );
+
+  if (result.modifiedCount > 0) {
+    console.log(`Wallet credited for user ${userId}: ₹${amount}, paymentId: ${paymentId}`);
   } else {
-    console.log(`Wallet already credited for paymentId: ${paymentId}`);
+    console.log(`Wallet already credited or paymentId exists: ${paymentId}`);
   }
 }
 
@@ -203,46 +203,11 @@ router.get('/status/:orderId', async (req, res) => {
     let transaction = await WalletTransaction.findOne({ orderId });
     if (!transaction) return res.status(404).json({ message: 'Transaction not found' });
 
-    console.log(`Checking status for transaction: ${orderId}, current status: ${transaction.status}`);
-
-    // Completed transactions
-    if (transaction.status !== 'pending') {
-      if (transaction.status === 'paid') {
-        await creditWalletOnce(transaction.userId, transaction.amount, transaction.paymentId);
-        console.log(`Wallet credited for transaction: ${orderId}`);
-      }
-      return res.json({ success: true, transaction });
-    }
-
-    // Fetch status from Cashfree
-    const cfResponse = await cashfree.PGFetchOrder(orderId);
-    const cfStatus = cfResponse.data.order_status;
-    const paymentDetails = cfResponse.data.payment_details || {};
-    console.log(`Cashfree status for ${orderId}: ${cfStatus}`);
-
-    if (cfStatus === 'PAID') {
-      transaction.status = 'paid';
-      transaction.paymentId = paymentDetails.payment_id || transaction.paymentId;
-      transaction.paymentMethod = paymentDetails.payment_method || transaction.paymentMethod;
-      transaction.paymentTime = paymentDetails.payment_time || transaction.paymentTime;
-      transaction.paymentMessage = paymentDetails.payment_message || transaction.paymentMessage;
+    if (transaction.status === 'pending') {
+      // Optionally fetch Cashfree status, but do NOT credit wallet here
+      const cfResponse = await cashfree.PGFetchOrder(orderId);
+      transaction.status = mapStatus(cfResponse.data.order_status);
       await transaction.save();
-      await creditWalletOnce(transaction.userId, transaction.amount, transaction.paymentId);
-      console.log(`Transaction marked as paid: ${orderId}`);
-
-    } else if (cfStatus === 'FAILED') {
-      transaction.status = 'failed';
-      await transaction.save();
-      console.log(`Transaction failed: ${orderId}`);
-
-    } else if (cfStatus === 'EXPIRED' || cfStatus === 'CANCELLED') {
-      transaction.status = 'cancelled';
-      await transaction.save();
-      console.log(`Transaction cancelled: ${orderId}`);
-
-    } else if (['PENDING', 'ACTIVE', 'INITIATED'].includes(cfStatus)) {
-      // Pending orders remain pending; do not terminate
-      console.log(`Transaction is still pending: ${orderId}`);
     }
 
     res.json({ success: true, transaction });
@@ -251,6 +216,7 @@ router.get('/status/:orderId', async (req, res) => {
     res.status(500).json({ message: 'Failed to get transaction status', error: error.message });
   }
 });
+
 
 
 

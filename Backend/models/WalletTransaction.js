@@ -5,7 +5,7 @@ const walletTransactionSchema = new mongoose.Schema({
   orderId: { type: String, required: true, unique: true },
   amount: { type: Number, required: true },
   status: { type: String, default: 'pending' }, // pending, paid, failed, cancelled
-  paymentId: String,
+  paymentId: { type: String, unique: true, sparse: true }, 
   paymentMethod: String,
   paymentTime: String,
   bankReference: String,
