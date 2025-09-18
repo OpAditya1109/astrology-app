@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import PanchangCard from "../components/Panchang";
 import astrologerImg from "../assets/astrologerm.png";
+import { useEffect } from "react";
 
 // ✅ Import images for each service
 import kundliImg from "../assets/kundli.png";
@@ -11,6 +12,7 @@ import shopImg from "../assets/shop.png";
 import courseImg from "../assets/course.png";
 
 export default function Home() {
+  
   const services = [
     {
       title: "Free Kundli",
@@ -49,7 +51,21 @@ export default function Home() {
       link: "/occult",
     },
   ];
+  useEffect(() => {
+    // Push a dummy state so back button doesn't exit
+    window.history.pushState(null, "", window.location.href);
 
+    const handlePopState = () => {
+      // Redirect to home again or prevent back
+      window.history.pushState(null, "", window.location.href);
+    };
+
+    window.addEventListener("popstate", handlePopState);
+
+    return () => {
+      window.removeEventListener("popstate", handlePopState);
+    };
+  }, []);
   return (
     <div className="min-h-screen bg-gray-50 text-gray-800">
       {/* Hero Section */}
