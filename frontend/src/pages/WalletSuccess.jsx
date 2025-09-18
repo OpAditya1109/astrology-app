@@ -11,7 +11,7 @@ export default function WalletSuccess() {
   const [transaction, setTransaction] = useState(null);
   const [error, setError] = useState("");
 
-  // Fetch transaction status and then redirect to home
+  // Fetch transaction status
   useEffect(() => {
     const fetchStatus = async () => {
       try {
@@ -27,6 +27,9 @@ export default function WalletSuccess() {
 
         if (data.success && data.transaction) {
           setTransaction(data.transaction);
+
+          // Replace URL in history to remove order_id
+          window.history.replaceState(null, "", "/wallet-success");
         } else {
           setError("Unable to fetch transaction status");
         }
@@ -34,13 +37,20 @@ export default function WalletSuccess() {
         setError("Error fetching transaction: " + err.message);
       } finally {
         setLoading(false);
-        // Redirect to home and replace history
-        navigate("/", { replace: true });
       }
     };
 
     fetchStatus();
-  }, [orderId, navigate]);
+  }, [orderId]);
+
+  // Block back button to prevent returning to checkout/payment page
+  useEffect(() => {
+    const handlePopState = () => {
+      navigate("/", { replace: true });
+    };
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, [navigate]);
 
   if (loading) {
     return (
