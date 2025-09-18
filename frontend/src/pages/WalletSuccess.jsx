@@ -12,33 +12,37 @@ export default function WalletSuccess() {
   const [error, setError] = useState("");
 
   // Fetch transaction status
-  useEffect(() => {
-    const fetchStatus = async () => {
-      try {
-        if (!orderId) {
-          setError("No order ID found in the URL");
-          setLoading(false);
-          return;
-        }
-
-        const { data } = await axios.get(
-          `https://bhavanaastro.onrender.com/api/wallet/status/${orderId}`
-        );
-
-        if (data.success && data.transaction) {
-          setTransaction(data.transaction);
-        } else {
-          setError("Unable to fetch transaction status");
-        }
-      } catch (err) {
-        setError("Error fetching transaction: " + err.message);
-      } finally {
+useEffect(() => {
+  const fetchStatus = async () => {
+    try {
+      if (!orderId) {
+        setError("No order ID found in the URL");
         setLoading(false);
+        return;
       }
-    };
 
-    fetchStatus();
-  }, [orderId]);
+      const { data } = await axios.get(
+        `https://bhavanaastro.onrender.com/api/wallet/status/${orderId}`
+      );
+
+      if (data.success && data.transaction) {
+        setTransaction(data.transaction);
+
+        // Replace this URL in history so back button won't return here
+        window.history.replaceState(null, "", "/");
+      } else {
+        setError("Unable to fetch transaction status");
+      }
+    } catch (err) {
+      setError("Error fetching transaction: " + err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  fetchStatus();
+}, [orderId]);
+
 
   // Block back button & redirect to home
   useEffect(() => {
