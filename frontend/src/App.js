@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import Home from "./pages/Home";
 import UserRegister from "./pages/UserRegister";
 import Login from "./pages/Login";
@@ -19,105 +19,178 @@ import MatchMakingForm from "./pages/MatchMakingForm";
 import VideoCall from "./pages/VideoCall";
 import WalletSuccess from "./pages/WalletSuccess";
 import Astrochat from "./pages/AstroChat";
-import Layout from "./pages/Footer"; // 👈 import Layout instead of Footer
+import Layout from "./pages/Footer"; // 👈 imported as Layout
 import RefundCancellation from "./pages/RefundCancellation";
 import TermsConditions from "./pages/TermsConditions";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import Disclaimer from "./pages/Disclaimer";
 import PricingPolicy from "./pages/PricingPolicy";
 import DailyHoroscopes from "./pages/Horoscopes";
-import Aboutus from "./pages/About"
-import BraceletPage from "./pages/BraceletPage"
+import Aboutus from "./pages/About";
+import BraceletPage from "./pages/BraceletPage";
 import ProductDetail from "./pages/ProductDetail";
 import Checkout from "./pages/Checkout";
 import OrderSuccess from "./pages/OrderSuccess";
-import RudrakshaPage from "./pages/RudrakshaPage"
-import MalaPage from "./pages/MalaPage"
-import GemstonePage from "./pages/GemstonePage"
-import YantraPage from "./pages/YantraPage"
-import MiscPage from "./pages/MiscPage"
+import RudrakshaPage from "./pages/RudrakshaPage";
+import MalaPage from "./pages/MalaPage";
+import GemstonePage from "./pages/GemstonePage";
+import YantraPage from "./pages/YantraPage";
+import MiscPage from "./pages/MiscPage";
 import EducationPage from "./pages/EducationPage";
 import CourseDetail from "./pages/CourseDetail";
 import AdminDashboard from "./pages/AdminDashboard";
 
+import { AuthProvider, useAuth } from "./Context/AuthContext"; // ✅ import
+
+// ✅ Protect routes if user is not logged in
+function ProtectedRoute({ children }) {
+  const { token } = useAuth();
+  if (!token) {
+    return <Navigate to="/login" replace />;
+  }
+  return children;
+}
+
 function App() {
   return (
-    <Router>
-      <Navbar />
-      <Layout>
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/user/register" element={<UserRegister />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/astrologer/register" element={<AstrologerRegister />} />
+    <AuthProvider>
+      <Router>
+        <Navbar />
+        <Layout>
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/user/register" element={<UserRegister />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/astrologer/register" element={<AstrologerRegister />} />
 
-          {/* Consultancy & Shopping */}
-          <Route path="/consultancy" element={<Consultancy />} />
-          <Route path="/shopping" element={<Shopping />} />
+            {/* Consultancy & Shopping */}
+            <Route path="/consultancy" element={<Consultancy />} />
+            <Route path="/shopping" element={<Shopping />} />
 
-          {/* User Dashboard & Wallet */}
-          <Route path="/user/dashboard" element={<UserDashboard />} />
-          <Route path="/user/wallet" element={<Wallet />} />
-          <Route path="/payment" element={<Payment />} />
-          <Route path="/user/consultancy" element={<UserConsultancy />} />
+            {/* ✅ Protected User Routes */}
+            <Route
+              path="/user/dashboard"
+              element={
+                <ProtectedRoute>
+                  <UserDashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/user/wallet"
+              element={
+                <ProtectedRoute>
+                  <Wallet />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/payment"
+              element={
+                <ProtectedRoute>
+                  <Payment />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/user/consultancy"
+              element={
+                <ProtectedRoute>
+                  <UserConsultancy />
+                </ProtectedRoute>
+              }
+            />
 
-          {/* Astrologer Dashboard */}
-          <Route
-            path="/astrologer/dashboard"
-            element={<AstrologerDashboard />}
-          />
-          <Route
-            path="/astrologer/dashboard/consultations"
-            element={<AstrologerConsultations />}
-          />
+            {/* ✅ Protected Astrologer Routes */}
+            <Route
+              path="/astrologer/dashboard"
+              element={
+                <ProtectedRoute>
+                  <AstrologerDashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/astrologer/dashboard/consultations"
+              element={
+                <ProtectedRoute>
+                  <AstrologerConsultations />
+                </ProtectedRoute>
+              }
+            />
 
-          {/* Chat & Video */}
-          <Route path="/chat/:consultationId" element={<ChatPage />} />
-          <Route
-            path="/astrologer/chat/:consultationId"
-            element={<AstrologerChat />}
-          />
-          <Route path="/video-call/:consultationId" element={<VideoCall />} />
+            {/* Chat & Video (protected) */}
+            <Route
+              path="/chat/:consultationId"
+              element={
+                <ProtectedRoute>
+                  <ChatPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/astrologer/chat/:consultationId"
+              element={
+                <ProtectedRoute>
+                  <AstrologerChat />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/video-call/:consultationId"
+              element={
+                <ProtectedRoute>
+                  <VideoCall />
+                </ProtectedRoute>
+              }
+            />
 
-          {/* AI & Matchmaking */}
-          <Route path="/ai-consultation" element={<AIConsultation />} />
-          <Route path="/match-making" element={<MatchMakingForm />} />
+            {/* AI & Matchmaking */}
+            <Route path="/ai-consultation" element={<AIConsultation />} />
+            <Route path="/match-making" element={<MatchMakingForm />} />
 
-          {/* Wallet success (redirect page from Cashfree) */}
-          <Route path="/wallet-success" element={<WalletSuccess />} />
+            {/* Wallet success (redirect page from Cashfree) */}
+            <Route path="/wallet-success" element={<WalletSuccess />} />
 
-          {/* Astrochat */}
-          <Route path="/astrochat" element={<Astrochat />} />
-          <Route path="/aboutus" element={<Aboutus />} />
-          <Route path="/Horoscopes" element={<DailyHoroscopes />} />
-          <Route path="/refund-cancellation" element={<RefundCancellation />} />
-          <Route path="/terms-conditions" element={<TermsConditions />} />
-          <Route path="/privacy-policy" element={<PrivacyPolicy />} />
-          <Route path="/disclaimer" element={<Disclaimer />} />
-          <Route path="/pricing-policy" element={<PricingPolicy />} />
+            {/* Astrochat */}
+            <Route path="/astrochat" element={<Astrochat />} />
+            <Route path="/aboutus" element={<Aboutus />} />
+            <Route path="/Horoscopes" element={<DailyHoroscopes />} />
+            <Route path="/refund-cancellation" element={<RefundCancellation />} />
+            <Route path="/terms-conditions" element={<TermsConditions />} />
+            <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+            <Route path="/disclaimer" element={<Disclaimer />} />
+            <Route path="/pricing-policy" element={<PricingPolicy />} />
 
-
-          <Route path="/shop/bracelet" element={<BraceletPage />}/>
-          <Route path="/shop/rudraksha" element={<RudrakshaPage />} />
-<Route path="/shop/mala" element={<MalaPage />} />
-<Route path="/shop/gemstone" element={<GemstonePage />} />
-<Route path="/shop/yantra" element={<YantraPage />} />
-<Route path="/shop/misc" element={<MiscPage />} />
-
-
+            {/* Shop pages */}
+            <Route path="/shop/bracelet" element={<BraceletPage />} />
+            <Route path="/shop/rudraksha" element={<RudrakshaPage />} />
+            <Route path="/shop/mala" element={<MalaPage />} />
+            <Route path="/shop/gemstone" element={<GemstonePage />} />
+            <Route path="/shop/yantra" element={<YantraPage />} />
+            <Route path="/shop/misc" element={<MiscPage />} />
 
             <Route path="/product/:id" element={<ProductDetail />} />
-               <Route path="/checkout/:id" element={<Checkout />} />
-                <Route path="/order-success" element={<OrderSuccess />} />
+            <Route path="/checkout/:id" element={<Checkout />} />
+            <Route path="/order-success" element={<OrderSuccess />} />
 
+            {/* Education */}
+            <Route path="/occult" element={<EducationPage />} />
+            <Route path="/course/:id" element={<CourseDetail />} />
 
-                <Route path="/occult" element={<EducationPage />} />
-<Route path="/course/:id" element={<CourseDetail />} />
-        <Route path="/admin/dashboard" element={<AdminDashboard />} />
-
-        </Routes>
-      </Layout>
-    </Router>
+            {/* Admin */}
+            <Route
+              path="/admin/dashboard"
+              element={
+                <ProtectedRoute>
+                  <AdminDashboard />
+                </ProtectedRoute>
+              }
+            />
+          </Routes>
+        </Layout>
+      </Router>
+    </AuthProvider>
   );
 }
 
