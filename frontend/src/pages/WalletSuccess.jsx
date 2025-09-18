@@ -12,11 +12,20 @@ export default function WalletSuccess() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    // Prevent browser back
+    // 1️⃣ Block browser back
     window.history.pushState(null, "", window.location.href);
     window.onpopstate = () => {
       window.history.pushState(null, "", window.location.href);
     };
+
+    // 2️⃣ Prevent page reload
+    const handleBeforeUnload = (e) => {
+      if (transaction && ["paid", "failed", "cancelled"].includes(transaction.status)) {
+        e.preventDefault();
+        e.returnValue = ""; // Chrome requires returnValue to be set
+      }
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
 
     const fetchStatus = async () => {
       try {
@@ -33,11 +42,8 @@ export default function WalletSuccess() {
         if (data.success && data.transaction) {
           setTransaction(data.transaction);
 
-          // 🚫 Lock page if transaction is completed
+          // 3️⃣ Auto redirect after 5s if completed
           if (["paid", "failed", "cancelled"].includes(data.transaction.status)) {
-            console.log("Transaction completed. User cannot retry payment.");
-
-            // Optional: redirect to wallet after 5 sec automatically
             setTimeout(() => navigate("/user/wallet"), 5000);
           }
         } else {
@@ -51,7 +57,11 @@ export default function WalletSuccess() {
     };
 
     fetchStatus();
-  }, [orderId, navigate]);
+
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    };
+  }, [orderId, navigate, transaction]);
 
   if (loading) {
     return (
@@ -98,8 +108,6 @@ export default function WalletSuccess() {
       ? "text-red-600"
       : transaction.status === "pending"
       ? "text-yellow-600"
-      : transaction.status === "cancelled"
-      ? "text-gray-600"
       : "text-gray-600";
 
   const statusText =
@@ -109,9 +117,7 @@ export default function WalletSuccess() {
       ? "Payment Failed ❌"
       : transaction.status === "pending"
       ? "Payment Pending ⏳"
-      : transaction.status === "cancelled"
-      ? "Payment Cancelled ⚠️"
-      : `Payment Status: ${transaction.status}`;
+      : "Payment Cancelled ⚠️";
 
   const statusMessage =
     transaction.status === "paid"
@@ -120,19 +126,17 @@ export default function WalletSuccess() {
       ? "We are still waiting for confirmation. Do not refresh or go back."
       : transaction.status === "failed"
       ? "Your transaction could not be processed."
-      : transaction.status === "cancelled"
-      ? "You have cancelled this transaction. No wallet credit has been made."
-      : "";
+      : "You have cancelled this transaction. No wallet credit has been made.";
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen p-6">
       <div className={statusColor + " text-center"}>
         <h2 className="text-2xl font-bold">{statusText}</h2>
-        {statusMessage && <p className="mt-2">{statusMessage}</p>}
+        <p className="mt-2">{statusMessage}</p>
       </div>
 
       {/* Transaction details */}
-      <div className="mt-6 bg-white shadow-md rounded-lg p-4 w-full max-w-md">
+      <div className="mt-6 bg-white shadow-md rounded-lg p-4 w-full max-w-md pointer-events-none opacity-90">
         <h3 className="text-lg font-semibold mb-3">Transaction Details</h3>
         <p><strong>Order ID:</strong> {transaction.orderId}</p>
         <p><strong>Amount:</strong> ₹{transaction.amount}</p>
@@ -144,8 +148,8 @@ export default function WalletSuccess() {
       </div>
 
       <button
-        className="mt-6 bg-blue-600 text-white px-4 py-2 rounded"
-        onClick={() => navigate("/user/wallet")}
+        className="mt-6 bg-blue-600 text-white px-4 py-2 rounded cursor-not-allowed"
+        disabled
       >
         Back to Wallet
       </button>
