@@ -200,25 +200,31 @@ router.post('/webhook', async (req, res) => {
 router.get('/status/:orderId', async (req, res) => {
   try {
     const { orderId } = req.params;
-    let transaction = await WalletTransaction.findOne({ orderId });
-    if (!transaction) return res.status(404).json({ message: 'Transaction not found' });
+    const transaction = await WalletTransaction.findOne({ orderId });
+
+    if (!transaction) {
+      console.log(`Transaction not found: ${orderId}`);
+      return res.status(404).json({ message: 'Transaction not found' });
+    }
 
     console.log(`Checking status for transaction: ${orderId}, current status: ${transaction.status}`);
 
-    // Completed transactions
+    // If transaction is already completed
     if (transaction.status !== 'pending') {
       if (transaction.status === 'paid') {
         await creditWalletOnce(transaction.userId, transaction.amount, transaction.paymentId);
+        console.log(`Transaction already paid: ${orderId}`);
       }
       return res.json({ success: true, transaction });
     }
 
-    // Fetch status from Cashfree
+    // Fetch latest status from Cashfree
     const cfResponse = await cashfree.PGFetchOrder(orderId);
     const cfStatus = cfResponse.data.order_status;
     const paymentDetails = cfResponse.data.payment_details || {};
     console.log(`Cashfree status for ${orderId}: ${cfStatus}`);
 
+    // Update transaction based on Cashfree status
     if (cfStatus === 'PAID') {
       transaction.status = 'paid';
       transaction.paymentId = paymentDetails.payment_id || transaction.paymentId;
@@ -234,7 +240,7 @@ router.get('/status/:orderId', async (req, res) => {
       await transaction.save();
       console.log(`Transaction failed: ${orderId}`);
 
-    } else if (cfStatus === 'EXPIRED' || cfStatus === 'CANCELLED') {
+    } else if (['EXPIRED', 'CANCELLED'].includes(cfStatus)) {
       transaction.status = 'cancelled';
       await transaction.save();
       console.log(`Transaction cancelled: ${orderId}`);
@@ -242,15 +248,16 @@ router.get('/status/:orderId', async (req, res) => {
     } else if (['PENDING', 'ACTIVE', 'INITIATED'].includes(cfStatus)) {
       // Terminate pending order
       try {
+        console.log(`Attempting to terminate pending order: ${orderId}`);
         const terminateRes = await cashfree.PGTerminateOrder({ order_id: orderId });
-        console.log(`Terminate Response for ${orderId}:`, terminateRes.data);
+        console.log(`Terminate response for ${orderId}:`, terminateRes.data);
 
         transaction.status = 'cancelled';
         transaction.paymentMessage = 'Order terminated due to inactivity';
         await transaction.save();
         console.log(`Pending transaction terminated: ${orderId}`);
       } catch (terminateError) {
-        console.error(`Error terminating pending order ${orderId}:`, terminateError);
+        console.error(`Error terminating pending order ${orderId}:`, terminateError.response?.data || terminateError.message);
       }
     }
 
@@ -260,5 +267,6 @@ router.get('/status/:orderId', async (req, res) => {
     res.status(500).json({ message: 'Failed to get transaction status', error: error.message });
   }
 });
+
 
 module.exports = router;
