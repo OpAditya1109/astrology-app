@@ -11,52 +11,36 @@ export default function WalletSuccess() {
   const [transaction, setTransaction] = useState(null);
   const [error, setError] = useState("");
 
-  // Fetch transaction status
-useEffect(() => {
-  const fetchStatus = async () => {
-    try {
-      if (!orderId) {
-        setError("No order ID found in the URL");
-        setLoading(false);
-        return;
-      }
-
-      const { data } = await axios.get(
-        `https://bhavanaastro.onrender.com/api/wallet/status/${orderId}`
-      );
-
-      if (data.success && data.transaction) {
-        setTransaction(data.transaction);
-
-        // Replace this URL in history so back button won't return here
-        window.history.replaceState(null, "", "/");
-      } else {
-        setError("Unable to fetch transaction status");
-      }
-    } catch (err) {
-      setError("Error fetching transaction: " + err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  fetchStatus();
-}, [orderId]);
-
-
-  // Block back button & redirect to home
+  // Fetch transaction status and then redirect to home
   useEffect(() => {
-    const handlePopState = () => {
-      navigate("/", { replace: true });
+    const fetchStatus = async () => {
+      try {
+        if (!orderId) {
+          setError("No order ID found in the URL");
+          setLoading(false);
+          return;
+        }
+
+        const { data } = await axios.get(
+          `https://bhavanaastro.onrender.com/api/wallet/status/${orderId}`
+        );
+
+        if (data.success && data.transaction) {
+          setTransaction(data.transaction);
+        } else {
+          setError("Unable to fetch transaction status");
+        }
+      } catch (err) {
+        setError("Error fetching transaction: " + err.message);
+      } finally {
+        setLoading(false);
+        // Redirect to home and replace history
+        navigate("/", { replace: true });
+      }
     };
 
-    window.history.pushState(null, "", window.location.href);
-    window.addEventListener("popstate", handlePopState);
-
-    return () => {
-      window.removeEventListener("popstate", handlePopState);
-    };
-  }, [navigate]);
+    fetchStatus();
+  }, [orderId, navigate]);
 
   if (loading) {
     return (
