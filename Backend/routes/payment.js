@@ -209,6 +209,7 @@ router.get('/status/:orderId', async (req, res) => {
     if (transaction.status !== 'pending') {
       if (transaction.status === 'paid') {
         await creditWalletOnce(transaction.userId, transaction.amount, transaction.paymentId);
+        console.log(`Wallet credited for transaction: ${orderId}`);
       }
       return res.json({ success: true, transaction });
     }
@@ -243,10 +244,7 @@ router.get('/status/:orderId', async (req, res) => {
       // Terminate pending order using SDK
       try {
         console.log(`Attempting to terminate pending order: ${orderId}`);
-        const terminateRes = await cashfree.PGTerminateOrder({
-          order_id: orderId,
-          order_status: 'TERMINATED'
-        });
+        const terminateRes = await cashfree.pGTerminateOrder({ orderId });
         console.log(`Terminate Response for ${orderId}:`, terminateRes.data);
 
         transaction.status = 'cancelled';
@@ -264,6 +262,7 @@ router.get('/status/:orderId', async (req, res) => {
     res.status(500).json({ message: 'Failed to get transaction status', error: error.message });
   }
 });
+
 
 
 
