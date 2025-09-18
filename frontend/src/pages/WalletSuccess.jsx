@@ -30,6 +30,9 @@ export default function WalletSuccess() {
 
           // Replace URL in history to remove order_id
           window.history.replaceState(null, "", "/wallet-success");
+
+          // Push a new state for home so back always goes there
+          window.history.pushState({ redirectHome: true }, "", "/");
         } else {
           setError("Unable to fetch transaction status");
         }
@@ -43,9 +46,10 @@ export default function WalletSuccess() {
     fetchStatus();
   }, [orderId]);
 
-  // Block back button to prevent returning to checkout/payment page
+  // Handle back button
   useEffect(() => {
-    const handlePopState = () => {
+    const handlePopState = (event) => {
+      // Redirect to home if user tries to go back
       navigate("/", { replace: true });
     };
     window.addEventListener("popstate", handlePopState);
