@@ -1,31 +1,37 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import axios from "axios";
+import { useNavigate } from "react-router-dom";
 
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const navigate = useNavigate();
+
+  // Redirect if already logged in
+  useEffect(() => {
+    const user = JSON.parse(sessionStorage.getItem("user"));
+    if (user) {
+      if (user.role === "user") navigate("/user/dashboard");
+      else if (user.role === "astrologer") navigate("/astrologer/dashboard");
+      else if (user.role === "admin") navigate("/admin/dashboard");
+    }
+  }, [navigate]);
 
   const handleLogin = async (e) => {
     e.preventDefault();
     try {
-      const { data } = await axios.post("https://bhavanaastro.onrender.com/api/auth/login", {
-        email,
-        password,
-      });
+      const { data } = await axios.post(
+        "https://bhavanaastro.onrender.com/api/auth/login",
+        { email, password }
+      );
 
       sessionStorage.setItem("token", data.token);
       sessionStorage.setItem("user", JSON.stringify(data.user));
 
-      // ✅ Redirect based on role
-      if (data.user.role === "user") {
-        window.location.href = "/user/dashboard";
-      } else if (data.user.role === "astrologer") {
-        window.location.href = "/astrologer/dashboard";
-      } else if (data.user.role === "admin") {
-        window.location.href = "/admin/dashboard"; // ✅ admin redirect
-      } else {
-        alert("Unknown role. Contact support.");
-      }
+      // Redirect based on role
+      if (data.user.role === "user") navigate("/user/dashboard");
+      else if (data.user.role === "astrologer") navigate("/astrologer/dashboard");
+      else if (data.user.role === "admin") navigate("/admin/dashboard");
     } catch (err) {
       alert(err.response?.data?.message || "Login failed");
     }
