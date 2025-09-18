@@ -45,7 +45,7 @@ export default function WalletSuccess() {
           setTransaction(tx);
 
           // Auto redirect after 5 seconds
-          setTimeout(() => navigate("/user/wallet"), 5000);
+         
         } else {
           setError("Unable to fetch transaction status");
         }
