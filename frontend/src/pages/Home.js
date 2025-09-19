@@ -108,10 +108,7 @@ export default function Home() {
         </div>
       </section>
 
-      <PanchangCard />
-
-      {/* ✅ Astrologers Section */}
-      <section className="max-w-7xl mx-auto px-6 py-12">
+     <section className="max-w-7xl mx-auto px-6 py-12">
         <h2 className="text-3xl font-semibold mb-6 text-gray-900">
           Our Astrologers
         </h2>
@@ -148,6 +145,11 @@ export default function Home() {
           )}
         </div>
       </section>
+
+      <PanchangCard />
+
+      {/* ✅ Astrologers Section */}
+ 
 
       {/* Services Section */}
       <section className="max-w-7xl mx-auto px-6 py-12">
