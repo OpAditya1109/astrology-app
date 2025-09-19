@@ -170,7 +170,7 @@ function Footer() {
 
         {/* Blogger */}
         <a
-          href="https://blogger.com/"
+          href="http://astrobhavana.blogspot.com/2025/09/astrology-meets-artificial-intelligence.html"
           target="_blank"
           rel="noopener noreferrer"
           className="hover:text-orange-500 transition"
@@ -185,22 +185,8 @@ function Footer() {
           </svg>
         </a>
 
-        {/* Medium */}
-        <a
-          href="https://medium.com/"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="hover:text-green-500 transition"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-6 w-6"
-            fill="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path d="M2 7.5c0-.2 0-.4.2-.6l2-2.4V4h-4V5.4l1.6 2v9.2L0 19.8V21h6v-1.2L4 16.6v-7.2l6 12.6h1l6-12.6v7.2l-2 3.2V21h9v-1.2l-2-3.2v-9.2l2-2.4V4h-8v.5l2 2.4V13l-5 10.2L6 13V7.9l2-2.4V4H2v3.5z" />
-          </svg>
-        </a>
+     
+    
       </div>
     </footer>
   );
