@@ -1,7 +1,8 @@
 import { Link } from "react-router-dom";
 import PanchangCard from "../components/Panchang";
 import astrologerImg from "../assets/astrologerm.png";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import axios from "axios";
 
 // ✅ Import images for each service
 import kundliImg from "../assets/kundli.png";
@@ -12,7 +13,8 @@ import shopImg from "../assets/shop.png";
 import courseImg from "../assets/course.png";
 
 export default function Home() {
-  
+  const [astrologers, setAstrologers] = useState([]);
+
   const services = [
     {
       title: "Free Kundli",
@@ -51,21 +53,32 @@ export default function Home() {
       link: "/occult",
     },
   ];
+
+  // ✅ Fetch astrologers from API
   useEffect(() => {
-    // Push a dummy state so back button doesn't exit
+    const fetchAstrologers = async () => {
+      try {
+        const res = await axios.get("https://bhavanaastro.onrender.com/api/Consult-astrologers?limit=10");
+        setAstrologers(res.data.astrologers || []);
+      } catch (error) {
+        console.error("Error fetching astrologers:", error);
+      }
+    };
+    fetchAstrologers();
+  }, []);
+
+  // ✅ Prevent back button exit
+  useEffect(() => {
     window.history.pushState(null, "", window.location.href);
 
     const handlePopState = () => {
-      // Redirect to home again or prevent back
       window.history.pushState(null, "", window.location.href);
     };
 
     window.addEventListener("popstate", handlePopState);
-
-    return () => {
-      window.removeEventListener("popstate", handlePopState);
-    };
+    return () => window.removeEventListener("popstate", handlePopState);
   }, []);
+
   return (
     <div className="min-h-screen bg-gray-50 text-gray-800">
       {/* Hero Section */}
@@ -97,6 +110,45 @@ export default function Home() {
 
       <PanchangCard />
 
+      {/* ✅ Astrologers Section */}
+      <section className="max-w-7xl mx-auto px-6 py-12">
+        <h2 className="text-3xl font-semibold mb-6 text-gray-900">
+          Our Astrologers
+        </h2>
+        <div className="flex overflow-x-auto space-x-6 pb-4 scrollbar-hide">
+          {astrologers.length > 0 ? (
+            astrologers.map((astro) => (
+              <div
+                key={astro._id}
+                className="min-w-[220px] bg-white rounded-xl shadow-md p-4 flex-shrink-0 text-center border hover:shadow-lg transition"
+              >
+                <img
+                  src={astro.photo || "/default-astrologer.png"}
+                  alt={astro.name}
+                  className="w-24 h-24 rounded-full object-cover mx-auto mb-3"
+                />
+                <h3 className="text-lg font-semibold text-gray-800">
+                  {astro.name}
+                </h3>
+                <p className="text-sm text-gray-500">{astro.experience} yrs exp</p>
+                <p className="text-sm text-gray-600">
+                  {astro.languagesKnown?.join(", ")}
+                </p>
+                <p className="text-xs text-gray-500">{astro.city}, {astro.country}</p>
+                <Link
+                  to="/login"
+                  className="mt-3 inline-block px-4 py-2 bg-purple-600 text-white text-sm rounded-lg hover:bg-purple-700"
+                >
+                  Chat Now
+                </Link>
+              </div>
+            ))
+          ) : (
+            <p className="text-gray-500">No astrologers available right now.</p>
+          )}
+        </div>
+      </section>
+
       {/* Services Section */}
       <section className="max-w-7xl mx-auto px-6 py-12">
         <h2 className="text-3xl font-semibold text-center mb-12 text-gray-900">
@@ -112,7 +164,6 @@ export default function Home() {
                 src={s.image}
                 alt={s.title}
                 className="h-66 w-66 object-cover mb-4"
-
               />
 
               <h3 className="text-xl font-semibold text-gray-800 mb-2">

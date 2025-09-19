@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import Home from "./pages/Home";
+import ScrollToTop from "./ScrollToTop";
 import UserRegister from "./pages/UserRegister";
 import Login from "./pages/Login";
 import AstrologerRegister from "./pages/AstrologerRegister";
@@ -61,6 +62,7 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
 function App() {
   return (
     <Router>
+       <ScrollToTop />
       <Navbar />
       <Layout>
         <Routes>
