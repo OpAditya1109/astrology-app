@@ -95,7 +95,7 @@ function Footer() {
       <div className="mt-10 flex space-x-5 justify-center">
         {/* Instagram */}
         <a
-          href="https://instagram.com/"
+          href="https://www.instagram.com/astrobhavana?igsh=cmdpazA1MmU2eWY0"
           target="_blank"
           rel="noopener noreferrer"
           className="hover:text-pink-500 transition"
@@ -112,7 +112,7 @@ function Footer() {
 
         {/* Facebook */}
         <a
-          href="https://facebook.com/"
+          href="https://www.facebook.com/share/14HM37D5i52/"
           target="_blank"
           rel="noopener noreferrer"
           className="hover:text-blue-500 transition"
@@ -129,7 +129,7 @@ function Footer() {
 
         {/* YouTube */}
         <a
-          href="https://youtube.com/"
+          href="https://www.youtube.com/@Astrobhavana"
           target="_blank"
           rel="noopener noreferrer"
           className="hover:text-red-500 transition"
@@ -145,7 +145,7 @@ function Footer() {
         </a>
 
         {/* Twitter (X) */}
-         <a href="https://x.com/" target="_blank" rel="noopener noreferrer" className="hover:text-gray-400">
+         <a href="https://x.com/AstroBhavana?t=Nr1dHByP9SWjVNbkchQFSA&s=09" target="_blank" rel="noopener noreferrer" className="hover:text-gray-400">
           <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" className="h-6 w-6" viewBox="0 0 24 24">
             <path d="M18.244 2.25h3.308l-7.227 8.26L22.5 21.75h-6.574l-5.144-6.759-5.89 6.759H1.585l7.73-8.865L1.5 2.25h6.75l4.708 6.231 5.286-6.231zm-1.157 17.52h1.833L7.104 4.126H5.147z"/>
           </svg>
@@ -153,7 +153,7 @@ function Footer() {
 
         {/* Tumblr */}
         <a
-          href="https://tumblr.com/"
+          href="https://www.tumblr.com/astrobhavana/"
           target="_blank"
           rel="noopener noreferrer"
           className="hover:text-blue-400 transition"
