@@ -44,7 +44,7 @@ const handleSubmit = async (e) => {
   setKundaliSvg(null);
 
   try {
-    const res = await axios.post("http://localhost:5000/api/free-kundali", form);
+    const res = await axios.post("https://bhavanaastro.onrender.com/api/free-kundali", form);
 
     let svgData = res.data.svg;
 
