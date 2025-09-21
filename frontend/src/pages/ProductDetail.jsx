@@ -7,14 +7,13 @@ export default function ProductDetail() {
   const { id } = useParams();
   const product = products.find((p) => p.id === id);
   const [mainImg, setMainImg] = useState(product?.img);
-  const [activeTab, setActiveTab] = useState("description"); // Default tab
+  const [activeTab, setActiveTab] = useState("description"); 
   const navigate = useNavigate();
 
   if (!product) {
     return <div className="p-6">Product not found</div>;
   }
 
-  // Common FAQs for all products
   const commonFaqs = [
     {
       question: "What is the return policy and estimated delivery duration?",
@@ -47,40 +46,39 @@ export default function ProductDetail() {
   ];
 
   const handleBuyNow = () => {
-    // Navigate to checkout page with productId
     navigate(`/checkout/${product.id}`);
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-10 px-6">
+    <div className="min-h-screen bg-white py-12 px-6">
       {/* Breadcrumb */}
-      <div className="max-w-6xl mx-auto mb-6">
+      <div className="max-w-7xl mx-auto mb-8">
         <button
           onClick={() => navigate(-1)}
-          className="text-gray-600 hover:text-black transition text-sm"
+          className="text-gray-600 hover:text-black transition text-base"
         >
           ← Back to Collection
         </button>
       </div>
 
-      <div className="max-w-6xl mx-auto bg-white rounded-2xl shadow-sm p-8 grid grid-cols-1 md:grid-cols-2 gap-12">
+      <div className="max-w-9xl mx-auto rounded-2xl shadow-lg p-10 grid grid-cols-1 md:grid-cols-2 gap-14 bg-white">
         {/* Left: Product Images */}
         <div className="flex flex-col items-center">
-          <div className="flex justify-center items-center w-full bg-gray-100 rounded-xl">
+          <div className="flex justify-center items-center w-full bg-gray-100 rounded-2xl">
             <img
               src={mainImg}
               alt={product.name}
-              className="rounded-xl shadow-md max-h-[750px] object-contain"
+              className="rounded-2xl shadow-lg max-h-[900px] object-contain"
             />
           </div>
-          <div className="flex gap-4 mt-6 overflow-x-auto justify-center">
+          <div className="flex gap-6 mt-8 overflow-x-auto justify-center">
             {[product.img, ...(product.images || [])].map((img, i) => (
               <img
                 key={i}
                 src={img}
                 alt={`${product.name}-${i}`}
                 onClick={() => setMainImg(img)}
-                className={`w-44 h-44 object-cover rounded-lg cursor-pointer border transition ${
+                className={`w-28 h-28 object-cover rounded-xl cursor-pointer border-2 transition ${
                   mainImg === img ? "border-black" : "border-gray-300"
                 }`}
               />
@@ -90,51 +88,55 @@ export default function ProductDetail() {
 
         {/* Right: Product Info */}
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">{product.name}</h1>
-          <p className="text-gray-500 mt-1 text-sm">★ 4.9 | 1300+ Reviews</p>
+          <h1 className="text-4xl font-extrabold text-gray-900">
+            {product.name}
+          </h1>
+          <p className="text-gray-500 mt-2 text-lg">★ 4.9 | 1300+ Reviews</p>
 
           {/* Price */}
-          <div className="flex items-center gap-3 mt-4">
-            <span className="text-3xl font-semibold text-black">
+          <div className="flex items-center gap-4 mt-6">
+            <span className="text-4xl font-bold text-black">
               {product.price}
             </span>
-            <span className="text-gray-400 line-through text-lg">
+            <span className="text-gray-400 line-through text-2xl">
               {product.oldPrice}
             </span>
-            <span className="text-green-600 font-medium">{product.offer}</span>
+            <span className="text-green-600 font-semibold text-xl">
+              {product.offer}
+            </span>
           </div>
 
           {/* CTA */}
           <button
             onClick={handleBuyNow}
-            className="mt-6 w-full bg-black text-white py-4 rounded-lg text-lg font-medium hover:bg-gray-900 transition shadow-md"
+            className="mt-8 w-full bg-black text-white py-5 rounded-xl text-xl font-semibold hover:bg-gray-900 transition shadow-lg"
           >
             Buy Now
           </button>
 
           {/* Trust Badges */}
-          <div className="grid grid-cols-2 gap-4 mt-8 text-gray-700 text-sm">
-            <div className="flex items-center gap-2 border rounded-lg p-3">
-              <Shield size={18} /> <span>100% Genuine Stones</span>
+          <div className="grid grid-cols-2 gap-5 mt-10 text-gray-700 text-base">
+            <div className="flex items-center gap-3 border rounded-xl p-4">
+              <Shield size={22} /> <span>100% Genuine Stones</span>
             </div>
-            <div className="flex items-center gap-2 border rounded-lg p-3">
-              <Truck size={18} /> <span>Free Shipping</span>
+            <div className="flex items-center gap-3 border rounded-xl p-4">
+              <Truck size={22} /> <span>Free Shipping</span>
             </div>
-            <div className="flex items-center gap-2 border rounded-lg p-3">
-              <RotateCcw size={18} /> <span>7-Day Easy Returns</span>
+            <div className="flex items-center gap-3 border rounded-xl p-4">
+              <RotateCcw size={22} /> <span>7-Day Easy Returns</span>
             </div>
           </div>
         </div>
       </div>
 
       {/* Product Tabs */}
-      <div className="max-w-6xl mx-auto mt-10 bg-white rounded-2xl shadow-sm p-8">
-        <div className="mb-6 flex gap-6 border-b">
+      <div className="max-w-7xl mx-auto mt-12 rounded-2xl shadow-lg p-10 bg-white">
+        <div className="mb-8 flex gap-8 border-b">
           {tabs.map((tab) => (
             <button
               key={tab.key}
               onClick={() => setActiveTab(tab.key)}
-              className={`pb-2 font-medium transition ${
+              className={`pb-3 text-lg font-semibold transition ${
                 activeTab === tab.key
                   ? "border-b-2 border-black text-black"
                   : "text-gray-500"
@@ -145,11 +147,11 @@ export default function ProductDetail() {
           ))}
         </div>
 
-        <div className="text-gray-700 leading-relaxed space-y-4">
+        <div className="text-gray-700 leading-relaxed space-y-5 text-lg">
           {activeTab === "description" && <p>{product.description}</p>}
 
           {activeTab === "benefits" && (
-            <ul className="list-disc list-inside space-y-1">
+            <ul className="list-disc list-inside space-y-2">
               {product.benefits.map((b, i) => (
                 <li key={i}>{b}</li>
               ))}
@@ -161,14 +163,14 @@ export default function ProductDetail() {
           {activeTab === "bestDay" && <p>{product.bestDay}</p>}
 
           {activeTab === "faq" && (
-            <div className="space-y-3">
+            <div className="space-y-4">
               {/* Product-specific FAQs */}
               {product.faqs?.map((f, i) => (
                 <details
                   key={`product-${i}`}
-                  className="border rounded-lg p-4 cursor-pointer"
+                  className="border rounded-lg p-5 cursor-pointer"
                 >
-                  <summary className="font-medium">{f.question}</summary>
+                  <summary className="font-semibold">{f.question}</summary>
                   <p className="mt-2 text-gray-600">{f.answer}</p>
                 </details>
               ))}
@@ -177,9 +179,9 @@ export default function ProductDetail() {
               {commonFaqs.map((f, i) => (
                 <details
                   key={`common-${i}`}
-                  className="border rounded-lg p-4 cursor-pointer"
+                  className="border rounded-lg p-5 cursor-pointer"
                 >
-                  <summary className="font-medium">{f.question}</summary>
+                  <summary className="font-semibold">{f.question}</summary>
                   <p className="mt-2 text-gray-600">{f.answer}</p>
                 </details>
               ))}
