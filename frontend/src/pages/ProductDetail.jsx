@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Shield, Truck, RotateCcw } from "lucide-react";
+import { Shield, Truck, RotateCcw, X } from "lucide-react";
 import products from "../data/product";
 
 export default function ProductDetail() {
@@ -8,11 +8,18 @@ export default function ProductDetail() {
   const product = products.find((p) => p.id === id);
   const [mainImg, setMainImg] = useState(product?.img);
   const [activeTab, setActiveTab] = useState("description");
+  const [showModal, setShowModal] = useState(false); // modal state
+  const [selectedImg, setSelectedImg] = useState(null);
   const navigate = useNavigate();
 
   if (!product) {
     return <div className="p-6">Product not found</div>;
   }
+
+  const handleImageClick = (img) => {
+    setSelectedImg(img);
+    setShowModal(true);
+  };
 
   const commonFaqs = [
     {
@@ -65,7 +72,10 @@ export default function ProductDetail() {
       <div className="max-w-7xl mx-auto rounded-2xl shadow-lg p-5 sm:p-10 grid grid-cols-1 md:grid-cols-2 gap-8 sm:gap-14 bg-white">
         {/* Left: Images */}
         <div className="flex flex-col items-center">
-          <div className="flex justify-center items-center w-full bg-gray-100 rounded-2xl">
+          <div
+            className="flex justify-center items-center w-full bg-gray-100 rounded-2xl cursor-pointer"
+            onClick={() => handleImageClick(mainImg)}
+          >
             <img
               src={mainImg}
               alt={product.name}
@@ -193,6 +203,32 @@ export default function ProductDetail() {
           )}
         </div>
       </div>
+
+      {/* 🔹 Fullscreen Image Modal */}
+      {showModal && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50"
+          onClick={() => setShowModal(false)} // close when clicking background
+        >
+          <div className="relative max-w-5xl w-full p-4">
+            {/* Close Button */}
+            <button
+              className="absolute top-4 right-4 bg-white rounded-full p-2 shadow"
+              onClick={() => setShowModal(false)}
+            >
+              <X size={24} />
+            </button>
+
+            {/* Image */}
+            <img
+              src={selectedImg}
+              alt="Enlarged"
+              className="mx-auto rounded-xl max-h-[90vh] object-contain"
+              onClick={(e) => e.stopPropagation()} // prevent closing when clicking image
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

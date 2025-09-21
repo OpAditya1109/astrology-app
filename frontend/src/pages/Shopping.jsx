@@ -6,7 +6,6 @@ export default function Shopping() {
     { name: "Mala", img: "/shop/mala.png", link: "/shop/mala" },
     { name: "Gemstone", img: "/shop/gemstone.png", link: "/shop/gemstone" },
     { name: "Rudraksha", img: "/shop/rudraksha.png", link: "/shop/rudraksha" },
-    // Later you can re-enable Yantra & Miscellaneous
   ];
 
   return (
@@ -25,7 +24,7 @@ export default function Shopping() {
             to={cat.link}
             className="group flex flex-col items-center w-full"
           >
-            <div className="w-36 h-36 sm:w-44 sm:h-44 md:w-52 md:h-52 lg:w-56 lg:h-56 bg-white shadow-lg rounded-xl flex items-center justify-center overflow-hidden border border-gray-100 group-hover:border-purple-400 group-hover:shadow-2xl transform group-hover:-translate-y-2 transition duration-300">
+            <div className="w-60 h-60 sm:w-64 sm:h-64 md:w-72 md:h-72 lg:w-80 lg:h-80 bg-white shadow-lg rounded-xl flex items-center justify-center overflow-hidden border border-gray-100 group-hover:border-purple-400 group-hover:shadow-2xl transform group-hover:-translate-y-2 transition duration-300">
               <img
                 src={cat.img}
                 alt={cat.name}
