@@ -36,12 +36,24 @@ router.post("/", async (req, res) => {
     const url = `https://api.vedicastroapi.com/v3-json/horoscope/chart-image?${params.toString()}`;
     const response = await fetch(url);
 
+    // ✅ Get the raw SVG string
     let svgString = await response.text();
 
-    // 🔥 Increase all font-sizes (both inline styles & attributes)
+    // 1. Remove fixed width/height
     svgString = svgString
-      .replace(/font-size:\s*[\d.]+px/g, "font-size:18px") // inline CSS
-      .replace(/font-size="[\d.]+px"/g, 'font-size="18px"'); // attribute
+      .replace(/(width|height)="[^"]*"/g, "")
+      .replace(
+        /<svg([^>]*)>/,
+        '<svg$1 viewBox="0 0 500 500" style="width:100%; height:auto; max-width:600px; display:block; margin:auto;">'
+      );
+
+    // 2. Scale font-sizes (x2 here, tweak as needed)
+    svgString = svgString.replace(/font-size:\s*([\d.]+)(px)?/gi, (m, size) => {
+      return `font-size:${parseFloat(size) * 2}px`;
+    });
+    svgString = svgString.replace(/font-size="([\d.]+)(px)?"/gi, (m, size) => {
+      return `font-size="${parseFloat(size) * 2}px"`;
+    });
 
     res.json({ svg: svgString });
   } catch (err) {
