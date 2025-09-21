@@ -66,7 +66,7 @@ const handleSubmit = async (e) => {
 />
 
         <h1 className="text-4xl font-bold text-purple-800 text-center">
-          Most Trusted Vedic Astrology Course
+          Most Trusted Astrology Course
         </h1>
         <h2 className="text-xl text-center text-gray-600 mt-2">
           Become a Professional Astrologer with{" "}
