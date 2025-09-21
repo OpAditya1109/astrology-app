@@ -6,30 +6,33 @@ export default function Shopping() {
     { name: "Mala", img: "/shop/mala.png", link: "/shop/mala" },
     { name: "Gemstone", img: "/shop/gemstone.png", link: "/shop/gemstone" },
     { name: "Rudraksha", img: "/shop/rudraksha.png", link: "/shop/rudraksha" },
-    { name: "Yantra", img: "/shop/yantra.png", link: "/shop/yantra" },
-    { name: "Miscellaneous", img: "/shop/misc.png", link: "/shop/misc" },
+    // Later you can re-enable Yantra & Miscellaneous
   ];
 
   return (
-    <div className="min-h-screen bg-green-50 p-6">
-      <h1 className="text-4xl font-bold text-purple-800 text-center mb-4">
+    <div className="min-h-screen bg-gradient-to-br from-green-50 via-yellow-50 to-purple-50 p-8">
+      <h1 className="text-5xl font-extrabold text-purple-900 text-center mb-4 drop-shadow-sm">
         Astrology Shop
       </h1>
-      <p className="text-lg text-gray-600 max-w-2xl text-center mx-auto mb-8">
-        Explore gemstones, Rudraksha, Yantras, and astrology remedies from trusted sources.
+      <p className="text-lg text-gray-700 max-w-2xl text-center mx-auto mb-12">
+        Explore authentic gemstones, sacred Rudraksha, mystical Yantras, and astrology remedies to bring positivity into your life.
       </p>
 
-      <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-6 max-w-5xl mx-auto">
+      <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-10 max-w-5xl mx-auto justify-items-center">
         {categories.map((cat, i) => (
           <Link
             key={i}
             to={cat.link}
-            className="flex flex-col items-center cursor-pointer hover:scale-105 transition"
+            className="group flex flex-col items-center"
           >
-            <div className="w-20 h-20 rounded-full bg-white shadow-md flex items-center justify-center overflow-hidden">
-              <img src={cat.img} alt={cat.name} className="w-full h-full object-cover" />
+            <div className="w-56 h-56 bg-white shadow-lg rounded-xl flex items-center justify-center overflow-hidden border border-gray-100 group-hover:border-purple-400 group-hover:shadow-2xl transform group-hover:-translate-y-2 transition duration-300">
+              <img
+                src={cat.img}
+                alt={cat.name}
+                className="w-full h-full object-cover group-hover:scale-110 transition"
+              />
             </div>
-            <p className="mt-2 text-sm font-medium text-gray-700 text-center">
+            <p className="mt-4 text-lg font-semibold text-gray-800 group-hover:text-purple-700 transition text-center">
               {cat.name}
             </p>
           </Link>

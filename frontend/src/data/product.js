@@ -1,11 +1,11 @@
-import moneyMagnet from "../assets/product/Bracelets/money-magnet.webp";
-import roseQuartz from "../assets/product/Bracelets/rose-quartz.webp";
-import greenAventurine from "../assets/product/Bracelets/Green-Aventurine.jpg";
-import amethyst from "../assets/product/Bracelets/Amethyst-Bracelet.jpg";
-import sulemani from "../assets/product/Bracelets/Sulemani-Hakik.avif";
-import clearQuartz from "../assets/product/Bracelets/Clear-Quartz.jfif";
-import blackTourmaline from "../assets/product/Bracelets/Black-Tourmaline.jpg";
-import yellowTigerEye from "../assets/product/Bracelets/Yellow-TigerEye.jpg";
+import moneyMagnet from "../assets/product/Bracelets/money-magnet.png";
+import roseQuartz from "../assets/product/Bracelets/rose-quartz.png";
+import greenAventurine from "../assets/product/Bracelets/Green-Aventurine.png";
+import amethyst from "../assets/product/Bracelets/Amethyst-Bracelet.png";
+import sulemani from "../assets/product/Bracelets/Sulemani-Hakik.png";
+import clearQuartz from "../assets/product/Bracelets/Clear-Quartz.png";
+import blackTourmaline from "../assets/product/Bracelets/Black-Tourmaline.png";
+import yellowTigerEye from "../assets/product/Bracelets/Yellow-TigerEye.png";
 
 
 import rud1 from "../assets/product/Rudraksha/1mukhi.jpg";

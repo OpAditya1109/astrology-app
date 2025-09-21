@@ -1,57 +1,103 @@
 import React from "react";
 import { Link } from "react-router-dom"; 
 import products from "../data/product";
+import { Star } from "lucide-react"; // rating stars
 
 export default function BraceletPage() {
   const braceletProducts = products.filter((p) => p.category === "bracelet");
 
   return (
-    <div className="min-h-screen bg-green-50 p-6">
+    <div className="min-h-screen bg-gradient-to-b from-green-50 to-purple-50 p-6">
       {/* Header */}
-      <h1 className="text-3xl font-bold text-purple-800 text-center mb-4">
-        Bracelets Collection
-      </h1>
-      <p className="text-gray-600 text-center mb-8">
-        Explore our exclusive range of spiritual and healing bracelets.
-      </p>
+      <div className="text-center mb-8">
+        <h1 className="text-4xl font-extrabold text-purple-800 drop-shadow-sm">
+          Bracelets Collection
+        </h1>
+        <p className="text-gray-600 mt-2">
+          Explore our exclusive range of spiritual and healing bracelets.
+        </p>
+      </div>
+
+      {/* Sort / Filter */}
+      <div className="flex justify-end mb-6 max-w-7xl mx-auto">
+        <select className="border rounded-lg px-3 py-2 text-sm shadow-sm">
+          <option>Sort by</option>
+          <option>Price: Low to High</option>
+          <option>Price: High to Low</option>
+          <option>Newest First</option>
+        </select>
+      </div>
 
       {/* Products Grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-8 max-w-6xl mx-auto">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-8 max-w-7xl mx-auto">
         {braceletProducts.map((product) => (
-          <Link
+          <div
             key={product.id}
-            to={`/product/${product.id}`} 
-            className="relative bg-white shadow-md rounded-xl p-4 flex flex-col items-center hover:shadow-lg transition group"
+            className="relative bg-white shadow-md rounded-xl overflow-hidden hover:shadow-xl transition transform hover:-translate-y-1 group"
           >
-            {/* Image Container with Hover Description */}
-            <div className="relative w-40 h-40 flex items-center justify-center overflow-hidden rounded-lg bg-gray-100">
-              <img
-                src={product.img}
-                alt={product.name}
-                className="w-full h-full object-contain transition-transform duration-300 group-hover:scale-110"
-              />
-              {/* Hover Overlay */}
-              <div className="absolute inset-0 bg-black bg-opacity-70 text-white opacity-0 group-hover:opacity-100 transition flex items-center justify-center text-center px-2 text-sm">
-                {product.desc}
+            {/* Discount Badge */}
+            {product.oldPrice && (
+              <span className="absolute top-3 left-3 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-lg">
+                {Math.round(
+                  ((product.oldPrice - product.price) / product.oldPrice) * 100
+                )}
+                % OFF
+              </span>
+            )}
+
+            {/* Image */}
+            <Link to={`/product/${product.id}`}>
+              <div className="relative w-full h-60 bg-gray-100 flex items-center justify-center overflow-hidden">
+                <img
+                  src={product.img}
+                  alt={product.name}
+                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                />
+                {/* Hover Overlay */}
+                <div className="absolute inset-0 bg-black bg-opacity-70 text-white opacity-0 group-hover:opacity-100 transition flex items-center justify-center text-center px-4 text-sm">
+                  {product.desc}
+                </div>
+              </div>
+            </Link>
+
+            {/* Details */}
+            <div className="p-4 flex flex-col items-center">
+              <h3 className="text-base font-semibold text-gray-800 text-center line-clamp-1">
+                {product.name}
+              </h3>
+
+              {/* Ratings */}
+              <div className="flex items-center gap-1 text-yellow-500 mt-1">
+                {[...Array(5)].map((_, i) => (
+                  <Star key={i} size={14} fill="currentColor" />
+                ))}
+              </div>
+
+              {/* Price */}
+              <div className="mt-2 flex items-center gap-2">
+                {product.oldPrice && (
+                  <span className="text-gray-400 line-through text-sm">
+                    ₹{product.oldPrice}
+                  </span>
+                )}
+                <span className="text-purple-700 font-bold text-lg">
+                  ₹{product.price}
+                </span>
+              </div>
+
+              {/* View Button Only */}
+              <div className="mt-4 w-full">
+                <Link
+                  to={`/product/${product.id}`}
+                  className="block w-full bg-purple-600 text-white text-sm py-2 rounded-lg hover:bg-purple-700 transition text-center"
+                >
+                  View
+                </Link>
               </div>
             </div>
-
-            {/* Product Details */}
-            <h3 className="mt-3 text-sm font-semibold text-gray-800 text-center">
-              {product.name}
-            </h3>
-
-            {/* Price Section */}
-            <div className="mt-1 flex items-center gap-2">
-              <span className="text-gray-500 line-through text-sm">
-                {product.oldPrice}
-              </span>
-              <span className="text-purple-700 font-bold">{product.price}</span>
-            </div>
-          </Link>
+          </div>
         ))}
       </div>
     </div>
   );
 }
- 

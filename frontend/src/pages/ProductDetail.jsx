@@ -1,8 +1,7 @@
 import React, { useState } from "react";
-import { useParams, Link,useNavigate } from "react-router-dom";
-import { Shield, Truck, RotateCcw, Gift } from "lucide-react";
+import { useParams, useNavigate } from "react-router-dom";
+import { Shield, Truck, RotateCcw } from "lucide-react";
 import products from "../data/product";
-
 
 export default function ProductDetail() {
   const { id } = useParams();
@@ -10,6 +9,7 @@ export default function ProductDetail() {
   const [mainImg, setMainImg] = useState(product?.img);
   const [activeTab, setActiveTab] = useState("description"); // Default tab
   const navigate = useNavigate();
+
   if (!product) {
     return <div className="p-6">Product not found</div>;
   }
@@ -50,34 +50,37 @@ export default function ProductDetail() {
     // Navigate to checkout page with productId
     navigate(`/checkout/${product.id}`);
   };
+
   return (
     <div className="min-h-screen bg-gray-50 py-10 px-6">
       {/* Breadcrumb */}
       <div className="max-w-6xl mx-auto mb-6">
-        <Link
-          to="/"
+        <button
+          onClick={() => navigate(-1)}
           className="text-gray-600 hover:text-black transition text-sm"
         >
           ← Back to Collection
-        </Link>
+        </button>
       </div>
 
       <div className="max-w-6xl mx-auto bg-white rounded-2xl shadow-sm p-8 grid grid-cols-1 md:grid-cols-2 gap-12">
         {/* Left: Product Images */}
-        <div>
-          <img
-            src={mainImg}
-            alt={product.name}
-            className="rounded-xl shadow-md w-full max-h-[500px] object-contain bg-gray-100"
-          />
-          <div className="flex gap-3 mt-4 overflow-x-auto">
+        <div className="flex flex-col items-center">
+          <div className="flex justify-center items-center w-full bg-gray-100 rounded-xl">
+            <img
+              src={mainImg}
+              alt={product.name}
+              className="rounded-xl shadow-md max-h-[750px] object-contain"
+            />
+          </div>
+          <div className="flex gap-4 mt-6 overflow-x-auto justify-center">
             {[product.img, ...(product.images || [])].map((img, i) => (
               <img
                 key={i}
                 src={img}
                 alt={`${product.name}-${i}`}
                 onClick={() => setMainImg(img)}
-                className={`w-20 h-20 object-cover rounded-lg cursor-pointer border transition ${
+                className={`w-44 h-44 object-cover rounded-lg cursor-pointer border transition ${
                   mainImg === img ? "border-black" : "border-gray-300"
                 }`}
               />
@@ -108,6 +111,7 @@ export default function ProductDetail() {
           >
             Buy Now
           </button>
+
           {/* Trust Badges */}
           <div className="grid grid-cols-2 gap-4 mt-8 text-gray-700 text-sm">
             <div className="flex items-center gap-2 border rounded-lg p-3">
@@ -119,7 +123,6 @@ export default function ProductDetail() {
             <div className="flex items-center gap-2 border rounded-lg p-3">
               <RotateCcw size={18} /> <span>7-Day Easy Returns</span>
             </div>
-           
           </div>
         </div>
       </div>
