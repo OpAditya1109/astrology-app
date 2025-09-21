@@ -45,20 +45,16 @@ export default function BraceletPage() {
               </span>
             )}
 
-            {/* Image */}
-            <Link to={`/product/${product.id}`}>
-              <div className="relative w-full h-48 sm:h-56 md:h-60 bg-gray-100 flex items-center justify-center overflow-hidden">
-                <img
-                  src={product.img}
-                  alt={product.name}
-                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                />
-                {/* Hover Overlay */}
-                <div className="absolute inset-0 bg-black bg-opacity-70 text-white opacity-0 group-hover:opacity-100 transition flex items-center justify-center text-center px-3 sm:px-4 text-xs sm:text-sm">
-                  {product.desc}
-                </div>
-              </div>
-            </Link>
+       <Link to={`/product/${product.id}`}>
+  <div className="relative w-full h-48 sm:h-56 md:h-60 bg-gray-100 flex items-center justify-center overflow-hidden">
+    <img
+      src={product.img}
+      alt={product.name}
+      className="w-full h-full object-cover transform transition-transform duration-700 ease-in-out group-hover:scale-110 active:scale-105"
+    />
+  </div>
+</Link>
+
 
             {/* Details */}
             <div className="p-3 sm:p-4 flex flex-col items-center">
