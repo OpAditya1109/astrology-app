@@ -40,7 +40,7 @@ import MiscPage from "./pages/MiscPage";
 import EducationPage from "./pages/EducationPage";
 import CourseDetail from "./pages/CourseDetail";
 import AdminDashboard from "./pages/AdminDashboard";
-
+import FreeKundali from "./pages/FreeKundali";
 // 🔹 Helper: Get logged-in user from storage
 const getStoredUser = () => {
   return (
@@ -68,6 +68,7 @@ function App() {
         <Routes>
           {/* Public Routes */}
           <Route path="/" element={<Home />} />
+            <Route path="/free-kundali" element={<FreeKundali />} />
           <Route path="/user/register" element={<UserRegister />} />
           <Route path="/login" element={<Login />} />
           <Route path="/astrologer/register" element={<AstrologerRegister />} />

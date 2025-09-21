@@ -20,7 +20,7 @@ export default function Home() {
       title: "Free Kundli",
       desc: "Generate your Janam Kundli instantly",
       image: kundliImg,
-      link: "/kundli",
+      link: "/free-kundali",
     },
     {
       title: "Horoscopes",

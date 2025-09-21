@@ -11,6 +11,10 @@ const panchangRoutes = require("./routes/panchang");
 const chatbotRoutes = require("./routes/chatbotRoutes");
 const orderRoute =require("./routes/orderRoutes")
 const enquiryRoutes = require("./routes/enquiryRoutes")
+
+const horoscopeRoutes = require("./routes/horoscope");
+const freeKundaliRoute = require("./routes/freeKundali");
+
 require("./cron/panchangCorn");
 dotenv.config();
 connectDB();
@@ -22,7 +26,7 @@ app.use("/api/wallet/webhook", express.text({ type: "*/*" }));
 app.use("/api/wallet/webhook", express.urlencoded({ extended: true }));
 app.use("/api/wallet/webhook", express.json());
 app.use(cors());
-
+app.use("/api/free-kundali", freeKundaliRoute);
 // --- REST API routes ---
 app.use("/api/users", require("./routes/userRoutes"));
 app.use("/api/astrologers", require("./routes/astrologerRoutes"));
@@ -37,7 +41,6 @@ app.use("/api/orders", orderRoute);
 app.use("/api/enquiries", enquiryRoutes);
 app.use("/api/admin", require("./routes/admin"));
 
-const horoscopeRoutes = require("./routes/horoscope");
 async function sendSystemMessage(roomId, text, kundaliUrl = null) {
   const consultation = await Consultation.findById(roomId);
   if (!consultation) return;
