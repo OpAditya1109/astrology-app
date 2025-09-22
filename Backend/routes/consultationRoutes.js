@@ -5,7 +5,6 @@ const User = require("../models/User");
 const { creditAdminWallet } = require("../controllers/adminController"); // Admin wallet helper
 const sendEmail = require("../utils/email"); // Import email helper
 
-// ➤ Create a new consultation (chat/audio/video) or return existing
 router.post("/", async (req, res) => {
   try {
     const { userId, userName, astrologerId, topic, mode, rate, kundaliUrl } = req.body;
@@ -36,22 +35,22 @@ router.post("/", async (req, res) => {
     });
 
     // 4️⃣ Check if consultation already exists
-    const existing = await Consultation.findOne({ userId, astrologerId });
-    if (existing) return res.status(200).json(existing);
+    let consultation = await Consultation.findOne({ userId, astrologerId });
+    if (!consultation) {
+      // 5️⃣ Create new consultation
+      consultation = new Consultation({
+        userId,
+        astrologerId,
+        topic,
+        mode,
+        bookedAt: new Date(),
+        messages: [],
+        status: "ongoing",
+        kundaliUrl: kundaliUrl || null,
+      });
 
-    // 5️⃣ Create new consultation
-    const consultation = new Consultation({
-      userId,
-      astrologerId,
-      topic,
-      mode,
-      bookedAt: new Date(),
-      messages: [],
-      status: "ongoing",
-      kundaliUrl: kundaliUrl || null, // ✅ store kundali URL
-    });
-
-    await consultation.save();
+      await consultation.save();
+    }
 
     // --- EMIT SOCKET EVENT ---
     const io = req.app.get("io");
@@ -63,14 +62,15 @@ router.post("/", async (req, res) => {
       mode: consultation.mode,
       bookedAt: consultation.bookedAt,
       status: consultation.status,
-      kundaliUrl: consultation.kundaliUrl, // ✅ send kundali to astrologer
+      kundaliUrl: consultation.kundaliUrl,
     });
 
     // --- SEND EMAIL TO ASTROLOGER ---
-    const astrologer = await User.findById(astrologerId);
-    if (astrologer?.email) {
-      const emailSubject = "New Consultation Booked";
-      const emailBody = `
+    try {
+      const astrologer = await User.findById(astrologerId);
+      if (astrologer?.email) {
+        const emailSubject = "New Consultation Booked";
+        const emailBody = `
 Hello ${astrologer.name},
 
 A new ${mode} consultation has been booked by ${userName}.
@@ -82,8 +82,11 @@ Please check your dashboard to start the consultation.
 
 Thanks,
 Bhavana Astro
-      `;
-      sendEmail(astrologer.email, emailSubject, emailBody);
+        `;
+        await sendEmail(astrologer.email, emailSubject, emailBody);
+      }
+    } catch (emailErr) {
+      console.error("Failed to send email:", emailErr);
     }
 
     res.status(201).json(consultation);
