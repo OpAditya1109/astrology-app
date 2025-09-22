@@ -18,52 +18,63 @@ export default function BraceletPage() {
         </p>
       </div>
 
+      {/* Sort / Filter */}
+      <div className="flex justify-end mb-6 max-w-7xl mx-auto">
+        <select className="border rounded-lg px-3 py-2 text-sm shadow-sm w-full sm:w-auto">
+          <option>Sort by</option>
+          <option>Newest First</option>
+          <option>Popular</option>
+        </select>
+      </div>
+
       {/* Products Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 sm:gap-8 max-w-7xl mx-auto">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-12 max-w-7xl mx-auto">
         {braceletProducts.map((product) => (
           <div
             key={product.id}
-            className="relative bg-white shadow-md rounded-xl overflow-hidden hover:shadow-xl transition transform hover:-translate-y-1 group"
+            className="relative bg-white shadow-md rounded-xl overflow-hidden hover:shadow-xl transition transform hover:-translate-y-1 group min-w-[400px]"
           >
-            {/* Product Image (Bigger) */}
+            {/* Product Image */}
             <Link to={`/product/${product.id}`}>
-              <div className="relative w-full h-64 sm:h-72 md:h-80 bg-gray-100 flex items-center justify-center overflow-hidden">
+              <div className="relative w-full h-[350px] bg-gray-100 flex items-center justify-center overflow-hidden">
                 <img
                   src={product.img}
                   alt={product.name}
-                  className="w-full h-full object-cover transform transition-transform duration-700 ease-in-out group-hover:scale-110 active:scale-105"
+                  className="w-full h-full object-cover transform transition-transform duration-700 ease-in-out group-hover:scale-105 active:scale-100"
                 />
               </div>
             </Link>
 
-            {/* Product Details */}
-            <div className="p-4 flex flex-col items-center">
-              <h3 className="text-sm sm:text-base font-semibold text-gray-800 text-center line-clamp-1">
-                {product.name}
-              </h3>
+            {/* Details */}
+          {/* Details */}
+<div className="p-4 flex flex-col items-center">
+  <h3 className="text-base font-medium text-gray-800 text-center line-clamp-1">
+    {product.name}
+  </h3>
 
-              {/* Ratings */}
-              <div className="flex items-center gap-1 text-yellow-500 mt-2">
-                {[...Array(5)].map((_, i) => (
-                  <Star
-                    key={i}
-                    size={14}
-                    className="sm:w-4 sm:h-4"
-                    fill="currentColor"
-                  />
-                ))}
-              </div>
+  {/* Ratings */}
+  <div className="flex items-center gap-1 text-yellow-500 mt-2">
+    {[...Array(5)].map((_, i) => (
+      <Star
+        key={i}
+        size={16}
+        className="sm:w-4 sm:h-4"
+        fill="currentColor"
+      />
+    ))}
+  </div>
 
-              {/* View Button */}
-              <div className="mt-4 w-full">
-                <Link
-                  to={`/product/${product.id}`}
-                  className="block w-full bg-black text-white text-xs sm:text-sm py-2 sm:py-2.5 rounded-lg hover:bg-purple-700 transition text-center"
-                >
-                  View Product
-                </Link>
-              </div>
-            </div>
+  {/* View Button */}
+  <div className="mt-4 w-full">
+    <Link
+      to={`/product/${product.id}`}
+      className="block w-full bg-black text-white text-sm py-2 rounded-lg hover:bg-purple-700 transition text-center"
+    >
+      View Product
+    </Link>
+  </div>
+</div>
+
           </div>
         ))}
       </div>
