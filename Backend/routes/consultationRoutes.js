@@ -3,6 +3,7 @@ const router = express.Router();
 const Consultation = require("../models/Consultation");
 const User = require("../models/User");
 const { creditAdminWallet } = require("../controllers/adminController"); // Admin wallet helper
+const sendEmail = require("../utils/email"); // Import email helper
 
 // ➤ Create a new consultation (chat/audio/video) or return existing
 router.post("/", async (req, res) => {
@@ -64,6 +65,26 @@ router.post("/", async (req, res) => {
       status: consultation.status,
       kundaliUrl: consultation.kundaliUrl, // ✅ send kundali to astrologer
     });
+
+    // --- SEND EMAIL TO ASTROLOGER ---
+    const astrologer = await User.findById(astrologerId);
+    if (astrologer?.email) {
+      const emailSubject = "New Consultation Booked";
+      const emailBody = `
+Hello ${astrologer.name},
+
+A new ${mode} consultation has been booked by ${userName}.
+
+Topic: "${topic}"
+Booked At: ${consultation.bookedAt.toLocaleString()}
+
+Please check your dashboard to start the consultation.
+
+Thanks,
+Bhavana Astro
+      `;
+      sendEmail(astrologer.email, emailSubject, emailBody);
+    }
 
     res.status(201).json(consultation);
   } catch (err) {

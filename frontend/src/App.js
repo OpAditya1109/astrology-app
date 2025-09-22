@@ -67,6 +67,8 @@ function App() {
       <Layout>
         <Routes>
           {/* Public Routes */}
+      
+
           <Route path="/" element={<Home />} />
             <Route path="/free-kundali" element={<FreeKundali />} />
           <Route path="/user/register" element={<UserRegister />} />
