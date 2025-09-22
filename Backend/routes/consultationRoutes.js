@@ -4,6 +4,7 @@ const Consultation = require("../models/Consultation");
 const User = require("../models/User");
 const { creditAdminWallet } = require("../controllers/adminController"); // Admin wallet helper
 const sendEmail = require("../utils/email"); // Import email helper
+const Astrologer = require("../models/Astrologer");
 
 router.post("/", async (req, res) => {
   try {
@@ -67,7 +68,7 @@ router.post("/", async (req, res) => {
 
     // --- SEND EMAIL TO ASTROLOGER ---
     try {
-      const astrologer = await User.findById(astrologerId);
+      const astrologer = await Astrologer.findById(astrologerId);
       if (astrologer?.email) {
         const emailSubject = "New Consultation Booked";
         const emailBody = `
