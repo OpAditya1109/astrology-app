@@ -25,38 +25,38 @@ import rud14 from "../assets/product/Rudraksha/14mukhi.jpg";
 
 
 
-import rudrakshaMala from "../assets/product/Mala/rudraksha-mala.jpg";
-import tulsiMala from "../assets/product/Mala/tulsi-mala.jpg";
-import sandalwoodMala from "../assets/product/Mala/sandalwood-mala.jpg";
-import crystalMala from "../assets/product/Mala/crystal-mala.jpg";
-import lotusSeedMala from "../assets/product/Mala/lotusseed-mala.jpg";
-import bodhiSeedMala from "../assets/product/Mala/bodhi-seed-mala.webp";
-import paradMala from "../assets/product/Mala/parad-mala.jpg";
+import rudrakshaMala from "../assets/product/Mala/rudraksha-mala.png";
+import tulsiMala from "../assets/product/Mala/tulsi-mala.png";
+import sandalwoodMala from "../assets/product/Mala/sandalwood-mala.png";
+import crystalMala from "../assets/product/Mala/crystal-mala.png";
+import lotusSeedMala from "../assets/product/Mala/lotusseed-mala.png";
+import bodhiSeedMala from "../assets/product/Mala/bodhi-seed-mala.png";
+import paradMala from "../assets/product/Mala/parad-mala.png";
 
 
 // --- Gemstone Images (placeholder imports) ---
-import rubyImg from "../assets/product/Gemstone/ruby.jfif";
-import pearlImg from "../assets/product/Gemstone/pearl.jpg";
-import redCoralImg from "../assets/product/Gemstone/red-coral.jfif";
-import emeraldImg from "../assets/product/Gemstone/emerald.jfif";
-import yellowSapphireImg from "../assets/product/Gemstone/yellow-sapphire.jpg";
-import diamondImg from "../assets/product/Gemstone/diamond.jpg";
-import blueSapphireImg from "../assets/product/Gemstone/blue-sapphire.jpg";
-import hessoniteImg from "../assets/product/Gemstone/hessonite.jpg";
-import catsEyeImg from "../assets/product/Gemstone/cats-eye.webp";
-import amethystImg from "../assets/product/Gemstone/amethyst.jfif";
-import citrineImg from "../assets/product/Gemstone/citrine.jfif";
-import garnetImg from "../assets/product/Gemstone/garnet.jpg";
-import peridotImg from "../assets/product/Gemstone/peridot.jfif";
-import turquoiseImg from "../assets/product/Gemstone/turquoise.jfif";
-import aquamarineImg from "../assets/product/Gemstone/aquamarine.jfif";
-import topazImg from "../assets/product/Gemstone/topaz.jfif";
-import moonstoneImg from "../assets/product/Gemstone/moonstone.jpg";
-import lapisLazuliImg from "../assets/product/Gemstone/lapis-lazuli.jfif";
-import onyxImg from "../assets/product/Gemstone/onyx.jfif";
-import sunstoneImg from "../assets/product/Gemstone/sunstone.jfif";
-import bloodstoneImg from "../assets/product/Gemstone/bloodstone.jfif";
-import malachiteImg from "../assets/product/Gemstone/malachite.jfif";
+import rubyImg from "../assets/product/Gemstone/ruby.png";
+import pearlImg from "../assets/product/Gemstone/pearl.png";
+import redCoralImg from "../assets/product/Gemstone/red-coral.png";
+import emeraldImg from "../assets/product/Gemstone/emerald.png";
+import yellowSapphireImg from "../assets/product/Gemstone/yellow-sapphire.png";
+import diamondImg from "../assets/product/Gemstone/diamond.png";
+import blueSapphireImg from "../assets/product/Gemstone/blue-sapphire.png";
+import hessoniteImg from "../assets/product/Gemstone/hessonite.png";
+import catsEyeImg from "../assets/product/Gemstone/cats-eye.png";
+import amethystImg from "../assets/product/Gemstone/amethyst.png";
+import citrineImg from "../assets/product/Gemstone/citrine.png";
+import garnetImg from "../assets/product/Gemstone/garnet.png";
+import peridotImg from "../assets/product/Gemstone/peridot.png";
+import turquoiseImg from "../assets/product/Gemstone/turquoise.png";
+import aquamarineImg from "../assets/product/Gemstone/aquamarine.png";
+import topazImg from "../assets/product/Gemstone/topaz.png";
+import moonstoneImg from "../assets/product/Gemstone/moonstone.png";
+import lapisLazuliImg from "../assets/product/Gemstone/lapis-lazuli.png";
+import onyxImg from "../assets/product/Gemstone/onyx.png";
+import sunstoneImg from "../assets/product/Gemstone/sunstone.png";
+import bloodstoneImg from "../assets/product/Gemstone/bloodstone.png";
+import malachiteImg from "../assets/product/Gemstone/malachite.png";
 
 
 const products = [
@@ -662,7 +662,7 @@ const products = [
     category: "gemstone",
   },
   {
-    id: "amethyst",
+    id: "amethystGemstone",
     name: "Amethyst",
     img: amethystImg,
     price: 2999,

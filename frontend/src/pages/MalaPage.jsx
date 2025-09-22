@@ -1,57 +1,73 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import products from "../data/product";
+import { Star } from "lucide-react"; // rating stars
 
 export default function MalaPage() {
   // Filter only Mala products
   const malaProducts = products.filter((p) => p.category === "mala");
 
   return (
-    <div className="min-h-screen bg-blue-50 p-6">
+    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-indigo-50 p-4 sm:p-6">
       {/* Header */}
-      <h1 className="text-3xl font-bold text-blue-800 text-center mb-4">
-        Mala Collection
-      </h1>
-      <p className="text-gray-600 text-center mb-8">
-        Explore our sacred mala beads for meditation and spiritual growth.
-      </p>
+      <div className="text-center mb-8">
+        <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-blue-800 drop-shadow-sm">
+          Mala Collection
+        </h1>
+        <p className="text-gray-600 mt-2 text-sm sm:text-base">
+          Explore our sacred mala beads for meditation and spiritual growth.
+        </p>
+      </div>
 
       {/* Products Grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-8 max-w-6xl mx-auto">
+      <div className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-10 max-w-7xl mx-auto">
         {malaProducts.map((product) => (
-          <Link
+          <div
             key={product.id}
-            to={`/product/${product.id}`} // same ProductDetail page
-            className="relative bg-white shadow-md rounded-xl p-4 flex flex-col items-center hover:shadow-lg transition group"
+            className="relative bg-white shadow-md rounded-xl overflow-hidden hover:shadow-xl transition transform hover:-translate-y-1 group w-full min-w-[320px]"
           >
-            {/* Image Container with Hover Description */}
-            <div className="relative w-40 h-40 flex items-center justify-center overflow-hidden rounded-lg bg-gray-100">
-              <img
-                src={product.img}
-                alt={product.name}
-                className="w-full h-full object-contain transition-transform duration-300 group-hover:scale-110"
-              />
-              <div className="absolute inset-0 bg-black bg-opacity-70 text-white opacity-0 group-hover:opacity-100 transition flex items-center justify-center text-center px-2 text-sm">
-                {product.desc}
+            {/* Product Image with Zoom */}
+            <Link to={`/product/${product.id}`}>
+              <div className="relative w-full h-80 sm:h-96 md:h-[28rem] bg-gray-100 flex items-center justify-center overflow-hidden">
+                <img
+                  src={product.img}
+                  alt={product.name}
+                  className="w-full h-full object-cover transform transition-transform duration-500 ease-in-out group-hover:scale-110 group-active:scale-105"
+                />
               </div>
-            </div>
+            </Link>
 
             {/* Product Details */}
-            <h3 className="mt-3 text-sm font-semibold text-gray-800 text-center">
-              {product.name}
-            </h3>
+            <div className="p-6 flex flex-col items-center">
+              <h3 className="text-lg font-semibold text-gray-800 text-center line-clamp-1">
+                {product.name}
+              </h3>
 
-            {/* Price Section */}
-            <div className="mt-1 flex items-center gap-2">
-              <span className="text-gray-500 line-through text-sm">
-                {product.oldPrice}
-              </span>
-              <span className="text-blue-700 font-bold">{product.price}</span>
+              {/* Ratings */}
+              <div className="flex items-center gap-1 text-yellow-500 mt-3">
+                {[...Array(5)].map((_, i) => (
+                  <Star
+                    key={i}
+                    size={18}
+                    className="sm:w-5 sm:h-5"
+                    fill="currentColor"
+                  />
+                ))}
+              </div>
+
+              {/* View Button */}
+              <div className="mt-5 w-full">
+                <Link
+                  to={`/product/${product.id}`}
+                  className="block w-full bg-blue-700 text-white text-sm py-3 rounded-lg hover:bg-indigo-700 transition text-center"
+                >
+                  View Product
+                </Link>
+              </div>
             </div>
-          </Link>
+          </div>
         ))}
       </div>
     </div>
   );
 }
- 
