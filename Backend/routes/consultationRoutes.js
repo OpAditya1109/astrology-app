@@ -74,7 +74,7 @@ router.post("/", async (req, res) => {
         const emailBody = `
 Hello ${astrologer.name},
 
-A new ${mode} consultation has been booked by ${userName}.
+A new ${mode} consultation has been booked.
 
 Topic: "${topic}"
 Booked At: ${consultation.bookedAt.toLocaleString()}
