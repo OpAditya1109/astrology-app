@@ -3,36 +3,48 @@ import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
 
 export default function ResetPassword() {
-  const { token } = useParams(); // ✅ token comes from route like /reset-password/:token
+  const { token } = useParams(); // ✅ token from /reset-password/:token
   const navigate = useNavigate();
 
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
+  const [disabled, setDisabled] = useState(false);
+
+  // ✅ Popup state
+  const [popupMessage, setPopupMessage] = useState("");
+  const [showPopup, setShowPopup] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setMessage("");
 
     if (password !== confirmPassword) {
-      setMessage("Passwords do not match");
+      setPopupMessage("Passwords do not match");
+      setShowPopup(true);
       setLoading(false);
       return;
     }
 
     try {
       const res = await axios.post(
-        `http://localhost:5000/api/auth/reset-password/${token}`,
+        `https://bhavanaastro.onrender.com/api/auth/reset-password/${token}`,
         { password }
       );
-      setMessage(res.data.message);
-      setTimeout(() => navigate("/login"), 2000); // redirect after success
+      setPopupMessage(res.data.message);
+      setShowPopup(true);
+      setDisabled(true); // disable after success
     } catch (err) {
-      setMessage(err.response?.data?.message || "Something went wrong");
+      setPopupMessage(err.response?.data?.message || "Something went wrong");
+      setShowPopup(true);
     }
+
     setLoading(false);
+  };
+
+  const handleClosePopup = () => {
+    setShowPopup(false);
+    navigate("/login"); // redirect after closing popup
   };
 
   return (
@@ -69,16 +81,27 @@ export default function ResetPassword() {
 
         <button
           type="submit"
-          disabled={loading}
+          disabled={loading || disabled}
           className="w-full bg-purple-600 text-white py-2 rounded-lg hover:bg-purple-700 transition disabled:opacity-50"
         >
           {loading ? "Resetting..." : "Reset Password"}
         </button>
-
-        {message && (
-          <p className="text-center text-sm text-gray-600 mt-3">{message}</p>
-        )}
       </form>
+
+      {/* ✅ Popup Modal */}
+      {showPopup && (
+        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center">
+          <div className="bg-white p-6 rounded-lg shadow-lg w-80 text-center">
+            <p className="text-gray-700 mb-4">{popupMessage}</p>
+            <button
+              onClick={handleClosePopup}
+              className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700"
+            >
+              OK
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

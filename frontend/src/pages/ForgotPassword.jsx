@@ -1,23 +1,39 @@
 import React, { useState } from "react";
 import axios from "axios";
+import { useNavigate } from "react-router-dom";
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState("");
-  const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
+  const [disabled, setDisabled] = useState(false);
+  const [popupMessage, setPopupMessage] = useState("");
+  const [showPopup, setShowPopup] = useState(false);
+
+  const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setMessage("");
 
     try {
-      const res = await axios.post("http://localhost:5000/api/auth/forgot-password", { email });
-      setMessage(res.data.message);
+      const res = await axios.post(
+        "https://bhavanaastro.onrender.com/api/auth/forgot-password",
+        { email }
+      );
+      setPopupMessage(res.data.message);
+      setShowPopup(true);
+      setDisabled(true); // disable after one click
     } catch (err) {
-      setMessage(err.response?.data?.message || "Something went wrong");
+      setPopupMessage(err.response?.data?.message || "Something went wrong");
+      setShowPopup(true);
     }
+
     setLoading(false);
+  };
+
+  const handleClosePopup = () => {
+    setShowPopup(false);
+    navigate("/login"); // redirect to login after popup close
   };
 
   return (
@@ -26,7 +42,9 @@ export default function ForgotPassword() {
         onSubmit={handleSubmit}
         className="bg-white shadow-md rounded-lg p-6 w-96"
       >
-        <h2 className="text-2xl font-bold text-center mb-4">Forgot Password</h2>
+        <h2 className="text-2xl font-bold text-center mb-4">
+          Forgot Password
+        </h2>
 
         <label className="block text-gray-700 font-medium mb-1">
           Email Address
@@ -42,16 +60,27 @@ export default function ForgotPassword() {
 
         <button
           type="submit"
-          disabled={loading}
+          disabled={loading || disabled}
           className="w-full bg-purple-600 text-white py-2 rounded-lg hover:bg-purple-700 transition disabled:opacity-50"
         >
           {loading ? "Sending..." : "Send Reset Link"}
         </button>
-
-        {message && (
-          <p className="text-center text-sm text-gray-600 mt-3">{message}</p>
-        )}
       </form>
+
+      {/* ✅ Popup Modal */}
+      {showPopup && (
+        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center">
+          <div className="bg-white p-6 rounded-lg shadow-lg w-80 text-center">
+            <p className="text-gray-700 mb-4">{popupMessage}</p>
+            <button
+              onClick={handleClosePopup}
+              className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700"
+            >
+              OK
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
