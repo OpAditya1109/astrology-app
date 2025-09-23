@@ -1,5 +1,5 @@
 import { useParams } from "react-router-dom";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import socket from "./socket"; // shared socket instance
 
 export default function ChatPage() {
@@ -7,9 +7,12 @@ export default function ChatPage() {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [secondsLeft, setSecondsLeft] = useState(0);
-  const [modalImg, setModalImg] = useState(null); // Kundali modal
-  const [consultationEnded, setConsultationEnded] = useState(false); // flag to disable input
-  const [isEnding, setIsEnding] = useState(false); // prevent beforeunload alert during auto redirect
+  const [modalImg, setModalImg] = useState(null);
+  const [consultationEnded, setConsultationEnded] = useState(false);
+  const [isEnding, setIsEnding] = useState(false);
+
+  const [keyboardPadding, setKeyboardPadding] = useState(0);
+  const messagesEndRef = useRef(null);
 
   const currentUser = JSON.parse(sessionStorage.getItem("user"));
   const userId = currentUser?.id || "guest";
@@ -20,13 +23,9 @@ export default function ChatPage() {
 
     if (!socket.connected) socket.connect();
 
-    // Join room
     socket.emit("joinRoom", roomId);
-
-    // Start consultation timer
     socket.emit("startConsultationTimer", { roomId, durationMinutes: 5 });
 
-    // Send intro message only once per consultation
     const userData = JSON.parse(sessionStorage.getItem("user"));
     const introSentKey = `introSent_${roomId}`;
     if (userData && !sessionStorage.getItem(introSentKey)) {
@@ -44,20 +43,15 @@ export default function ChatPage() {
       sessionStorage.setItem(introSentKey, "true");
     }
 
-    // Fetch existing messages
-    fetch(
-      `https://bhavanaastro.onrender.com/api/consultations/${roomId}/messages`
-    )
+    fetch(`https://bhavanaastro.onrender.com/api/consultations/${roomId}/messages`)
       .then((res) => res.json())
       .then((data) => {
         if (Array.isArray(data)) setMessages(data);
-        else if (data?.messages && Array.isArray(data.messages))
-          setMessages(data.messages);
+        else if (data?.messages && Array.isArray(data.messages)) setMessages(data.messages);
         else setMessages([]);
       })
       .catch(() => setMessages([]));
 
-    // Socket listeners
     const handleNewMessage = (message) => setMessages((prev) => [...prev, message]);
     const handleTimerUpdate = ({ secondsLeft }) => setSecondsLeft(secondsLeft);
     const handleTimerEnd = () => endConsultation("⏰ Consultation timer ended!");
@@ -70,7 +64,6 @@ export default function ChatPage() {
     socket.on("timerEnded", handleTimerEnd);
     socket.on("consultationEnded", handleConsultationEnded);
 
-    // Warn before leaving only if not ending automatically
     const handleBeforeUnload = (e) => {
       if (!isEnding) {
         e.preventDefault();
@@ -90,7 +83,29 @@ export default function ChatPage() {
     };
   }, [roomId, isEnding]);
 
-  // End consultation
+  // Auto-scroll when messages or keyboard open
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, keyboardPadding]);
+
+  // ✅ Keyboard padding detection for Android WebView
+  useEffect(() => {
+    const handleResize = () => {
+      const viewportHeight = window.innerHeight;
+      const docHeight = document.documentElement.clientHeight;
+
+      const diff = docHeight - viewportHeight;
+      setKeyboardPadding(diff > 0 ? diff : 0);
+
+      setTimeout(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+      }, 100);
+    };
+
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
   const endConsultation = async (alertMessage) => {
     setIsEnding(true);
     alert(alertMessage);
@@ -112,7 +127,6 @@ export default function ChatPage() {
     socket.emit("leaveRoom", roomId);
     socket.disconnect();
 
-    // Auto redirect after 3 seconds so user can see "Consultation Ended" message
     setTimeout(() => {
       window.location.href = "/user/consultancy";
     }, 3000);
@@ -138,7 +152,10 @@ export default function ChatPage() {
         <span className="bg-purple-900 px-3 py-1 rounded">{formatTime(secondsLeft)}</span>
       </header>
 
-      <div className="flex-1 overflow-y-auto p-4 space-y-2">
+      <div
+        className="flex-1 overflow-y-auto p-4 space-y-2"
+        style={{ paddingBottom: keyboardPadding + 70 }}
+      >
         {messages.map((msg, i) => (
           <div
             key={i}
@@ -161,22 +178,26 @@ export default function ChatPage() {
             )}
           </div>
         ))}
-
         {consultationEnded && (
           <div className="text-center text-red-600 font-semibold mt-2">
             ⏰ Consultation has ended
           </div>
         )}
+        <div ref={messagesEndRef} />
       </div>
 
-      {/* Input */}
-      <div className="p-4 flex border-t bg-white">
+      {/* ✅ Input bar fixed with keyboard padding */}
+      <div
+        className="fixed bottom-0 left-0 right-0 p-4 flex border-t bg-white"
+        style={{ paddingBottom: keyboardPadding > 0 ? keyboardPadding : "env(safe-area-inset-bottom)" }}
+      >
         <input
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && sendMessage()}
           disabled={secondsLeft <= 0 || consultationEnded}
           className="flex-1 border rounded-lg px-3 py-2 mr-2 disabled:bg-gray-200"
+          placeholder="Type your message..."
         />
         <button
           onClick={sendMessage}
@@ -187,7 +208,6 @@ export default function ChatPage() {
         </button>
       </div>
 
-      {/* Modal for Kundali */}
       {modalImg && (
         <div
           className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50"
