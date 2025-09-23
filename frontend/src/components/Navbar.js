@@ -70,7 +70,7 @@ export default function Navbar() {
                   to="/user/register"
                   className="text-gray-700 hover:text-purple-700 font-medium"
                 >
-                  User Register
+                  Sign up
                 </Link>
                 <Link
                   to="/astrologer/register"
@@ -132,7 +132,7 @@ export default function Navbar() {
                   Login
                 </Link>
                 <Link to="/user/register" onClick={() => setIsMenuOpen(false)}>
-                  User Register
+                  Sign up
                 </Link>
                 <Link
                   to="/astrologer/register"

@@ -1,8 +1,9 @@
 import React, { useState } from "react";
 import axios from "axios";
 import Select from "react-select";
-
-// Options (alphabetical order)
+import { useNavigate } from "react-router-dom";
+import cities from "../cities_minified.json";
+// Options
 const systemsOptions = [
   { value: "Angel", label: "Angel Reading" },
   { value: "FaceReading", label: "Face Reading" },
@@ -51,6 +52,7 @@ const categoryOptions = [
 ];
 
 const AstrologerRegister = () => {
+  const navigate = useNavigate();
   const [form, setForm] = useState({
     name: "",
     email: "",
@@ -64,8 +66,9 @@ const AstrologerRegister = () => {
     languagesKnown: [],
     categories: [],
   });
-
-  const [photo, setPhoto] = useState(null); // 📸 state for profile photo
+  const [photo, setPhoto] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [popup, setPopup] = useState({ show: false, type: "success", message: "" });
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -77,10 +80,10 @@ const AstrologerRegister = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setLoading(true);
+
     try {
       const formData = new FormData();
-
-      // Append text fields
       Object.keys(form).forEach((key) => {
         if (Array.isArray(form[key])) {
           form[key].forEach((item) => formData.append(key, item.value));
@@ -89,10 +92,7 @@ const AstrologerRegister = () => {
         }
       });
 
-      // Append photo
-      if (photo) {
-        formData.append("photo", photo);
-      }
+      if (photo) formData.append("photo", photo);
 
       const res = await axios.post(
         "https://bhavanaastro.onrender.com/api/astrologers/register",
@@ -100,14 +100,40 @@ const AstrologerRegister = () => {
         { headers: { "Content-Type": "multipart/form-data" } }
       );
 
-      alert(res.data.message || "Registration successful");
+      setPopup({ show: true, type: "success", message: res.data.message || "Registration Successful!" });
+
+      // Reset form
+      setForm({
+        name: "",
+        email: "",
+        password: "",
+        gender: "",
+        mobile: "",
+        experience: "",
+        city: "",
+        country: "",
+        systemsKnown: [],
+        languagesKnown: [],
+        categories: [],
+      });
+      setPhoto(null);
+
+      setTimeout(() => {
+        setPopup({ ...popup, show: false });
+        navigate("/login"); // redirect after popup
+      }, 2500);
+
     } catch (err) {
-      alert(err.response?.data?.error || "Error occurred");
+      const errorMessage = err.response?.data?.error || "Something went wrong";
+      setPopup({ show: true, type: "error", message: errorMessage });
+      setTimeout(() => setPopup({ ...popup, show: false }), 2500);
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-yellow-100 via-orange-100 to-pink-100 p-6">
+    <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-yellow-100 via-orange-100 to-pink-100 p-6 relative">
       <div className="bg-white shadow-2xl rounded-2xl p-8 w-full max-w-3xl border border-orange-200">
         <h2 className="text-3xl font-bold text-center text-orange-600 mb-6">
           🔮 Astrologer Registration
@@ -125,6 +151,7 @@ const AstrologerRegister = () => {
               required
               value={form.name}
               onChange={handleChange}
+              disabled={loading}
               className="w-full border rounded-xl px-3 py-2 focus:ring-2 focus:ring-orange-400 outline-none"
             />
           </div>
@@ -139,6 +166,7 @@ const AstrologerRegister = () => {
               required
               value={form.gender}
               onChange={handleChange}
+              disabled={loading}
               className="w-full border rounded-xl px-3 py-2 focus:ring-2 focus:ring-orange-400 outline-none"
             >
               <option value="">-- Select Gender --</option>
@@ -160,6 +188,7 @@ const AstrologerRegister = () => {
                 required
                 value={form.mobile}
                 onChange={handleChange}
+                disabled={loading}
                 className="w-full border rounded-xl px-3 py-2 focus:ring-2 focus:ring-orange-400 outline-none"
               />
             </div>
@@ -173,6 +202,7 @@ const AstrologerRegister = () => {
                 required
                 value={form.experience}
                 onChange={handleChange}
+                disabled={loading}
                 className="w-full border rounded-xl px-3 py-2 focus:ring-2 focus:ring-orange-400 outline-none"
               />
             </div>
@@ -180,19 +210,34 @@ const AstrologerRegister = () => {
 
           {/* City & Country */}
           <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block mb-1 font-semibold">
-                City <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                name="city"
-                required
-                value={form.city}
-                onChange={handleChange}
-                className="w-full border rounded-xl px-3 py-2 focus:ring-2 focus:ring-orange-400 outline-none"
-              />
-            </div>
+           <div>
+  <label className="block mb-1 font-semibold">
+    City <span className="text-red-500">*</span>
+  </label>
+  <select
+    name="city"
+    value={form.city}
+    onChange={(e) => {
+      const selectedCity = cities.find((c) => c.city === e.target.value);
+      if (selectedCity) {
+        setForm({
+          ...form,
+          city: selectedCity.city,
+          country: selectedCity.country || "India", // optional
+        });
+      }
+    }}
+    className="w-full border rounded-xl px-3 py-2 focus:ring-2 focus:ring-orange-400 outline-none"
+    required
+  >
+    <option value="">Select your city</option>
+    {cities.map((c) => (
+      <option key={c.city} value={c.city}>
+        {c.city}, {c.state}
+      </option>
+    ))}
+  </select>
+</div>
             <div>
               <label className="block mb-1 font-semibold">
                 Country <span className="text-red-500">*</span>
@@ -203,6 +248,7 @@ const AstrologerRegister = () => {
                 required
                 value={form.country}
                 onChange={handleChange}
+                disabled={loading}
                 className="w-full border rounded-xl px-3 py-2 focus:ring-2 focus:ring-orange-400 outline-none"
               />
             </div>
@@ -217,9 +263,8 @@ const AstrologerRegister = () => {
               isMulti
               options={systemsOptions}
               value={form.systemsKnown}
-              onChange={(selected) =>
-                handleMultiSelectChange(selected, "systemsKnown")
-              }
+              onChange={(selected) => handleMultiSelectChange(selected, "systemsKnown")}
+              isDisabled={loading}
               className="react-select-container"
               classNamePrefix="react-select"
             />
@@ -234,9 +279,8 @@ const AstrologerRegister = () => {
               isMulti
               options={languageOptions}
               value={form.languagesKnown}
-              onChange={(selected) =>
-                handleMultiSelectChange(selected, "languagesKnown")
-              }
+              onChange={(selected) => handleMultiSelectChange(selected, "languagesKnown")}
+              isDisabled={loading}
               className="react-select-container"
               classNamePrefix="react-select"
             />
@@ -251,9 +295,8 @@ const AstrologerRegister = () => {
               isMulti
               options={categoryOptions}
               value={form.categories}
-              onChange={(selected) =>
-                handleMultiSelectChange(selected, "categories")
-              }
+              onChange={(selected) => handleMultiSelectChange(selected, "categories")}
+              isDisabled={loading}
               className="react-select-container"
               classNamePrefix="react-select"
             />
@@ -270,6 +313,7 @@ const AstrologerRegister = () => {
               required
               value={form.email}
               onChange={handleChange}
+              disabled={loading}
               className="w-full border rounded-xl px-3 py-2 focus:ring-2 focus:ring-orange-400 outline-none"
             />
           </div>
@@ -285,6 +329,7 @@ const AstrologerRegister = () => {
               required
               value={form.password}
               onChange={handleChange}
+              disabled={loading}
               className="w-full border rounded-xl px-3 py-2 focus:ring-2 focus:ring-orange-400 outline-none"
             />
           </div>
@@ -298,6 +343,7 @@ const AstrologerRegister = () => {
               type="file"
               accept="image/*"
               onChange={(e) => setPhoto(e.target.files[0])}
+              disabled={loading}
               className="w-full border rounded-xl px-3 py-2 focus:ring-2 focus:ring-orange-400 outline-none"
             />
           </div>
@@ -305,26 +351,61 @@ const AstrologerRegister = () => {
           {/* Submit */}
           <button
             type="submit"
-            className="w-full bg-orange-500 hover:bg-orange-600 text-white py-3 rounded-xl font-semibold shadow-lg transition"
+            disabled={loading}
+            className={`w-full py-3 rounded-xl font-semibold shadow-lg transition text-white ${
+              loading ? "bg-gray-400 cursor-not-allowed" : "bg-orange-500 hover:bg-orange-600"
+            }`}
           >
-            Register
+            {loading ? "Registering..." : "Register"}
           </button>
 
           {/* Login Redirect */}
           <p className="text-center mt-4 text-sm">
             Already have an account?{" "}
-            <a
-              href="/login"
-              className="text-orange-600 font-semibold hover:underline"
-            >
+            <a href="/login" className="text-orange-600 font-semibold hover:underline">
               Login here
             </a>
           </p>
         </form>
       </div>
+
+      {/* Centered popup */}
+      {popup.show && (
+        <div className="fixed inset-0 flex items-center justify-center z-50">
+          <div
+            className={`bg-white rounded-xl shadow-xl px-8 py-6 flex flex-col items-center ${
+              popup.type === "success" ? "" : "border-2 border-red-500"
+            }`}
+          >
+            {popup.type === "success" ? (
+              <svg
+                className="w-16 h-16 text-green-500 mb-4"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+              </svg>
+            ) : (
+              <svg
+                className="w-16 h-16 text-red-500 mb-4"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            )}
+            <p className={`text-lg font-semibold ${popup.type === "success" ? "text-green-600" : "text-red-600"}`}>
+              {popup.message}
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
 
 export default AstrologerRegister;
- 
