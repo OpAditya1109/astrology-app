@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -89,7 +89,9 @@ export default function Login() {
           <button
             type="submit"
             className={`w-full text-white py-2 rounded ${
-              loading ? "bg-gray-400 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700"
+              loading
+                ? "bg-gray-400 cursor-not-allowed"
+                : "bg-blue-600 hover:bg-blue-700"
             }`}
             disabled={loading}
           >
@@ -102,6 +104,27 @@ export default function Login() {
             <div className="w-6 h-6 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
           </div>
         )}
+
+        {/* Links Section */}
+        <div className="mt-6 text-center space-y-2">
+          <p className="text-sm">
+            New account?{" "}
+            <Link
+              to="/user/register"
+              className="text-blue-600 font-semibold hover:underline"
+            >
+              Sign up
+            </Link>
+          </p>
+          <p className="text-sm">
+            <Link
+              to="/forgot-password"
+              className="text-gray-600 hover:text-blue-600 hover:underline"
+            >
+              Forgot password?
+            </Link>
+          </p>
+        </div>
       </div>
     </div>
   );
