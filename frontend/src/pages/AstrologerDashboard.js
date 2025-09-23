@@ -95,27 +95,14 @@ export default function AstrologerDashboard() {
 
       {/* Quick Links */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Link
-          to="/astrologer/dashboard/profile"
-          className="bg-purple-100 hover:bg-purple-200 text-purple-700 font-semibold rounded-xl shadow-md p-6 text-center"
-        >
-          Manage Profile
-        </Link>
+  <Link
+    to="/astrologer/dashboard/consultations"
+    className="bg-blue-100 hover:bg-blue-200 text-blue-700 font-semibold rounded-xl shadow-md p-6 text-center"
+  >
+    Consultations
+  </Link>
+</div>
 
-        <Link
-          to="/astrologer/dashboard/wallet"
-          className="bg-green-100 hover:bg-green-200 text-green-700 font-semibold rounded-xl shadow-md p-6 text-center"
-        >
-          View Wallet
-        </Link>
-
-        <Link
-          to="/astrologer/dashboard/consultations"
-          className="bg-blue-100 hover:bg-blue-200 text-blue-700 font-semibold rounded-xl shadow-md p-6 text-center"
-        >
-          Consultations
-        </Link>
-      </div>
     </div>
   );
 }

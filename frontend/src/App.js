@@ -41,6 +41,8 @@ import EducationPage from "./pages/EducationPage";
 import CourseDetail from "./pages/CourseDetail";
 import AdminDashboard from "./pages/AdminDashboard";
 import FreeKundali from "./pages/FreeKundali";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
 // 🔹 Helper: Get logged-in user from storage
 const getStoredUser = () => {
   return (
@@ -70,6 +72,8 @@ function App() {
       
 
           <Route path="/" element={<Home />} />
+           <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password/:token" element={<ResetPassword />} />
             <Route path="/free-kundali" element={<FreeKundali />} />
           <Route path="/user/register" element={<UserRegister />} />
           <Route path="/login" element={<Login />} />
