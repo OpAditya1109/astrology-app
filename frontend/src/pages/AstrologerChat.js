@@ -9,8 +9,10 @@ export default function AstrologerChat() {
   const [messages, setMessages] = useState([]);
   const [text, setText] = useState("");
   const [modalImg, setModalImg] = useState(null);
+  const [keyboardPadding, setKeyboardPadding] = useState(0);
 
   const messagesEndRef = useRef(null);
+  const inputRef = useRef(null);
 
   const user = JSON.parse(sessionStorage.getItem("user"));
   const senderId = user?.id;
@@ -22,15 +24,12 @@ export default function AstrologerChat() {
     socket.emit("joinRoom", consultationId);
 
     // Load chat history
-    fetch(
-      `https://bhavanaastro.onrender.com/api/consultations/${consultationId}/messages`
-    )
+    fetch(`https://bhavanaastro.onrender.com/api/consultations/${consultationId}/messages`)
       .then((res) => res.json())
       .then((data) => {
         let msgs = [];
         if (Array.isArray(data)) msgs = data;
-        else if (data?.messages && Array.isArray(data.messages))
-          msgs = data.messages;
+        else if (data?.messages && Array.isArray(data.messages)) msgs = data.messages;
         setMessages(msgs);
       })
       .catch(() => setMessages([]));
@@ -45,18 +44,37 @@ export default function AstrologerChat() {
     };
   }, [consultationId]);
 
-  // Auto-scroll when new messages arrive
+  // Auto-scroll
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  }, [messages, keyboardPadding]);
+
+  // Fix for mobile + WebView keyboard pushing input up
+  useEffect(() => {
+    const handleResize = () => {
+      const viewportHeight = window.innerHeight;
+      const docHeight = document.documentElement.clientHeight;
+
+      // If keyboard is open, viewport height shrinks
+      const diff = docHeight - viewportHeight;
+      setKeyboardPadding(diff > 0 ? diff : 0);
+
+      // Keep scroll at bottom
+      setTimeout(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+      }, 100);
+    };
+
+    window.addEventListener("resize", handleResize);
+
+    return () => {
+      window.removeEventListener("resize", handleResize);
+    };
+  }, []);
 
   const sendMessage = () => {
     if (!text.trim()) return;
-    socket.emit("sendMessage", {
-      roomId: consultationId,
-      sender: senderId,
-      text,
-    });
+    socket.emit("sendMessage", { roomId: consultationId, sender: senderId, text });
     setText("");
   };
 
@@ -68,9 +86,11 @@ export default function AstrologerChat() {
       </header>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-2 pb-24">
+      <div
+        className="flex-1 overflow-y-auto p-4 space-y-2"
+        style={{ paddingBottom: keyboardPadding + 70 }} // add padding when keyboard opens
+      >
         {messages.map((m, i) => {
-          // system messages (like Kundali intro)
           if (m.system) {
             return (
               <div key={i} className="flex justify-center">
@@ -89,18 +109,12 @@ export default function AstrologerChat() {
             );
           }
 
-          // normal messages
           const isSender = m.sender === senderId;
           return (
-            <div
-              key={i}
-              className={`flex ${isSender ? "justify-end" : "justify-start"}`}
-            >
+            <div key={i} className={`flex ${isSender ? "justify-end" : "justify-start"}`}>
               <div
                 className={`px-3 py-2 rounded-lg max-w-xs break-words ${
-                  isSender
-                    ? "bg-purple-600 text-white"
-                    : "bg-gray-200 text-gray-800"
+                  isSender ? "bg-purple-600 text-white" : "bg-gray-200 text-gray-800"
                 }`}
               >
                 {m.text}
@@ -119,18 +133,16 @@ export default function AstrologerChat() {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input (fixed above keyboard) */}
-      <div className="p-4 flex border-t bg-white fixed bottom-0 left-0 right-0">
+      {/* Input Bar */}
+      <div
+        className="fixed bottom-0 left-0 right-0 p-4 flex border-t bg-white"
+        style={{ paddingBottom: keyboardPadding > 0 ? keyboardPadding : "env(safe-area-inset-bottom)" }}
+      >
         <input
+          ref={inputRef}
           type="text"
           value={text}
           onChange={(e) => setText(e.target.value)}
-          onFocus={() => {
-            // ensure chat scrolls above keyboard
-            setTimeout(() => {
-              messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-            }, 300);
-          }}
           className="flex-1 border rounded-lg px-3 py-2 mr-2"
           placeholder="Type your message..."
           onKeyDown={(e) => e.key === "Enter" && sendMessage()}
