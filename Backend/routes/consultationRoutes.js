@@ -202,6 +202,7 @@ router.post("/:id/end", async (req, res) => {
 
     // Update astrologer stats
     const astro = await Astrologer.findById(consultation.astrologerId);
+    if (!astro) return res.status(404).json({ error: "Astrologer not found" });
 
     if (consultation.mode === "chat") {
       astro.stats.totalChats += 1;
@@ -216,12 +217,6 @@ router.post("/:id/end", async (req, res) => {
       astro.stats.audioMinutes += duration;
     }
 
-    // track unique customer
-    if (!astro.stats.uniqueCustomers.includes(consultation.userId)) {
-      astro.stats.uniqueCustomers.push(consultation.userId);
-      astro.stats.totalCustomers = astro.stats.uniqueCustomers.length;
-    }
-
     await astro.save();
 
     res.json({ message: "Consultation ended", consultation });
@@ -230,5 +225,6 @@ router.post("/:id/end", async (req, res) => {
     res.status(500).json({ error: "Failed to end consultation" });
   }
 });
+
 
 module.exports = router;
