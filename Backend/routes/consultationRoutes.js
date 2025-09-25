@@ -175,15 +175,59 @@ router.get("/:consultationId/messages", async (req, res) => {
 });
 
 // DELETE consultation by ID
-router.delete("/:id", async (req, res) => {
+// router.delete("/:id", async (req, res) => {
+//   try {
+//     const deleted = await Consultation.findByIdAndDelete(req.params.id);
+//     if (!deleted) {
+//       return res.status(404).json({ error: "Consultation not found" });
+//     }
+//     res.json({ message: "Consultation ended and deleted" });
+//   } catch (error) {
+//     res.status(500).json({ error: error.message });
+//   }
+// });
+
+// ➤ End consultation and update astrologer stats
+router.post("/:id/end", async (req, res) => {
   try {
-    const deleted = await Consultation.findByIdAndDelete(req.params.id);
-    if (!deleted) {
-      return res.status(404).json({ error: "Consultation not found" });
+    const { duration } = req.body; // in minutes
+
+    const consultation = await Consultation.findById(req.params.id);
+    if (!consultation) return res.status(404).json({ error: "Consultation not found" });
+
+    consultation.status = "completed";
+    consultation.endTime = new Date();
+    consultation.duration = duration;
+    await consultation.save();
+
+    // Update astrologer stats
+    const astro = await Astrologer.findById(consultation.astrologerId);
+
+    if (consultation.mode === "chat") {
+      astro.stats.totalChats += 1;
+      astro.stats.chatMinutes += duration;
     }
-    res.json({ message: "Consultation ended and deleted" });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
+    if (consultation.mode === "video") {
+      astro.stats.totalVideos += 1;
+      astro.stats.videoMinutes += duration;
+    }
+    if (consultation.mode === "audio") {
+      astro.stats.totalAudios += 1;
+      astro.stats.audioMinutes += duration;
+    }
+
+    // track unique customer
+    if (!astro.stats.uniqueCustomers.includes(consultation.userId)) {
+      astro.stats.uniqueCustomers.push(consultation.userId);
+      astro.stats.totalCustomers = astro.stats.uniqueCustomers.length;
+    }
+
+    await astro.save();
+
+    res.json({ message: "Consultation ended", consultation });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to end consultation" });
   }
 });
 

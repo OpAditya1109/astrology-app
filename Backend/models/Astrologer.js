@@ -30,6 +30,27 @@ const astrologerSchema = new mongoose.Schema(
       video: { type: Boolean, default: false },
       audio: { type: Boolean, default: false },
     },
+
+    // ✅ Tracking stats
+    stats: {
+      // counts
+      totalChats: { type: Number, default: 0 },
+      totalVideos: { type: Number, default: 0 },
+      totalAudios: { type: Number, default: 0 },
+
+      // minutes
+      chatMinutes: { type: Number, default: 0 },
+      videoMinutes: { type: Number, default: 0 },
+      audioMinutes: { type: Number, default: 0 },
+
+      // customers
+      totalCustomers: { type: Number, default: 0 },
+      uniqueCustomers: {
+        type: [mongoose.Schema.Types.ObjectId],
+        ref: "User",
+        default: [],
+      },
+    },
   },
   { timestamps: true }
 );
