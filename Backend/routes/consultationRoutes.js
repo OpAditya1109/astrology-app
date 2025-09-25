@@ -67,28 +67,28 @@ router.post("/", async (req, res) => {
     });
 
     // --- SEND EMAIL TO ASTROLOGER ---
-    try {
-      const astrologer = await Astrologer.findById(astrologerId);
-      if (astrologer?.email) {
-        const emailSubject = "New Consultation Booked";
-        const emailBody = `
-Hello ${astrologer.name},
+//     try {
+//       const astrologer = await Astrologer.findById(astrologerId);
+//       if (astrologer?.email) {
+//         const emailSubject = "New Consultation Booked";
+//         const emailBody = `
+// Hello ${astrologer.name},
 
-A new ${mode} consultation has been booked.
+// A new ${mode} consultation has been booked.
 
-Topic: "${topic}"
-Booked At: ${consultation.bookedAt.toLocaleString()}
+// Topic: "${topic}"
+// Booked At: ${consultation.bookedAt.toLocaleString()}
 
-Please check your dashboard to start the consultation.
+// Please check your dashboard to start the consultation.
 
-Thanks,
-Bhavana Astro
-        `;
-        await sendEmail(astrologer.email, emailSubject, emailBody);
-      }
-    } catch (emailErr) {
-      console.error("Failed to send email:", emailErr);
-    }
+// Thanks,
+// Bhavana Astro
+//         `;
+//         await sendEmail(astrologer.email, emailSubject, emailBody);
+//       }
+//     } catch (emailErr) {
+//       console.error("Failed to send email:", emailErr);
+//     }
 
     res.status(201).json(consultation);
   } catch (err) {
