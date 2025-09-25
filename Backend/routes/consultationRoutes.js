@@ -175,17 +175,17 @@ router.get("/:consultationId/messages", async (req, res) => {
 });
 
 // DELETE consultation by ID
-// router.delete("/:id", async (req, res) => {
-//   try {
-//     const deleted = await Consultation.findByIdAndDelete(req.params.id);
-//     if (!deleted) {
-//       return res.status(404).json({ error: "Consultation not found" });
-//     }
-//     res.json({ message: "Consultation ended and deleted" });
-//   } catch (error) {
-//     res.status(500).json({ error: error.message });
-//   }
-// });
+router.delete("/:id", async (req, res) => {
+  try {
+    const deleted = await Consultation.findByIdAndDelete(req.params.id);
+    if (!deleted) {
+      return res.status(404).json({ error: "Consultation not found" });
+    }
+    res.json({ message: "Consultation ended and deleted" });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
 
 // ➤ End consultation and update astrologer stats
 // router.post("/:id/end", async (req, res) => {

@@ -80,27 +80,24 @@ export default function AstrologerConsultations() {
     navigate(`/video-call/${consultationId}?mode=Audio`);
   };
 
-// const handleEndChat = async (consultationId) => {
-//   const confirmEnd = window.confirm(
-//     "Are you sure you want to end this consultation? This will mark it completed."
-//   );
-//   if (!confirmEnd) return;
+  const handleEndChat = async (consultationId) => {
+    const confirmEnd = window.confirm(
+      "Are you sure you want to end this consultation? This will delete it."
+    );
+    if (!confirmEnd) return;
+    try {
+      const token = sessionStorage.getItem("token");
+      await axios.delete(
+        `https://bhavanaastro.onrender.com/api/consultations/${consultationId}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
 
-//   try {
-//     const token = sessionStorage.getItem("token");
-//     await axios.post(
-//       `https://bhavanaastro.onrender.com/api/consultations/${consultationId}/end`,
-//       { duration: 10 }, // example minutes, send actual duration from UI
-//       { headers: { Authorization: `Bearer ${token}` } }
-//     );
-
-//     setConsultations((prev) => prev.filter((c) => c._id !== consultationId));
-//   } catch (err) {
-//     console.error("Error ending consultation", err);
-//     alert("Failed to end consultation. Please try again.");
-//   }
-// };
-
+      setConsultations((prev) => prev.filter((c) => c._id !== consultationId));
+    } catch (err) {
+      console.error("Error ending consultation", err);
+      alert("Failed to end consultation. Please try again.");
+    }
+  };
 
   // Filter consultations by selected mode (if modeFromQuery is provided)
   const filteredConsultations = modeFromQuery
