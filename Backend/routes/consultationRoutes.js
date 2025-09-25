@@ -188,43 +188,43 @@ router.get("/:consultationId/messages", async (req, res) => {
 // });
 
 // ➤ End consultation and update astrologer stats
-router.post("/:id/end", async (req, res) => {
-  try {
-    const { duration } = req.body; // in minutes
+// router.post("/:id/end", async (req, res) => {
+//   try {
+//     const { duration } = req.body; // in minutes
 
-    const consultation = await Consultation.findById(req.params.id);
-    if (!consultation) return res.status(404).json({ error: "Consultation not found" });
+//     const consultation = await Consultation.findById(req.params.id);
+//     if (!consultation) return res.status(404).json({ error: "Consultation not found" });
 
-    consultation.status = "completed";
-    consultation.endTime = new Date();
-    consultation.duration = duration;
-    await consultation.save();
+//     consultation.status = "completed";
+//     consultation.endTime = new Date();
+//     consultation.duration = duration;
+//     await consultation.save();
 
-    // Update astrologer stats
-    const astro = await Astrologer.findById(consultation.astrologerId);
-    if (!astro) return res.status(404).json({ error: "Astrologer not found" });
+//     // Update astrologer stats
+//     const astro = await Astrologer.findById(consultation.astrologerId);
+//     if (!astro) return res.status(404).json({ error: "Astrologer not found" });
 
-    if (consultation.mode === "chat") {
-      astro.stats.totalChats += 1;
-      astro.stats.chatMinutes += duration;
-    }
-    if (consultation.mode === "video") {
-      astro.stats.totalVideos += 1;
-      astro.stats.videoMinutes += duration;
-    }
-    if (consultation.mode === "audio") {
-      astro.stats.totalAudios += 1;
-      astro.stats.audioMinutes += duration;
-    }
+//     if (consultation.mode === "chat") {
+//       astro.stats.totalChats += 1;
+//       astro.stats.chatMinutes += duration;
+//     }
+//     if (consultation.mode === "video") {
+//       astro.stats.totalVideos += 1;
+//       astro.stats.videoMinutes += duration;
+//     }
+//     if (consultation.mode === "audio") {
+//       astro.stats.totalAudios += 1;
+//       astro.stats.audioMinutes += duration;
+//     }
 
-    await astro.save();
+//     await astro.save();
 
-    res.json({ message: "Consultation ended", consultation });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Failed to end consultation" });
-  }
-});
+//     res.json({ message: "Consultation ended", consultation });
+//   } catch (err) {
+//     console.error(err);
+//     res.status(500).json({ error: "Failed to end consultation" });
+//   }
+// });
 
 
 module.exports = router;
