@@ -76,18 +76,23 @@ router.get("/:id", async (req, res) => {
   }
 });
 // GET astrologer from session
+// GET astrologer talk time using id from frontend
 router.get("/session/:id", async (req, res) => {
   try {
-    const astrologerId = req.session.user?.id; // stored in session
-    if (!astrologerId) return res.status(401).json({ error: "Not logged in" });
+    const astrologerId = req.params.id;
 
     const astrologer = await Astrologer.findOne({
       _id: astrologerId,
       isVerified: true,
-    }).select("name email experience languagesKnown categories systemsKnown city country photo rates online description totalTalkTime");
+    }).select("totalTalkTime");
 
-    if (!astrologer) return res.status(404).json({ error: "Astrologer not found" });
-    res.json(astrologer);
+    if (!astrologer) {
+      return res.status(404).json({ error: "Astrologer not found" });
+    }
+
+    res.json({
+      totalTalkTime: astrologer.totalTalkTime || "00:00",
+    });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Server error" });
