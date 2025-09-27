@@ -16,7 +16,7 @@ const [skipExtendPrompt, setSkipExtendPrompt] = useState(false);
   const [extendRate, setExtendRate] = useState(0);
   const [extendMinutes, setExtendMinutes] = useState(5);
   const [userWallet, setUserWallet] = useState(0);
-
+const [extending, setExtending] = useState(false);
   const messagesEndRef = useRef(null);
 
   const currentUser = JSON.parse(sessionStorage.getItem("user"));
@@ -182,10 +182,14 @@ useEffect(() => {
   };
 
 const extendConsultation = async () => {
+  if (extending) return; // prevent double click
+  setExtending(true);
+
   const extendCost = extendMinutes * extendRate;
 
   if (userWallet < extendCost) {
     alert(`Insufficient balance. You have ₹${userWallet}`);
+    setExtending(false);
     setShowExtendModal(false);
     return;
   }
@@ -205,13 +209,13 @@ const extendConsultation = async () => {
     const data = await res.json();
     setUserWallet(data.balance); // update wallet
 
-    // Tell server to extend timer in memory (Option B)
     socket.emit("extendConsultationTimer", { roomId, extendMinutes });
-
-    setShowExtendModal(false);
+    setShowExtendModal(false); // ✅ close modal after success
   } catch (err) {
     console.error("Failed to extend consultation:", err);
     alert("Failed to extend consultation. Try again.");
+  } finally {
+    setExtending(false);
   }
 };
 
@@ -327,7 +331,7 @@ const extendConsultation = async () => {
               Extend {extendMinutes} min at ₹{extendRate}/min = ₹{extendMinutes * extendRate}?
             </p>
             <div className="flex justify-center gap-4">
-            <button
+             <button
   onClick={extendConsultation}
   className={`px-4 py-2 rounded-lg text-white ${
     extending ? "bg-green-400 cursor-not-allowed" : "bg-green-600 hover:bg-green-700"
