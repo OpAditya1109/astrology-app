@@ -101,12 +101,14 @@ io.on("connection", (socket) => {
     socket.to(roomId).emit("peer-joined", { socketId: socket.id });
 
     // --- Send waiting system message ---
-    io.to(roomId).emit("newMessage", {
-      sender: "system",
-      text: "⏳ Waiting for astrologer to start the consultation...",
-      system: true,
-      createdAt: new Date(),
-    });
+// Instead of io.to(roomId).emit
+socket.emit("newMessage", {
+  sender: "system",
+  text: "⏳ Waiting for astrologer to start the consultation...",
+  system: true,
+  createdAt: new Date(),
+});
+
 
     // Load previous messages
     try {
@@ -158,40 +160,26 @@ io.on("connection", (socket) => {
   });
 
   // --- Join astrologer room ---
-  socket.on("joinAstrologerRoom", async (astrologerId) => {
-    socket.join(astrologerId);
-    console.log(`📌 Astrologer ${socket.id} joined room: ${astrologerId}`);
+const astrologerJoinedRooms = {};
 
-    const consultation = await Consultation.findOne({ astrologerId });
-    if (!consultation) return;
+socket.on("joinAstrologerRoom", async (astrologerId) => {
+  socket.join(astrologerId);
 
-    const roomId = consultation._id.toString();
+  const consultation = await Consultation.findOne({ astrologerId });
+  if (!consultation) return;
+  const roomId = consultation._id.toString();
 
-    io.to(roomId).emit("newMessage", {
+  if (!astrologerJoinedRooms[roomId]) {
+    socket.to(roomId).emit("newMessage", {
       sender: "system",
       text: "✅ Astrologer has joined. Consultation started!",
       system: true,
       createdAt: new Date(),
     });
+    astrologerJoinedRooms[roomId] = true;
+  }
+});
 
-    // Start 5-minute timer if not already running
-    if (!activeTimers[roomId]) {
-      let secondsLeft = 5 * 60;
-      io.to(roomId).emit("timerUpdate", { secondsLeft });
-
-      activeTimers[roomId] = setInterval(() => {
-        secondsLeft--;
-        io.to(roomId).emit("timerUpdate", { secondsLeft });
-
-        if (secondsLeft <= 0) {
-          clearInterval(activeTimers[roomId]);
-          delete activeTimers[roomId];
-          io.to(roomId).emit("timerEnded");
-          console.log(`⏰ Timer ended for room ${roomId}`);
-        }
-      }, 1000);
-    }
-  });
 
   // --- Video call signaling ---
   socket.on("call-user", ({ to, offer }) => {
