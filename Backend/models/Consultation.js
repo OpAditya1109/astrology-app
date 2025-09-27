@@ -55,10 +55,17 @@ const consultationSchema = new mongoose.Schema({
     }
   ],
 
-  // ✅ Add rate per minute for this consultation
+  // ✅ Rate per minute for this consultation
   rate: {
     type: Number,
     default: 0,
+  },
+
+  // ✅ Persistent timer to handle refresh
+  timer: {
+    startTime: { type: Date, default: null },      // when timer started
+    durationMinutes: { type: Number, default: 5 }, // total duration in minutes
+    isRunning: { type: Boolean, default: false },
   }
 });
 

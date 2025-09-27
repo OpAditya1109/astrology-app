@@ -83,23 +83,34 @@ io.on("connection", (socket) => {
   // --- Join user room ---
 // --- Join user room for chat/video ---
 socket.on("joinRoom", async (roomId) => {
-  socket.join(roomId);
+    socket.join(roomId);
+    const consultation = await Consultation.findById(roomId);
 
-  const consultation = await Consultation.findById(roomId);
-  if (consultation) {
-    // const waitingMessage = {
-    //   sender: "user",
-    //   text: "⏳ Waiting for astrologer to start the consultation...",
-    //   system: true,
-    //   createdAt: new Date(),
-    // };
-    // consultation.messages.push(waitingMessage);
-    // await consultation.save();
-    // io.to(roomId).emit("newMessage", waitingMessage);
+    if (consultation?.timer?.isRunning) {
+        // Calculate remaining seconds
+        const elapsed = Math.floor((Date.now() - new Date(consultation.timer.startTime)) / 1000);
+        let remaining = consultation.timer.durationMinutes * 60 - elapsed;
+        if (remaining < 0) remaining = 0;
 
-    // waitingMessages[roomId] = waitingMessage._id; // store globally
-  }
+        io.to(socket.id).emit("timerUpdate", { secondsLeft: remaining });
+
+        // Start interval if not already running in memory
+        if (!activeTimers[roomId]) {
+            activeTimers[roomId] = setInterval(async () => {
+                remaining--;
+                io.to(roomId).emit("timerUpdate", { secondsLeft: remaining });
+                if (remaining <= 0) {
+                    clearInterval(activeTimers[roomId]);
+                    delete activeTimers[roomId];
+                    io.to(roomId).emit("timerEnded");
+                    consultation.timer.isRunning = false;
+                    await consultation.save();
+                }
+            }, 1000);
+        }
+    }
 });
+
 
 socket.on("sendMessage", async ({ roomId, sender, text, kundaliUrl, system }) => {
   const consultation = await Consultation.findById(roomId);
@@ -112,29 +123,31 @@ socket.on("sendMessage", async ({ roomId, sender, text, kundaliUrl, system }) =>
 
   const astrologer = await Astrologer.findById(consultation.astrologerId);
 
-  if (astrologer && sender === astrologer._id.toString() && !activeTimers[roomId]) {
-    // ✅ Remove waiting message
-    const waitingMessageId = waitingMessages[roomId];
-    if (waitingMessageId) {
-      consultation.messages = consultation.messages.filter(m => m._id.toString() !== waitingMessageId.toString());
-      await consultation.save();
-      io.to(roomId).emit("removeMessage", waitingMessageId);
-      delete waitingMessages[roomId]; // cleanup
-    }
+  if (astrologer && sender === astrologer._id.toString() && !consultation.timer?.isRunning) {
+    // Start timer
+    consultation.timer = {
+        startTime: new Date(),
+        durationMinutes: 5,
+        isRunning: true,
+    };
+    await consultation.save();
 
-    let secondsLeft = 5 * 60;
+    let secondsLeft = consultation.timer.durationMinutes * 60;
     io.to(roomId).emit("timerUpdate", { secondsLeft });
 
-    activeTimers[roomId] = setInterval(() => {
-      secondsLeft--;
-      io.to(roomId).emit("timerUpdate", { secondsLeft });
-      if (secondsLeft <= 0) {
-        clearInterval(activeTimers[roomId]);
-        delete activeTimers[roomId];
-        io.to(roomId).emit("timerEnded");
-      }
+    activeTimers[roomId] = setInterval(async () => {
+        secondsLeft--;
+        io.to(roomId).emit("timerUpdate", { secondsLeft });
+        if (secondsLeft <= 0) {
+            clearInterval(activeTimers[roomId]);
+            delete activeTimers[roomId];
+            io.to(roomId).emit("timerEnded");
+            consultation.timer.isRunning = false;
+            await consultation.save();
+        }
     }, 1000);
-  }
+}
+
 });
 
 
