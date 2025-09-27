@@ -86,15 +86,35 @@ export default function AstrologerProfile() {
     }
   };
 
-  const shareProfile = () => {
-    const profileUrl = `${window.location.origin}/astrologer/${id}`;
-    navigator.clipboard.writeText(profileUrl)
-      .then(() => {
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
-      })
-      .catch((err) => console.error("Failed to copy URL:", err));
-  };
+const shareProfile = async () => {
+  const profileUrl = `${window.location.origin}/astrologer/${id}`;
+
+  if (navigator.share) {
+    // If the browser supports native sharing
+    try {
+      await navigator.share({
+        title: "Check out this astrologer!",
+        text: `I found this astrologer on Bhavana Astro: ${astrologer.name}`,
+        url: profileUrl,
+      });
+      console.log("Profile shared successfully!");
+    } catch (err) {
+      console.error("Error sharing profile:", err);
+    }
+  } else {
+    // Fallback: copy to clipboard
+    try {
+      await navigator.clipboard.writeText(profileUrl);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+      alert("Link copied to clipboard!");
+    } catch (err) {
+      console.error("Failed to copy URL:", err);
+      alert("Failed to share profile.");
+    }
+  }
+};
+
 
   if (loading) return <p className="text-gray-500">Loading profile...</p>;
   if (!astrologer) return <p className="text-red-500">Astrologer not found</p>;
