@@ -87,17 +87,17 @@ socket.on("joinRoom", async (roomId) => {
 
   const consultation = await Consultation.findById(roomId);
   if (consultation) {
-    const waitingMessage = {
-      sender: "user",
-      text: "⏳ Waiting for astrologer to start the consultation...",
-      system: true,
-      createdAt: new Date(),
-    };
-    consultation.messages.push(waitingMessage);
-    await consultation.save();
-    io.to(roomId).emit("newMessage", waitingMessage);
+    // const waitingMessage = {
+    //   sender: "user",
+    //   text: "⏳ Waiting for astrologer to start the consultation...",
+    //   system: true,
+    //   createdAt: new Date(),
+    // };
+    // consultation.messages.push(waitingMessage);
+    // await consultation.save();
+    // io.to(roomId).emit("newMessage", waitingMessage);
 
-    waitingMessages[roomId] = waitingMessage._id; // store globally
+    // waitingMessages[roomId] = waitingMessage._id; // store globally
   }
 });
 
@@ -122,7 +122,7 @@ socket.on("sendMessage", async ({ roomId, sender, text, kundaliUrl, system }) =>
       delete waitingMessages[roomId]; // cleanup
     }
 
-    let secondsLeft = 60;
+    let secondsLeft = 5 * 60;
     io.to(roomId).emit("timerUpdate", { secondsLeft });
 
     activeTimers[roomId] = setInterval(() => {
