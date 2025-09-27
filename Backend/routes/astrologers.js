@@ -75,5 +75,23 @@ router.get("/:id", async (req, res) => {
     res.status(500).json({ error: "Server error" });
   }
 });
+// GET astrologer from session
+router.get("/session", async (req, res) => {
+  try {
+    const astrologerId = req.session.user?.id; // stored in session
+    if (!astrologerId) return res.status(401).json({ error: "Not logged in" });
+
+    const astrologer = await Astrologer.findOne({
+      _id: astrologerId,
+      isVerified: true,
+    }).select("name email experience languagesKnown categories systemsKnown city country photo rates online description totalTalkTime");
+
+    if (!astrologer) return res.status(404).json({ error: "Astrologer not found" });
+    res.json(astrologer);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Server error" });
+  }
+});
 
 module.exports = router;

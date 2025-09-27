@@ -6,21 +6,16 @@ const Astrologer = require("../models/Astrologer");
 const { creditAdminWallet } = require("../controllers/adminController");
 const sendEmail = require("../utils/email");
 
-// helper → format seconds into mm:ss
-function formatDuration(seconds) {
-  const m = Math.floor(seconds / 60);
-  const s = seconds % 60;
-  return `${m}:${s.toString().padStart(2, "0")}`;
-}
-
 // ➤ Create a new consultation
 router.post("/", async (req, res) => {
   try {
     const { userId, userName, astrologerId, topic, mode, rate, kundaliUrl } = req.body;
 
+    // 1️⃣ Fetch user
     const user = await User.findById(userId);
     if (!user) return res.status(404).json({ message: "User not found" });
 
+    // 2️⃣ Deduct first 5 min
     const first5MinCost = rate * 5;
     if (user.wallet.balance < first5MinCost) {
       return res.status(400).json({ message: "Insufficient balance" });
@@ -34,14 +29,17 @@ router.post("/", async (req, res) => {
     });
     await user.save();
 
+    // 3️⃣ Credit admin wallet
     await creditAdminWallet({
       amount: first5MinCost,
       description: `First 5 min payment from ${user.name}`,
       referenceId: astrologerId,
     });
 
+    // 4️⃣ Check if consultation exists
     let consultation = await Consultation.findOne({ userId, astrologerId });
     if (!consultation) {
+      // 5️⃣ Create new consultation
       consultation = new Consultation({
         userId,
         astrologerId,
@@ -51,12 +49,12 @@ router.post("/", async (req, res) => {
         messages: [],
         status: "ongoing",
         kundaliUrl: kundaliUrl || null,
-        rate: rate || 0,
-        totalTalkSeconds: 0, // default
+        rate: rate || 0, // <--- added rate field
       });
       await consultation.save();
     }
 
+    // 6️⃣ Emit socket event
     const io = req.app.get("io");
     io.to(astrologerId.toString()).emit("newConsultation", {
       _id: consultation._id,
@@ -68,13 +66,12 @@ router.post("/", async (req, res) => {
       status: consultation.status,
       kundaliUrl: consultation.kundaliUrl,
       rate: consultation.rate,
-      talkTime: formatDuration(consultation.totalTalkSeconds), // send mm:ss
     });
 
-    res.status(201).json({
-      ...consultation.toObject(),
-      talkTime: formatDuration(consultation.totalTalkSeconds),
-    });
+    // 7️⃣ Optional: send email to astrologer (commented)
+    // try { ... } catch (emailErr) { console.error(emailErr); }
+
+    res.status(201).json(consultation);
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Failed to create consultation" });
@@ -97,8 +94,7 @@ router.get("/:astrologerId", async (req, res) => {
       bookedAt: c.bookedAt,
       mode: c.mode,
       status: c.status || "ongoing",
-      rate: c.rate || 0,
-      talkTime: formatDuration(c.totalTalkSeconds || 0), // formatted clock
+      rate: c.rate || 0, // include rate here
     }));
 
     res.json(mapped);
@@ -118,18 +114,18 @@ router.get("/details/:consultationId", async (req, res) => {
 
     res.json({
       ...consultation.toObject(),
-      ratePerMinute: consultation.rate,
-      talkTime: formatDuration(consultation.totalTalkSeconds || 0),
+      ratePerMinute: consultation.rate, // for frontend extend modal
     });
   } catch (err) {
     res.status(500).json({ error: "Failed to fetch consultation" });
   }
 });
 
-// ➤ Add a new message
+// ➤ Add a new message to consultation
 router.post("/:consultationId/messages", async (req, res) => {
   try {
     const { sender, text, kundaliUrl, system } = req.body;
+
     const consultation = await Consultation.findById(req.params.consultationId);
     if (!consultation) return res.status(404).json({ error: "Consultation not found" });
 
@@ -147,7 +143,7 @@ router.post("/:consultationId/messages", async (req, res) => {
   }
 });
 
-// ➤ Get all messages
+// ➤ Get all messages of a consultation
 router.get("/:consultationId/messages", async (req, res) => {
   try {
     const consultation = await Consultation.findById(req.params.consultationId);

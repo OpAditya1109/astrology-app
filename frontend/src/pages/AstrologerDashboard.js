@@ -10,14 +10,18 @@ export default function AstrologerDashboard() {
     totalTalkTime: "00:00", // ✅ default clock format
   });
 
+  // ✅ Get astrologerId from session (not params)
   const astrologerId = JSON.parse(sessionStorage.getItem("user"))?.id;
 
   // Fetch astrologer data on load
   useEffect(() => {
     const fetchData = async () => {
+      if (!astrologerId) return;
+
       try {
         const res = await axios.get(
-          `https://bhavanaastro.onrender.com/api/Consult-astrologers/${astrologerId}`
+          `https://bhavanaastro.onrender.com/api/Consult-astrologers/session`, 
+          { withCredentials: true } // ✅ important if using session cookies
         );
         setAstrologer(res.data);
       } catch (err) {
@@ -47,8 +51,9 @@ export default function AstrologerDashboard() {
   const saveSettings = async () => {
     try {
       await axios.put(
-        `https://bhavanaastro.onrender.com/api/Consult-astrologers/update-rates-online/${astrologerId}`,
-        { rates: astrologer.rates, online: astrologer.online }
+        `https://bhavanaastro.onrender.com/api/Consult-astrologers/update-rates-online`, 
+        { rates: astrologer.rates, online: astrologer.online },
+        { withCredentials: true } // ✅ session-based update
       );
       alert("Settings updated successfully!");
     } catch (err) {
