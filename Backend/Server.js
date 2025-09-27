@@ -11,7 +11,7 @@ const panchangRoutes = require("./routes/panchang");
 const chatbotRoutes = require("./routes/chatbotRoutes");
 const orderRoute =require("./routes/orderRoutes")
 const enquiryRoutes = require("./routes/enquiryRoutes")
-
+const { server } = require("socket.io"); // make sure your io is initialized
 const horoscopeRoutes = require("./routes/horoscope");
 const freeKundaliRoute = require("./routes/freeKundali");
 
