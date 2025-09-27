@@ -66,7 +66,7 @@ router.get("/:id", async (req, res) => {
     const astrologer = await Astrologer.findOne({
       _id: req.params.id,
       isVerified: true, // ✅ only verified astrologer
-    }).select("name email experience languagesKnown categories systemsKnown city country photo rates online");
+    }).select("name email experience languagesKnown categories systemsKnown city country photo rates online description");
 
     if (!astrologer) return res.status(404).json({ error: "Astrologer not found or not verified" });
     res.json(astrologer);
