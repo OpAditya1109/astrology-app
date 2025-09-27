@@ -23,99 +23,72 @@ export default function ChatPage() {
   const userId = currentUser?.id || "guest";
   const roomId = consultationId;
 
-  // Fetch consultation details and user wallet
-  useEffect(() => {
-    if (!roomId) return;
+ 
+useEffect(() => {
+  if (!roomId) return;
   setSecondsLeft(50);
-    const fetchConsultation = async () => {
-      try {
-        const res = await fetch(
-          `https://bhavanaastro.onrender.com/api/consultations/${roomId}/details`
-        );
-        const data = await res.json();
-        setExtendRate(data.ratePerMinute || 0);
-      } catch (err) {
-        console.error("Failed to fetch consultation rate:", err);
-      }
-    };
 
-    const fetchWallet = async () => {
-      if (!currentUser?.id) return;
-      try {
-        const res = await fetch(
-          `https://bhavanaastro.onrender.com/api/users/${currentUser.id}/details`
-        );
-        const data = await res.json();
-        setUserWallet(data.wallet?.balance || 0);
-      } catch (err) {
-        console.error("Failed to fetch wallet:", err);
-      }
-    };
-
-    fetchConsultation();
-    fetchWallet();
-  }, [roomId, currentUser?.id]);
-
-  useEffect(() => {
-    if (!roomId) return;
-    if (!socket.connected) socket.connect();
-
-    socket.emit("joinRoom", roomId);
-
-    // Send intro message once
-    const introSentKey = `introSent_${roomId}`;
-    if (currentUser && !sessionStorage.getItem(introSentKey)) {
-      const introMessage = {
-        sender: currentUser.id,
-        text: `👤 Name: ${currentUser.name}\n📅 DOB: ${new Date(
-          currentUser.dob
-        ).toLocaleDateString("en-IN")}\n🕒 Birth Time: ${
-          currentUser.birthTime || "-"
-        }\n📍 Birth Place: ${currentUser.birthPlace || "-"}`,
-        kundaliUrl: currentUser.kundaliUrl || null,
-        system: true,
-      };
-      socket.emit("sendMessage", { roomId, ...introMessage });
-      sessionStorage.setItem(introSentKey, "true");
+  const fetchConsultation = async () => {
+    try {
+      const res = await fetch(
+        `https://bhavanaastro.onrender.com/api/consultations/${roomId}/details`
+      );
+      const data = await res.json();
+      console.log("Fetched consultation data:", data);
+      setExtendRate(data.ratePerMinute || 0);
+    } catch (err) {
+      console.error("Failed to fetch consultation rate:", err);
     }
+  };
 
-    // Fetch chat messages
-    fetch(`https://bhavanaastro.onrender.com/api/consultations/${roomId}/messages`)
-      .then((res) => res.json())
-      .then((data) => setMessages(Array.isArray(data) ? data : data?.messages || []))
-      .catch(() => setMessages([]));
+  const fetchWallet = async () => {
+    if (!currentUser?.id) return;
+    try {
+      const res = await fetch(
+        `https://bhavanaastro.onrender.com/api/users/${currentUser.id}/details`
+      );
+      const data = await res.json();
+      console.log("Fetched user wallet:", data.wallet?.balance);
+      setUserWallet(data.wallet?.balance || 0);
+    } catch (err) {
+      console.error("Failed to fetch wallet:", err);
+    }
+  };
 
-    // Socket handlers
-    const handleNewMessage = (message) => setMessages((prev) => [...prev, message]);
-    const handleTimerUpdate = ({ secondsLeft }) => setSecondsLeft(secondsLeft);
-    const handleTimerEnd = () => endConsultation("⏰ Consultation timer ended!");
-    const handleConsultationEnded = ({ consultationId: endedId }) => {
-      if (endedId === roomId) endConsultation("⏰ Consultation has been ended by the astrologer!");
-    };
+  fetchConsultation();
+  fetchWallet();
+}, [roomId, currentUser?.id]);
 
-    socket.on("newMessage", handleNewMessage);
-    socket.on("timerUpdate", handleTimerUpdate);
-    socket.on("timerEnded", handleTimerEnd);
-    socket.on("consultationEnded", handleConsultationEnded);
+// Show extend modal when time is almost up
+useEffect(() => {
+  console.log(
+    "Checking extend modal conditions:",
+    secondsLeft,
+    showExtendModal,
+    consultationEnded,
+    extendRate,
+    userWallet
+  );
 
-    const handleBeforeUnload = (e) => {
-      if (!isEnding) {
-        e.preventDefault();
-        e.returnValue = "Are you sure you want to leave the chat?";
-      }
-    };
-    window.addEventListener("beforeunload", handleBeforeUnload);
+  if (
+    secondsLeft !== null &&
+    secondsLeft <= 60 &&
+    !showExtendModal &&
+    !consultationEnded &&
+    extendRate > 0
+  ) {
+    const maxMinutes = Math.floor(userWallet / extendRate);
+    console.log("Max minutes possible for extension:", maxMinutes);
+    if (maxMinutes > 0) {
+      setExtendMinutes(Math.min(5, maxMinutes));
+      console.log("Showing extend modal for", Math.min(5, maxMinutes), "minutes");
+      setShowExtendModal(true);
+    } else {
+      console.log("User does not have enough balance to extend");
+    }
+  }
+}, [secondsLeft, userWallet, showExtendModal, consultationEnded, extendRate]);
 
-    return () => {
-      socket.off("newMessage", handleNewMessage);
-      socket.off("timerUpdate", handleTimerUpdate);
-      socket.off("timerEnded", handleTimerEnd);
-      socket.off("consultationEnded", handleConsultationEnded);
-      socket.emit("stopConsultationTimer", { roomId });
-      socket.emit("leaveRoom", roomId);
-      window.removeEventListener("beforeunload", handleBeforeUnload);
-    };
-  }, [roomId, isEnding]);
 
   // Auto-scroll
   useEffect(() => {
