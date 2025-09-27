@@ -75,7 +75,7 @@ export default function About() {
               <h3 className="font-bold text-lg mb-2 text-orange-600">Support</h3>
               <p>
                 Offering 24/7 support to ensure you get guidance whenever you need
-                it most.
+                it most......
               </p>
             </div>
           </div>
