@@ -1,6 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import Home from "./pages/Home";
-import ThankYouPage from "./pages/ThankYouPage";
+import ThankYouPage from "./pages/ThankYou";
 import ScrollToTop from "./ScrollToTop";
 import UserRegister from "./pages/UserRegister";
 import Login from "./pages/Login";

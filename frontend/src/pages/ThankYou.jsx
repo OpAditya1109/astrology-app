@@ -16,6 +16,7 @@ export default function ThankYouPage() {
         </p>
 
         <div className="flex justify-center gap-4">
+          {/* Go Home */}
           <Link
             to="/"
             className="px-5 py-2 rounded-xl bg-orange-500 text-white font-medium shadow hover:bg-orange-600 transition"
@@ -23,12 +24,13 @@ export default function ThankYouPage() {
             Go to Home
           </Link>
 
-          <Link
-            to="/contact"
+          {/* Contact Us (mailto link with subject) */}
+          <a
+            href="mailto:bhavanaastro6@gmail.com?subject=Astrologer%20Registration%20Support"
             className="px-5 py-2 rounded-xl border border-gray-300 text-gray-700 font-medium hover:bg-gray-100 transition"
           >
             Contact Us
-          </Link>
+          </a>
         </div>
       </div>
     </div>
