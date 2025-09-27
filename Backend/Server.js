@@ -145,7 +145,7 @@ io.on("connection", (socket) => {
 
   // --- Timer manual stop ---
   socket.on("stopConsultationTimer", ({ roomId }) => {
-    stopTimer(roomId);
+    stopTimer(roomId, true); // true = manual stop
   });
 
   // --- Join astrologer room ---
@@ -188,14 +188,8 @@ io.on("connection", (socket) => {
           io.to(roomId).emit("timerUpdate", { secondsLeft: activeTimers[roomId].secondsLeft });
 
           if (activeTimers[roomId].secondsLeft <= 0) {
-            stopTimer(roomId);
+            await finalizeConsultation(roomId, true); // auto end
             io.to(roomId).emit("timerEnded");
-
-            const c = await Consultation.findById(roomId);
-            if (c?.timer) {
-              c.timer.isRunning = false;
-              await c.save();
-            }
           }
         } catch (err) {
           console.error("Timer interval error:", err);
@@ -204,12 +198,49 @@ io.on("connection", (socket) => {
     };
   }
 
-  function stopTimer(roomId) {
+  async function stopTimer(roomId, manual = false) {
     if (!activeTimers[roomId]) return;
+
     clearInterval(activeTimers[roomId].interval);
+    await finalizeConsultation(roomId, manual);
     delete activeTimers[roomId];
   }
+
+  // Save talk seconds into Consultation + Astrologer
+  async function finalizeConsultation(roomId, endedByTimer = false) {
+    try {
+      const c = await Consultation.findById(roomId);
+      if (!c?.timer) return;
+
+      const totalAllocatedSeconds = c.timer.durationMinutes * 60;
+      let talkedSeconds;
+
+      if (endedByTimer) {
+        // Timer fully used
+        talkedSeconds = totalAllocatedSeconds;
+      } else {
+        // Manual stop → calculate from remaining
+        const remaining = activeTimers[roomId]?.secondsLeft || 0;
+        talkedSeconds = totalAllocatedSeconds - remaining;
+      }
+
+      // Save to consultation
+      c.timer.isRunning = false;
+      c.talkSeconds = talkedSeconds;
+      await c.save();
+
+      // Update astrologer total talk
+      const astro = await Astrologer.findById(c.astrologerId);
+      if (astro) {
+        astro.totalTalkSeconds = (astro.totalTalkSeconds || 0) + talkedSeconds;
+        await astro.save();
+      }
+    } catch (err) {
+      console.error("finalizeConsultation error:", err);
+    }
+  }
 });
+
 
 
 // --- Server listen ---

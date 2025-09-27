@@ -66,7 +66,9 @@ const consultationSchema = new mongoose.Schema({
     startTime: { type: Date, default: null },      // when timer started
     durationMinutes: { type: Number, default: 5 }, // total duration in minutes
     isRunning: { type: Boolean, default: false },
-  }
+  },
+  talkSeconds: { type: Number, default: 0 },
+
 });
 
 // ✅ Prevent duplicate consultation rooms between same user & astrologer

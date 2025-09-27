@@ -36,6 +36,7 @@ const astrologerSchema = new mongoose.Schema(
       video: { type: Boolean, default: false },
       audio: { type: Boolean, default: false },
     },
+totalTalkSeconds: { type: Number, default: 0 },
   },
   { timestamps: true }
 );
