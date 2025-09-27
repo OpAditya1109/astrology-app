@@ -191,11 +191,18 @@ const extendConsultation = async () => {
   }
 
   try {
-    const res = await fetch(`https://bhavanaastro.onrender.com/api/users/deduct`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ amount: extendCost, consultationId: roomId }),
-    });
+   const currentUser = JSON.parse(sessionStorage.getItem("user"));
+const res = await fetch(`https://bhavanaastro.onrender.com/api/users/deduct`, {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
+    userId: currentUser.id,   // ✅ must be here
+    amount: extendCost,
+    consultationId: roomId,
+    extendMinutes
+  }),
+});
+
 
     if (!res.ok) {
       const errorData = await res.json();
