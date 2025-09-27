@@ -82,6 +82,9 @@ const activeTimers = {};
 io.on("connection", (socket) => {
   console.log("⚡ New client connected:", socket.id);
 
+  // --- Active timers storage ---
+  const activeTimers = {}; // you can move this outside if global for all sockets
+
   // --- Join user room ---
   socket.on("joinRoom", async (roomId) => {
     socket.join(roomId);
@@ -97,7 +100,7 @@ io.on("connection", (socket) => {
     }
     socket.to(roomId).emit("peer-joined", { socketId: socket.id });
 
-    // --- Send waiting message system message ---
+    // --- Send waiting system message ---
     io.to(roomId).emit("newMessage", {
       sender: "system",
       text: "⏳ Waiting for astrologer to start the consultation...",
@@ -114,45 +117,44 @@ io.on("connection", (socket) => {
     } catch (err) {
       console.error(err);
     }
+  });
 
-    // --- Chat messages from user ---
-    socket.on("sendMessage", async ({ roomId, sender, text, kundaliUrl, system }) => {
-      try {
-        const consultation = await Consultation.findById(roomId);
-        if (!consultation) return console.log("❌ Consultation not found:", roomId);
+  // --- Send chat message (registered once) ---
+  socket.on("sendMessage", async ({ roomId, sender, text, kundaliUrl, system }) => {
+    try {
+      const consultation = await Consultation.findById(roomId);
+      if (!consultation) return console.log("❌ Consultation not found:", roomId);
 
-        const newMessage = {
-          sender,
-          text,
-          kundaliUrl: kundaliUrl || null,
-          system: system || false,
-          senderModel: "User",
+      const newMessage = {
+        sender,
+        text,
+        kundaliUrl: kundaliUrl || null,
+        system: system || false,
+        senderModel: "User",
+        createdAt: new Date(),
+      };
+
+      consultation.messages.push(newMessage);
+      await consultation.save();
+      io.to(roomId).emit("newMessage", newMessage);
+
+      // AI response if astrologer is AI
+      const astrologer = await Astrologer.findById(consultation.astrologerId);
+      if (astrologer && astrologer.isAI) {
+        const aiReply = await getAstrologyResponse(text);
+        const aiMessage = {
+          sender: astrologer._id,
+          senderModel: "Astrologer",
+          text: aiReply,
           createdAt: new Date(),
         };
-
-        consultation.messages.push(newMessage);
+        consultation.messages.push(aiMessage);
         await consultation.save();
-        io.to(roomId).emit("newMessage", newMessage);
-
-        const astrologer = await Astrologer.findById(consultation.astrologerId);
-
-        // AI response if astrologer is AI
-        if (astrologer && astrologer.isAI) {
-          const aiReply = await getAstrologyResponse(text);
-          const aiMessage = {
-            sender: astrologer._id,
-            senderModel: "Astrologer",
-            text: aiReply,
-            createdAt: new Date(),
-          };
-          consultation.messages.push(aiMessage);
-          await consultation.save();
-          io.to(roomId).emit("newMessage", aiMessage);
-        }
-      } catch (error) {
-        console.error("❌ Error sending message:", error.message);
+        io.to(roomId).emit("newMessage", aiMessage);
       }
-    });
+    } catch (error) {
+      console.error("❌ Error sending message:", error.message);
+    }
   });
 
   // --- Join astrologer room ---
@@ -160,34 +162,34 @@ io.on("connection", (socket) => {
     socket.join(astrologerId);
     console.log(`📌 Astrologer ${socket.id} joined room: ${astrologerId}`);
 
-    // Start timer for the consultation the astrologer belongs to
     const consultation = await Consultation.findOne({ astrologerId });
-    if (consultation) {
-      const roomId = consultation._id.toString();
+    if (!consultation) return;
 
-      io.to(roomId).emit("newMessage", {
-        sender: "system",
-        text: "✅ Astrologer has joined. Consultation started!",
-        system: true,
-        createdAt: new Date(),
-      });
+    const roomId = consultation._id.toString();
 
-      if (!activeTimers[roomId]) {
-        let secondsLeft = 5 * 60; // 5 min
+    io.to(roomId).emit("newMessage", {
+      sender: "system",
+      text: "✅ Astrologer has joined. Consultation started!",
+      system: true,
+      createdAt: new Date(),
+    });
+
+    // Start 5-minute timer if not already running
+    if (!activeTimers[roomId]) {
+      let secondsLeft = 5 * 60;
+      io.to(roomId).emit("timerUpdate", { secondsLeft });
+
+      activeTimers[roomId] = setInterval(() => {
+        secondsLeft--;
         io.to(roomId).emit("timerUpdate", { secondsLeft });
 
-        activeTimers[roomId] = setInterval(() => {
-          secondsLeft--;
-          io.to(roomId).emit("timerUpdate", { secondsLeft });
-
-          if (secondsLeft <= 0) {
-            clearInterval(activeTimers[roomId]);
-            delete activeTimers[roomId];
-            io.to(roomId).emit("timerEnded");
-            console.log(`⏰ Timer ended for room ${roomId}`);
-          }
-        }, 1000);
-      }
+        if (secondsLeft <= 0) {
+          clearInterval(activeTimers[roomId]);
+          delete activeTimers[roomId];
+          io.to(roomId).emit("timerEnded");
+          console.log(`⏰ Timer ended for room ${roomId}`);
+        }
+      }, 1000);
     }
   });
 
