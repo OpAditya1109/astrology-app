@@ -261,7 +261,7 @@ const shareProfile = async () => {
         <div className="text-center">
           <button
             onClick={() => navigate(-1)}
-            className="bg-purple-600 text-white px-8 py-2 rounded-lg hover:bg-purple-700 shadow-md"
+            className="bg-black text-white px-8 py-2 rounded-lg hover:bg-purple-700 shadow-md"
           >
             Back
           </button>
