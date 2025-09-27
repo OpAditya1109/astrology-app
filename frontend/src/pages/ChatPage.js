@@ -29,11 +29,14 @@ export default function ChatPage() {
   setSecondsLeft(50);
     const fetchConsultation = async () => {
       try {
-        const res = await fetch(
-          `https://bhavanaastro.onrender.com/api/consultations/${roomId}/details`
-        );
-        const data = await res.json();
-        setExtendRate(data.ratePerMinute || 0);
+       const res = await fetch(`https://bhavanaastro.onrender.com/api/consultations/${roomId}/details`);
+if (!res.ok) {
+  console.error("Failed to fetch consultation details", res.status, res.statusText);
+  return;
+}
+const data = await res.json();
+setExtendRate(data.ratePerMinute || 0);
+
       } catch (err) {
         console.error("Failed to fetch consultation rate:", err);
       }
