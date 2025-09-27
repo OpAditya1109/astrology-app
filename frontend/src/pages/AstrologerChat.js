@@ -1,15 +1,19 @@
 import { useEffect, useRef, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import io from "socket.io-client";
 
 const socket = io("https://bhavanaastro.onrender.com");
 
 export default function AstrologerChat() {
   const { consultationId } = useParams();
+  const navigate = useNavigate();
+
   const [messages, setMessages] = useState([]);
   const [text, setText] = useState("");
   const [modalImg, setModalImg] = useState(null);
   const [keyboardPadding, setKeyboardPadding] = useState(0);
+  const [consultationEnded, setConsultationEnded] = useState(false);
+  const [talkTime, setTalkTime] = useState(null);
 
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
@@ -20,7 +24,6 @@ export default function AstrologerChat() {
   useEffect(() => {
     if (!consultationId) return;
 
-    // Join room
     socket.emit("joinRoom", consultationId);
 
     // Load chat history
@@ -34,46 +37,59 @@ export default function AstrologerChat() {
       })
       .catch(() => setMessages([]));
 
-    // Listen for new messages
     const handleNewMessage = (msg) => setMessages((prev) => [...prev, msg]);
+
+    // ✅ handle consultation ended
+    const handleConsultationEnded = async ({ consultationId: endedId }) => {
+      if (endedId !== consultationId) return;
+
+      try {
+        // fetch talkTime from backend
+        const res = await fetch(
+          `https://bhavanaastro.onrender.com/api/consultations/${consultationId}/details`
+        );
+        const data = await res.json();
+        setTalkTime(data?.talkTime || null);
+      } catch (err) {
+        console.error("Failed to fetch talk time:", err);
+      }
+
+      setConsultationEnded(true);
+
+      // auto redirect after 3s
+      setTimeout(() => {
+        navigate("/astrologer/dashboard/consultations");
+      }, 3000);
+    };
+
     socket.on("newMessage", handleNewMessage);
+    socket.on("consultationEnded", handleConsultationEnded);
 
     return () => {
       socket.off("newMessage", handleNewMessage);
+      socket.off("consultationEnded", handleConsultationEnded);
       socket.emit("leaveRoom", consultationId);
     };
-  }, [consultationId]);
+  }, [consultationId, navigate]);
 
   // Auto-scroll
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, keyboardPadding]);
 
-  // Fix for mobile + WebView keyboard pushing input up
+  // Keyboard fix
   useEffect(() => {
     const handleResize = () => {
-      const viewportHeight = window.innerHeight;
-      const docHeight = document.documentElement.clientHeight;
-
-      // If keyboard is open, viewport height shrinks
-      const diff = docHeight - viewportHeight;
+      const diff = document.documentElement.clientHeight - window.innerHeight;
       setKeyboardPadding(diff > 0 ? diff : 0);
-
-      // Keep scroll at bottom
-      setTimeout(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-      }, 100);
+      setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
     };
-
     window.addEventListener("resize", handleResize);
-
-    return () => {
-      window.removeEventListener("resize", handleResize);
-    };
+    return () => window.removeEventListener("resize", handleResize);
   }, []);
 
   const sendMessage = () => {
-    if (!text.trim()) return;
+    if (!text.trim() || consultationEnded) return;
     socket.emit("sendMessage", { roomId: consultationId, sender: senderId, text });
     setText("");
   };
@@ -88,7 +104,7 @@ export default function AstrologerChat() {
       {/* Messages */}
       <div
         className="flex-1 overflow-y-auto p-4 space-y-2"
-        style={{ paddingBottom: keyboardPadding + 70 }} // add padding when keyboard opens
+        style={{ paddingBottom: keyboardPadding + 70 }}
       >
         {messages.map((m, i) => {
           if (m.system) {
@@ -130,30 +146,40 @@ export default function AstrologerChat() {
             </div>
           );
         })}
+
+        {/* ✅ End message */}
+        {consultationEnded && (
+          <div className="text-center text-green-600 font-semibold mt-2">
+            ✅ Consultation ended. {talkTime ? `You talked for ${talkTime}` : ""}
+          </div>
+        )}
+
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input Bar */}
-      <div
-        className="fixed bottom-0 left-0 right-0 p-4 flex border-t bg-white"
-        style={{ paddingBottom: keyboardPadding > 0 ? keyboardPadding : "env(safe-area-inset-bottom)" }}
-      >
-        <input
-          ref={inputRef}
-          type="text"
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          className="flex-1 border rounded-lg px-3 py-2 mr-2"
-          placeholder="Type your message..."
-          onKeyDown={(e) => e.key === "Enter" && sendMessage()}
-        />
-        <button
-          onClick={sendMessage}
-          className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700"
+      {/* Input */}
+      {!consultationEnded && (
+        <div
+          className="fixed bottom-0 left-0 right-0 p-4 flex border-t bg-white"
+          style={{ paddingBottom: keyboardPadding > 0 ? keyboardPadding : "env(safe-area-inset-bottom)" }}
         >
-          Send
-        </button>
-      </div>
+          <input
+            ref={inputRef}
+            type="text"
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            className="flex-1 border rounded-lg px-3 py-2 mr-2"
+            placeholder="Type your message..."
+            onKeyDown={(e) => e.key === "Enter" && sendMessage()}
+          />
+          <button
+            onClick={sendMessage}
+            className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700"
+          >
+            Send
+          </button>
+        </div>
+      )}
 
       {/* Kundali Modal */}
       {modalImg && (
