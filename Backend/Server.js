@@ -188,18 +188,27 @@ socket.on("joinRoom", async (roomId) => {
     io.to(roomId).emit("timerUpdate", { secondsLeft });
 
     activeTimers[roomId] = {
-      secondsLeft,
-      interval: setInterval(() => {
-        activeTimers[roomId].secondsLeft--;
-        io.to(roomId).emit("timerUpdate", { secondsLeft: activeTimers[roomId].secondsLeft });
+  secondsLeft,
+  interval: setInterval(async () => {
+    if (!activeTimers[roomId]) return; // <-- important check
 
-        if (activeTimers[roomId].secondsLeft <= 0) {
-          clearInterval(activeTimers[roomId].interval);
-          delete activeTimers[roomId];
-          io.to(roomId).emit("timerEnded");
-        }
-      }, 1000)
-    };
+    activeTimers[roomId].secondsLeft--;
+    io.to(roomId).emit("timerUpdate", { secondsLeft: activeTimers[roomId].secondsLeft });
+
+    if (activeTimers[roomId].secondsLeft <= 0) {
+      clearInterval(activeTimers[roomId].interval);
+      delete activeTimers[roomId];
+      io.to(roomId).emit("timerEnded");
+
+      const c = await Consultation.findById(roomId);
+      if (c?.timer) {
+        c.timer.isRunning = false;
+        await c.save();
+      }
+    }
+  }, 1000)
+};
+
   });
 
   socket.on("stopConsultationTimer", ({ roomId }) => {
