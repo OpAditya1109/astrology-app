@@ -226,51 +226,50 @@ io.on("connection", (socket) => {
     return `${m}:${s}`;
   }
 
-  // Save talk seconds into Consultation + Astrologer
-  // --- Save talk time into Consultation + Astrologer
-async function finalizeConsultation(roomId, endedByTimer = false) {
-  try {
-    const c = await Consultation.findById(roomId);
-    if (!c?.timer) return;
-
-    const timer = activeTimers[roomId];
-    if (!timer) return;
-
-    // --- Actual talked seconds ---
-    const talkedSeconds = timer.totalAllocated - timer.secondsLeft;
-
-    // --- Format to MM:SS
-    const talkedClock = formatClock(talkedSeconds);
-
-    // ✅ Save consultation data
-    c.timer.isRunning = false;
-    c.talkTime = talkedClock; // 👈 save formatted clock directly
-    await c.save();
-
-    // ✅ Update astrologer stats
-    const astro = await Astrologer.findById(c.astrologerId);
-    if (astro) {
-      // add new talk seconds to previous total
-      const prevTotalSeconds = astro.totalTalkSeconds || 0;
-      const newTotalSeconds = prevTotalSeconds + talkedSeconds;
-
-      astro.totalTalkSeconds = newTotalSeconds; // keep raw if you still want stats
-      astro.totalTalkTime = formatClock(newTotalSeconds); // 👈 save formatted clock
-      await astro.save();
-    }
-
-    // ✅ Calculate unused
-    const unused = timer.totalAllocated - talkedSeconds;
-    if (unused > 0) {
-      await Admin.updateOne({}, { $inc: { remainingSeconds: unused } });
-    }
-
-    delete activeTimers[roomId];
-  } catch (err) {
-    console.error("finalizeConsultation error:", err);
+  function clockToSeconds(clock) {
+    const [m, s] = clock.split(":").map(Number);
+    return m * 60 + s;
   }
-}
 
+  // --- Save talk time into Consultation + Astrologer
+  async function finalizeConsultation(roomId, endedByTimer = false) {
+    try {
+      const c = await Consultation.findById(roomId);
+      if (!c?.timer) return;
+
+      const timer = activeTimers[roomId];
+      if (!timer) return;
+
+      // --- Actual talked seconds
+      const talkedSeconds = timer.totalAllocated - timer.secondsLeft;
+      const talkedClock = formatClock(talkedSeconds);
+
+      // ✅ Save consultation data
+      c.timer.isRunning = false;
+      c.talkTime = talkedClock; // store MM:SS only
+      await c.save();
+
+      // ✅ Update astrologer stats
+      const astro = await Astrologer.findById(c.astrologerId);
+      if (astro) {
+        const prevSeconds = clockToSeconds(astro.totalTalkTime || "00:00");
+        const newTotalSeconds = prevSeconds + talkedSeconds;
+
+        astro.totalTalkTime = formatClock(newTotalSeconds); // 👈 store only clock format
+        await astro.save();
+      }
+
+      // ✅ Save unused to Admin
+      const unused = timer.secondsLeft;
+      if (unused > 0) {
+        await Admin.updateOne({}, { $inc: { remainingSeconds: unused } });
+      }
+
+      delete activeTimers[roomId];
+    } catch (err) {
+      console.error("finalizeConsultation error:", err);
+    }
+  }
 });
 
 
