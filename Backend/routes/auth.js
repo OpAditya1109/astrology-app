@@ -37,6 +37,11 @@ router.post("/login", async (req, res) => {
 
     if (!user) return res.status(400).json({ message: "User not found" });
 
+    // ✅ Block astrologers if not verified
+    if (role === "astrologer" && !user.isVerified) {
+      return res.status(403).json({ message: "Your account is pending verification by admin." });
+    }
+
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) return res.status(400).json({ message: "Invalid credentials" });
 
@@ -68,6 +73,7 @@ router.post("/login", async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 });
+
 
 // ✅ Forgot Password
 router.post("/forgot-password", async (req, res) => {

@@ -17,6 +17,9 @@ const astrologerSchema = new mongoose.Schema(
     role: { type: String, enum: ["astrologer"], default: "astrologer" },
     isAI: { type: Boolean, default: false },
 
+    // ✅ Verification field
+    isVerified: { type: Boolean, default: false },
+
     // ✅ Rates for different modes
     rates: {
       chat: { type: Number, default: 0 },
