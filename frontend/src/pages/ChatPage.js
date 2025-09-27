@@ -327,12 +327,16 @@ const extendConsultation = async () => {
               Extend {extendMinutes} min at ₹{extendRate}/min = ₹{extendMinutes * extendRate}?
             </p>
             <div className="flex justify-center gap-4">
-              <button
-                onClick={extendConsultation}
-                className="bg-green-600 text-white px-4 py-2 rounded-lg"
-              >
-                Yes, Extend
-              </button>
+            <button
+  onClick={extendConsultation}
+  className={`px-4 py-2 rounded-lg text-white ${
+    extending ? "bg-green-400 cursor-not-allowed" : "bg-green-600 hover:bg-green-700"
+  }`}
+  disabled={extending}
+>
+  {extending ? "Processing..." : "Yes, Extend"}
+</button>
+
              <button
   onClick={() => {
     setShowExtendModal(false);
