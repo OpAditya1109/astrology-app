@@ -6,7 +6,7 @@ export default function ChatPage() {
   const { consultationId } = useParams();
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
-  const [secondsLeft, setSecondsLeft] = useState(0);
+  const [secondsLeft, setSecondsLeft] = useState(null); // null = timer not started
   const [modalImg, setModalImg] = useState(null);
   const [consultationEnded, setConsultationEnded] = useState(false);
   const [isEnding, setIsEnding] = useState(false);
@@ -24,7 +24,6 @@ export default function ChatPage() {
     if (!socket.connected) socket.connect();
 
     socket.emit("joinRoom", roomId);
-    // socket.emit("startConsultationTimer", { roomId, durationMinutes: 5 });
 
     const userData = JSON.parse(sessionStorage.getItem("user"));
     const introSentKey = `introSent_${roomId}`;
@@ -52,6 +51,7 @@ export default function ChatPage() {
       })
       .catch(() => setMessages([]));
 
+    // --- Socket handlers ---
     const handleNewMessage = (message) => setMessages((prev) => [...prev, message]);
     const handleTimerUpdate = ({ secondsLeft }) => setSecondsLeft(secondsLeft);
     const handleTimerEnd = () => endConsultation("⏰ Consultation timer ended!");
@@ -88,20 +88,15 @@ export default function ChatPage() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, keyboardPadding]);
 
-  // ✅ Keyboard padding detection for Android WebView
+  // Keyboard padding detection
   useEffect(() => {
     const handleResize = () => {
       const viewportHeight = window.innerHeight;
       const docHeight = document.documentElement.clientHeight;
-
       const diff = docHeight - viewportHeight;
       setKeyboardPadding(diff > 0 ? diff : 0);
-
-      setTimeout(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-      }, 100);
+      setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
     };
-
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
@@ -133,13 +128,14 @@ export default function ChatPage() {
   };
 
   const sendMessage = () => {
-    if (!input.trim() || secondsLeft <= 0 || consultationEnded) return;
+    if (!input.trim() || consultationEnded) return;
     const newMsg = { sender: userId, text: input };
     socket.emit("sendMessage", { roomId, ...newMsg });
     setInput("");
   };
 
   const formatTime = (sec) => {
+    if (sec === null) return "Waiting..."; // timer not started
     const m = Math.floor(sec / 60).toString().padStart(2, "0");
     const s = (sec % 60).toString().padStart(2, "0");
     return `${m}:${s}`;
@@ -186,7 +182,7 @@ export default function ChatPage() {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* ✅ Input bar fixed with keyboard padding */}
+      {/* Input bar */}
       <div
         className="fixed bottom-0 left-0 right-0 p-4 flex border-t bg-white"
         style={{ paddingBottom: keyboardPadding > 0 ? keyboardPadding : "env(safe-area-inset-bottom)" }}
@@ -195,13 +191,13 @@ export default function ChatPage() {
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && sendMessage()}
-          disabled={secondsLeft <= 0 || consultationEnded}
+          disabled={consultationEnded}
           className="flex-1 border rounded-lg px-3 py-2 mr-2 disabled:bg-gray-200"
           placeholder="Type your message..."
         />
         <button
           onClick={sendMessage}
-          disabled={secondsLeft <= 0 || consultationEnded}
+          disabled={consultationEnded}
           className="bg-purple-600 text-white px-4 py-2 rounded-lg disabled:opacity-50"
         >
           Send
