@@ -3,7 +3,7 @@ const dotenv = require("dotenv");
 const connectDB = require("./config/db");
 const cors = require("cors");
 const http = require("http");
-const { Server } = require("socket.io");
+
 const Consultation = require("./models/Consultation");
 const Astrologer = require("./models/Astrologer");
 const { getAstrologyResponse } = require("./api/astrology");
@@ -75,15 +75,19 @@ app.set("io", io);
 const activeTimers = {};
 
 // --- Handle socket connections ---
+
+
+
+
 io.on("connection", (socket) => {
   console.log("⚡ New client connected:", socket.id);
 
-  // --- Join user room for chat/video ---
+  // --- Join user room ---
   socket.on("joinRoom", async (roomId) => {
     socket.join(roomId);
     console.log(`📌 User ${socket.id} joined room: ${roomId}`);
 
-    // --- Send list of existing peers ---
+    // Notify peers
     try {
       const sockets = await io.in(roomId).fetchSockets();
       const peers = sockets.filter((s) => s.id !== socket.id).map((s) => s.id);
@@ -91,45 +95,27 @@ io.on("connection", (socket) => {
     } catch (e) {
       console.error("fetchSockets failed:", e);
     }
-
     socket.to(roomId).emit("peer-joined", { socketId: socket.id });
 
-    // --- Send system message "Waiting for astrologer..." ---
-    let waitingMessageId = null;
+    // --- Send waiting message system message ---
+    io.to(roomId).emit("newMessage", {
+      sender: "system",
+      text: "⏳ Waiting for astrologer to start the consultation...",
+      system: true,
+      createdAt: new Date(),
+    });
+
+    // Load previous messages
     try {
       const consultation = await Consultation.findById(roomId);
-      if (consultation) {
-        const waitingMessage = {
-          sender: "system",
-          text: "⏳ Waiting for astrologer to start the consultation...",
-          system: true,
-          createdAt: new Date(),
-        };
-        consultation.messages.push(waitingMessage);
-        await consultation.save();
-
-        io.to(roomId).emit("newMessage", waitingMessage);
-        waitingMessageId = waitingMessage._id; // track to remove later
-
-        // Send Kundali system message if exists
-        if (consultation.kundaliUrl) {
-          const kundaliMessage = {
-            sender: "system",
-            text: "📜 Kundali is ready for this consultation",
-            kundaliUrl: consultation.kundaliUrl,
-            system: true,
-            createdAt: new Date(),
-          };
-          consultation.messages.push(kundaliMessage);
-          await consultation.save();
-          io.to(roomId).emit("newMessage", kundaliMessage);
-        }
+      if (consultation?.messages?.length) {
+        socket.emit("loadMessages", consultation.messages);
       }
     } catch (err) {
-      console.error("❌ Failed to send system messages:", err.message);
+      console.error(err);
     }
 
-    // --- Chat messages ---
+    // --- Chat messages from user ---
     socket.on("sendMessage", async ({ roomId, sender, text, kundaliUrl, system }) => {
       try {
         const consultation = await Consultation.findById(roomId);
@@ -150,40 +136,7 @@ io.on("connection", (socket) => {
 
         const astrologer = await Astrologer.findById(consultation.astrologerId);
 
-        // ✅ Start 5-min timer only when astrologer sends first message
-        if (
-          astrologer &&
-          sender === astrologer._id.toString() &&
-          !activeTimers[roomId]
-        ) {
-          // Remove waiting message if exists
-          if (waitingMessageId) {
-            consultation.messages = consultation.messages.filter(
-              (m) => m._id.toString() !== waitingMessageId.toString()
-            );
-            await consultation.save();
-            io.to(roomId).emit("removeMessage", waitingMessageId);
-          }
-
-          let secondsLeft = 5 * 60; // 5 minutes
-          console.log(`⏱️ Timer started for room ${roomId} (astrologer sent first message)`);
-
-          io.to(roomId).emit("timerUpdate", { secondsLeft });
-
-          activeTimers[roomId] = setInterval(() => {
-            secondsLeft--;
-            io.to(roomId).emit("timerUpdate", { secondsLeft });
-
-            if (secondsLeft <= 0) {
-              clearInterval(activeTimers[roomId]);
-              delete activeTimers[roomId];
-              io.to(roomId).emit("timerEnded");
-              console.log(`⏰ Timer ended for room ${roomId}`);
-            }
-          }, 1000);
-        }
-
-        // ✅ AI reply logic
+        // AI response if astrologer is AI
         if (astrologer && astrologer.isAI) {
           const aiReply = await getAstrologyResponse(text);
           const aiMessage = {
@@ -203,25 +156,53 @@ io.on("connection", (socket) => {
   });
 
   // --- Join astrologer room ---
-  socket.on("joinAstrologerRoom", (astrologerId) => {
+  socket.on("joinAstrologerRoom", async (astrologerId) => {
     socket.join(astrologerId);
     console.log(`📌 Astrologer ${socket.id} joined room: ${astrologerId}`);
+
+    // Start timer for the consultation the astrologer belongs to
+    const consultation = await Consultation.findOne({ astrologerId });
+    if (consultation) {
+      const roomId = consultation._id.toString();
+
+      io.to(roomId).emit("newMessage", {
+        sender: "system",
+        text: "✅ Astrologer has joined. Consultation started!",
+        system: true,
+        createdAt: new Date(),
+      });
+
+      if (!activeTimers[roomId]) {
+        let secondsLeft = 5 * 60; // 5 min
+        io.to(roomId).emit("timerUpdate", { secondsLeft });
+
+        activeTimers[roomId] = setInterval(() => {
+          secondsLeft--;
+          io.to(roomId).emit("timerUpdate", { secondsLeft });
+
+          if (secondsLeft <= 0) {
+            clearInterval(activeTimers[roomId]);
+            delete activeTimers[roomId];
+            io.to(roomId).emit("timerEnded");
+            console.log(`⏰ Timer ended for room ${roomId}`);
+          }
+        }, 1000);
+      }
+    }
   });
 
-  // --- VIDEO CALL SIGNALING ---
+  // --- Video call signaling ---
   socket.on("call-user", ({ to, offer }) => {
     if (to) io.to(to).emit("incoming-call", { from: socket.id, offer });
   });
-
   socket.on("answer-call", ({ to, answer }) => {
     if (to) io.to(to).emit("call-answered", { from: socket.id, answer });
   });
-
   socket.on("ice-candidate", ({ to, candidate }) => {
     if (to) io.to(to).emit("ice-candidate", { from: socket.id, candidate });
   });
 
-  // --- Timer logic ---
+  // --- Timer manual start/stop ---
   socket.on("startConsultationTimer", ({ roomId, durationMinutes = 5 }) => {
     if (!roomId || activeTimers[roomId]) return;
 
