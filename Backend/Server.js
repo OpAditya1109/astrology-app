@@ -78,7 +78,6 @@ const activeTimers = {};
 io.on("connection", (socket) => {
   console.log("⚡ New client connected:", socket.id);
 
-  // --- Active timers storage ---
 
 
   // --- Join user room ---
@@ -120,7 +119,9 @@ socket.on("joinRoom", async (roomId) => {
   socket.to(roomId).emit("peer-joined", { socketId: socket.id });
 
   // --- Remove waiting message and start timer when astrologer sends first message ---
-  socket.on("sendMessage", async ({ roomId, sender, text, kundaliUrl, system }) => {
+  
+});
+socket.on("sendMessage", async ({ roomId, sender, text, kundaliUrl, system }) => {
     try {
       const consultation = await Consultation.findById(roomId);
       if (!consultation) return console.log("❌ Consultation not found:", roomId);
@@ -190,8 +191,6 @@ socket.on("joinRoom", async (roomId) => {
       console.error("❌ Error sending message:", error.message);
     }
   });
-});
-
 
   // --- Join astrologer room ---
   socket.on("joinAstrologerRoom", async (astrologerId) => {
