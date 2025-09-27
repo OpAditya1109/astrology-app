@@ -7,55 +7,38 @@ export default function AstrologerDashboard() {
   const [astrologer, setAstrologer] = useState({
     rates: { chat: 0, video: 0, audio: 0 },
     online: { chat: false, video: false, audio: false },
-    totalTalkTime: "00:00", // ✅ default clock format
+    totalTalkTime: "00:00",
   });
 
-  // ✅ Get astrologerId from session (not params)
-  const astrologerId = JSON.parse(sessionStorage.getItem("user"))?.id;
+  const user = JSON.parse(sessionStorage.getItem("user"));
+  const astrologerId = user?.id;
 
-  // Fetch astrologer data on load
+  // Load astrologer from sessionStorage first
   useEffect(() => {
-    const fetchData = async () => {
-      if (!astrologerId) return;
+    if (user) {
+      setAstrologer((prev) => ({
+        ...prev,
+        name: user.name,
+        email: user.email,
+        totalTalkTime: user.totalTalkTime || "00:00",
+      }));
+    }
+  }, [user]);
 
-      try {
-        const res = await axios.get(
-          `https://bhavanaastro.onrender.com/api/Consult-astrologers/session`, 
-          { withCredentials: true } // ✅ important if using session cookies
-        );
-        setAstrologer(res.data);
-      } catch (err) {
-        console.error("Failed to fetch astrologer data:", err);
-      }
-    };
-    fetchData();
-  }, [astrologerId]);
-
-  // Toggle online status
-  const handleToggle = (mode) => {
-    setAstrologer((prev) => ({
-      ...prev,
-      online: { ...prev.online, [mode]: !prev.online[mode] },
-    }));
-  };
-
-  // Update rates
-  const handleRateChange = (mode, value) => {
-    setAstrologer((prev) => ({
-      ...prev,
-      rates: { ...prev.rates, [mode]: Number(value) },
-    }));
-  };
-
-  // Save settings to DB
+  // Save rates/online in DB
   const saveSettings = async () => {
     try {
       await axios.put(
-        `https://bhavanaastro.onrender.com/api/Consult-astrologers/update-rates-online`, 
-        { rates: astrologer.rates, online: astrologer.online },
-        { withCredentials: true } // ✅ session-based update
+        `https://bhavanaastro.onrender.com/api/Consult-astrologers/update-rates-online/${astrologerId}`,
+        { rates: astrologer.rates, online: astrologer.online }
       );
       alert("Settings updated successfully!");
+
+      // ✅ update sessionStorage also so reload keeps new state
+      sessionStorage.setItem(
+        "user",
+        JSON.stringify({ ...user, rates: astrologer.rates, online: astrologer.online })
+      );
     } catch (err) {
       console.error(err);
       alert("Failed to update settings.");
@@ -88,14 +71,24 @@ export default function AstrologerDashboard() {
             <input
               type="checkbox"
               checked={astrologer.online[mode]}
-              onChange={() => handleToggle(mode)}
+              onChange={() =>
+                setAstrologer((prev) => ({
+                  ...prev,
+                  online: { ...prev.online, [mode]: !prev.online[mode] },
+                }))
+              }
               className="w-5 h-5"
             />
             <label className="ml-4">Rate (₹):</label>
             <input
               type="number"
               value={astrologer.rates[mode]}
-              onChange={(e) => handleRateChange(mode, e.target.value)}
+              onChange={(e) =>
+                setAstrologer((prev) => ({
+                  ...prev,
+                  rates: { ...prev.rates, [mode]: Number(e.target.value) },
+                }))
+              }
               className="border rounded px-2 py-1 w-24"
             />
           </div>
