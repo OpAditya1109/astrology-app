@@ -77,24 +77,25 @@ export default function UserConsultancy() {
                 <strong>Specialty:</strong> {astrologer.categories?.join(", ") || "N/A"}
               </p>
 
-              {/* Rates */}
-              <div className="flex gap-3 mb-4 flex-wrap justify-center">
-                {astrologer.rates?.chat && (
-                  <span className="px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-sm font-medium">
-                    💬 ₹{astrologer.rates.chat}/min
-                  </span>
-                )}
-                {astrologer.rates?.video && (
-                  <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-medium">
-                    📹 ₹{astrologer.rates.video}/min
-                  </span>
-                )}
-                {astrologer.rates?.audio && (
-                  <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-medium">
-                    🎙 ₹{astrologer.rates.audio}/min
-                  </span>
-                )}
-              </div>
+           
+            {/* Rates */}
+<div className="flex gap-3 mb-4 flex-wrap justify-center">
+  {astrologer.rates?.chat != null && (
+    <span className="px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-sm font-medium">
+      💬 {astrologer.rates.chat === 0 ? "Free" : `₹${astrologer.rates.chat}/min`}
+    </span>
+  )}
+  {astrologer.rates?.video != null && (
+    <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-medium">
+      📹 {astrologer.rates.video === 0 ? "Free" : `₹${astrologer.rates.video}/min`}
+    </span>
+  )}
+  {astrologer.rates?.audio != null && (
+    <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-medium">
+      🎙 {astrologer.rates.audio === 0 ? "Free" : `₹${astrologer.rates.audio}/min`}
+    </span>
+  )}
+</div>
 
               {/* View Profile Button */}
               <button

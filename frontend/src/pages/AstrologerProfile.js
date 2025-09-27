@@ -218,9 +218,9 @@ const shareProfile = async () => {
           <div>
             <p className="text-gray-700 font-semibold">Rates</p>
             <ul className="text-gray-600">
-              <li>💬 Chat: {astrologer.rates?.chat ? `₹${astrologer.rates.chat}/min` : "N/A"}</li>
-              <li>📹 Video: {astrologer.rates?.video ? `₹${astrologer.rates.video}/min` : "N/A"}</li>
-              <li>🎙 Audio: {astrologer.rates?.audio ? `₹${astrologer.rates.audio}/min` : "N/A"}</li>
+              <li>💬 Chat: {astrologer.rates?.chat ? `₹${astrologer.rates.chat}/min` : "Free"}</li>
+              <li>📹 Video: {astrologer.rates?.video ? `₹${astrologer.rates.video}/min` : "Free"}</li>
+              <li>🎙 Audio: {astrologer.rates?.audio ? `₹${astrologer.rates.audio}/min` : "Free"}</li>
             </ul>
           </div>
           <div>
@@ -251,7 +251,7 @@ const shareProfile = async () => {
                   "bg-blue-600 hover:bg-blue-700"
                 }`}
               >
-                {mode} {rate ? `₹${rate}/min` : "N/A"}
+                {mode} {rate ? `₹${rate}/min` : "Free"}
               </button>
             );
           })}
