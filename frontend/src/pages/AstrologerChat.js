@@ -40,27 +40,19 @@ export default function AstrologerChat() {
     const handleNewMessage = (msg) => setMessages((prev) => [...prev, msg]);
 
     // ✅ handle consultation ended
-    const handleConsultationEnded = async ({ consultationId: endedId }) => {
-      if (endedId !== consultationId) return;
+   // ✅ handle consultation ended (now receives talkTime directly from socket)
+const handleConsultationEnded = ({ consultationId: endedId, talkTime }) => {
+  if (endedId !== consultationId) return;
 
-      try {
-        // fetch talkTime from backend
-        const res = await fetch(
-          `https://bhavanaastro.onrender.com/api/consultations/${consultationId}/details`
-        );
-        const data = await res.json();
-        setTalkTime(data?.talkTime || null);
-      } catch (err) {
-        console.error("Failed to fetch talk time:", err);
-      }
+  setTalkTime(talkTime || null);
+  setConsultationEnded(true);
 
-      setConsultationEnded(true);
+  // auto redirect after 3s
+  setTimeout(() => {
+    navigate("/astrologer/dashboard/consultations");
+  }, 3000);
+};
 
-      // auto redirect after 3s
-      setTimeout(() => {
-        navigate("/astrologer/dashboard/consultations");
-      }, 3000);
-    };
 
     socket.on("newMessage", handleNewMessage);
     socket.on("consultationEnded", handleConsultationEnded);
