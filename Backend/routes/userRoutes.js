@@ -42,10 +42,10 @@ router.get("/profile", async (req, res) => {
 
 router.post("/deduct", async (req, res) => {
   try {
-    const userId = req.session.userId;
-    if (!userId) return res.status(401).json({ message: "User not logged in" });
+    // ✅ Get userId from request body
+    const { userId, amount, consultationId, extendMinutes } = req.body;
 
-    const { amount, consultationId, extendMinutes } = req.body;
+    if (!userId) return res.status(401).json({ message: "User not logged in" });
     if (!amount || amount <= 0) return res.status(400).json({ message: "Invalid amount" });
     if (extendMinutes && extendMinutes <= 0) return res.status(400).json({ message: "Invalid extend minutes" });
 
@@ -53,10 +53,17 @@ router.post("/deduct", async (req, res) => {
     if (!user) return res.status(404).json({ message: "User not found" });
     if (user.wallet.balance < amount) return res.status(400).json({ message: "Insufficient balance" });
 
+    // Deduct wallet balance
     user.wallet.balance -= amount;
-    user.wallet.transactions.push({ type: "debit", amount, date: new Date(), consultationId: consultationId || null });
+    user.wallet.transactions.push({
+      type: "debit",
+      amount,
+      date: new Date(),
+      consultationId: consultationId || null,
+    });
     await user.save();
 
+    // Extend consultation timer if needed
     let updatedTimer = null;
     if (consultationId && extendMinutes) {
       const consultation = await Consultation.findById(consultationId);
@@ -77,5 +84,6 @@ router.post("/deduct", async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+
 
 module.exports = router;
