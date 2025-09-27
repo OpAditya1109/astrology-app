@@ -72,7 +72,7 @@ const io = new Server(server, {
 app.set("io", io);
 
 
-const activeTimers = {}; // { roomId: { interval, secondsLeft } }
+const activeTimers = {}; // { roomId: { interval, secondsLeft, totalAllocated } }
 const waitingMessages = {};
 
 io.on("connection", (socket) => {
@@ -130,15 +130,14 @@ io.on("connection", (socket) => {
   });
 
   // --- Extend consultation timer ---
-socket.on("extendConsultationTimer", ({ roomId, extendMinutes }) => {
-  if (!activeTimers[roomId]) return; // Timer must be running
-  const addSeconds = extendMinutes * 60;
+  socket.on("extendConsultationTimer", ({ roomId, extendMinutes }) => {
+    if (!activeTimers[roomId]) return; // Timer must be running
+    const addSeconds = extendMinutes * 60;
 
-  activeTimers[roomId].secondsLeft += addSeconds;
-  activeTimers[roomId].totalAllocated += addSeconds; // ✅ also track allocated time
-
-  io.to(roomId).emit("timerUpdate", { secondsLeft: activeTimers[roomId].secondsLeft });
-});
+    activeTimers[roomId].secondsLeft += addSeconds;
+    activeTimers[roomId].totalAllocated += addSeconds; // ✅ track full purchased
+    io.to(roomId).emit("timerUpdate", { secondsLeft: activeTimers[roomId].secondsLeft });
+  });
 
   // --- Timer manual start ---
   socket.on("startConsultationTimer", ({ roomId, durationMinutes = 5 }) => {
@@ -178,27 +177,25 @@ socket.on("extendConsultationTimer", ({ roomId, extendMinutes }) => {
   });
 
   // --- Helper functions ---
-function startTimer(roomId, seconds) {
-  if (activeTimers[roomId]) return; // already running
+  function startTimer(roomId, seconds) {
+    if (activeTimers[roomId]) return; // already running
 
-  activeTimers[roomId] = {
-    secondsLeft: seconds,
-    startTime: Date.now(), // ⬅️ store when timer started
-    totalAllocated: seconds,
-    interval: setInterval(async () => {
-      if (!activeTimers[roomId]) return;
+    activeTimers[roomId] = {
+      secondsLeft: seconds,
+      totalAllocated: seconds,
+      interval: setInterval(async () => {
+        if (!activeTimers[roomId]) return;
 
-      activeTimers[roomId].secondsLeft--;
-      io.to(roomId).emit("timerUpdate", { secondsLeft: activeTimers[roomId].secondsLeft });
+        activeTimers[roomId].secondsLeft--;
+        io.to(roomId).emit("timerUpdate", { secondsLeft: activeTimers[roomId].secondsLeft });
 
-      if (activeTimers[roomId].secondsLeft <= 0) {
-        await finalizeConsultation(roomId, true); // auto end
-        io.to(roomId).emit("timerEnded");
-      }
-    }, 1000),
-  };
-}
-
+        if (activeTimers[roomId].secondsLeft <= 0) {
+          await finalizeConsultation(roomId, true); // auto end
+          io.to(roomId).emit("timerEnded");
+        }
+      }, 1000),
+    };
+  }
 
   async function stopTimer(roomId, manual = false) {
     if (!activeTimers[roomId]) return;
@@ -209,50 +206,42 @@ function startTimer(roomId, seconds) {
   }
 
   // Save talk seconds into Consultation + Astrologer
-async function finalizeConsultation(roomId, endedByTimer = false) {
-  try {
-    const c = await Consultation.findById(roomId);
-    if (!c?.timer) return;
+  async function finalizeConsultation(roomId, endedByTimer = false) {
+    try {
+      const c = await Consultation.findById(roomId);
+      if (!c?.timer) return;
 
-    const timer = activeTimers[roomId];
-    if (!timer) return;
+      const timer = activeTimers[roomId];
+      if (!timer) return;
 
-    // calculate elapsed
-    const elapsed = Math.floor((Date.now() - timer.startTime) / 1000);
+      // --- Actual talked seconds based on difference ---
+      const talkedSeconds = timer.totalAllocated - timer.secondsLeft;
 
-    let talkedSeconds;
-    if (endedByTimer) {
-      // if auto-ended → full allocated time is used
-      talkedSeconds = timer.totalAllocated;
-    } else {
-      // if manually stopped → only count actual elapsed
-      talkedSeconds = Math.min(elapsed, timer.totalAllocated);
+      // Save consultation data
+      c.timer.isRunning = false;
+      c.talkSeconds = (c.talkSeconds || 0) + talkedSeconds;
+      await c.save();
+
+      // Update astrologer stats
+      const astro = await Astrologer.findById(c.astrologerId);
+      if (astro) {
+        astro.totalTalkSeconds = (astro.totalTalkSeconds || 0) + talkedSeconds;
+        await astro.save();
+      }
+
+      // Calculate unused
+      const unused = timer.totalAllocated - talkedSeconds;
+      if (unused > 0) {
+        await Admin.updateOne({}, { $inc: { remainingSeconds: unused } });
+      }
+
+      delete activeTimers[roomId];
+    } catch (err) {
+      console.error("finalizeConsultation error:", err);
     }
-
-    // Save consultation data
-    c.timer.isRunning = false;
-    c.talkSeconds = (c.talkSeconds || 0) + talkedSeconds;
-    await c.save();
-
-    // Update astrologer stats
-    const astro = await Astrologer.findById(c.astrologerId);
-    if (astro) {
-      astro.totalTalkSeconds = (astro.totalTalkSeconds || 0) + talkedSeconds;
-      await astro.save();
-    }
-
-    // Calculate unused
-    const unused = timer.totalAllocated - talkedSeconds;
-    if (unused > 0) {
-      await Admin.updateOne({}, { $inc: { remainingSeconds: unused } });
-    }
-
-    delete activeTimers[roomId];
-  } catch (err) {
-    console.error("finalizeConsultation error:", err);
   }
-}
 });
+
 
 
 
