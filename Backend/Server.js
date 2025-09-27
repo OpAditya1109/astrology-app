@@ -73,41 +73,53 @@ app.set("io", io);
 
 
 
-
+const activeTimers = {};
 
 io.on("connection", (socket) => {
   console.log("⚡ New client connected:", socket.id);
 
   // --- Active timers storage ---
-  const activeTimers = {}; // you can move this outside if global for all sockets
+
 
   // --- Join user room ---
-  socket.on("joinRoom", async (roomId) => {
-    socket.join(roomId);
-    console.log(`📌 User ${socket.id} joined room: ${roomId}`);
+// --- Join user room for chat/video ---
+socket.on("joinRoom", async (roomId) => {
+  socket.join(roomId);
+  console.log(`📌 User ${socket.id} joined room: ${roomId}`);
 
-    // Notify peers
-    try {
-      const sockets = await io.in(roomId).fetchSockets();
-      const peers = sockets.filter((s) => s.id !== socket.id).map((s) => s.id);
-      if (peers.length) socket.emit("existing-peers", { peers });
-    } catch (e) {
-      console.error("fetchSockets failed:", e);
+  // --- Send "Waiting for astrologer..." system message ---
+  let waitingMessageId = null;
+  try {
+    const consultation = await Consultation.findById(roomId);
+    if (consultation) {
+      const waitingMessage = {
+        sender: "system",
+        text: "⏳ Waiting for astrologer to start the consultation...",
+        system: true,
+        createdAt: new Date(),
+      };
+      consultation.messages.push(waitingMessage);
+      await consultation.save();
+
+      io.to(roomId).emit("newMessage", waitingMessage);
+      waitingMessageId = waitingMessage._id; // track to remove later
     }
-    socket.to(roomId).emit("peer-joined", { socketId: socket.id });
+  } catch (err) {
+    console.error("❌ Failed to send waiting system message:", err.message);
+  }
 
-    // Load previous messages
-    try {
-      const consultation = await Consultation.findById(roomId);
-      if (consultation?.messages?.length) {
-        socket.emit("loadMessages", consultation.messages);
-      }
-    } catch (err) {
-      console.error(err);
-    }
-  });
+  // --- Existing peer logic ---
+  try {
+    const sockets = await io.in(roomId).fetchSockets();
+    const peers = sockets.filter((s) => s.id !== socket.id).map((s) => s.id);
+    if (peers.length) socket.emit("existing-peers", { peers });
+  } catch (e) {
+    console.error("fetchSockets failed:", e);
+  }
 
-  // --- Send chat message ---
+  socket.to(roomId).emit("peer-joined", { socketId: socket.id });
+
+  // --- Remove waiting message and start timer when astrologer sends first message ---
   socket.on("sendMessage", async ({ roomId, sender, text, kundaliUrl, system }) => {
     try {
       const consultation = await Consultation.findById(roomId);
@@ -126,8 +138,42 @@ io.on("connection", (socket) => {
       await consultation.save();
       io.to(roomId).emit("newMessage", newMessage);
 
-      // AI response if astrologer is AI
       const astrologer = await Astrologer.findById(consultation.astrologerId);
+
+      // ✅ Start timer if astrologer sends first message
+      if (
+        astrologer &&
+        sender === astrologer._id.toString() &&
+        !activeTimers[roomId]
+      ) {
+        // Remove waiting message if exists
+        if (waitingMessageId) {
+          consultation.messages = consultation.messages.filter(
+            (m) => m._id.toString() !== waitingMessageId.toString()
+          );
+          await consultation.save();
+          io.to(roomId).emit("removeMessage", waitingMessageId);
+        }
+
+        let secondsLeft = 5 * 60; // 5 minutes
+        console.log(`⏱️ Timer started for room ${roomId} (astrologer sent first message)`);
+
+        io.to(roomId).emit("timerUpdate", { secondsLeft });
+
+        activeTimers[roomId] = setInterval(() => {
+          secondsLeft--;
+          io.to(roomId).emit("timerUpdate", { secondsLeft });
+
+          if (secondsLeft <= 0) {
+            clearInterval(activeTimers[roomId]);
+            delete activeTimers[roomId];
+            io.to(roomId).emit("timerEnded");
+            console.log(`⏰ Timer ended for room ${roomId}`);
+          }
+        }, 1000);
+      }
+
+      // ✅ AI reply logic (unchanged)
       if (astrologer && astrologer.isAI) {
         const aiReply = await getAstrologyResponse(text);
         const aiMessage = {
@@ -144,6 +190,8 @@ io.on("connection", (socket) => {
       console.error("❌ Error sending message:", error.message);
     }
   });
+});
+
 
   // --- Join astrologer room ---
   socket.on("joinAstrologerRoom", async (astrologerId) => {
