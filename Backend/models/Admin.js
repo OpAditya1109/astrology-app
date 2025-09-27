@@ -6,7 +6,7 @@ const adminSchema = new mongoose.Schema({
   email: { type: String, unique: true, required: true },
   password: { type: String, required: true },
   role: { type: String, default: "admin" }, // ✅ role field
- remainingSeconds: { type: Number, default: 0 },
+remainingTime: { type: String, default: "00:00" },
   wallet: {
     balance: { type: Number, default: 0 },
     transactions: [

@@ -7,6 +7,7 @@ export default function AstrologerDashboard() {
   const [astrologer, setAstrologer] = useState({
     rates: { chat: 0, video: 0, audio: 0 },
     online: { chat: false, video: false, audio: false },
+    totalTalkTime: "00:00", // ✅ default clock format
   });
 
   const astrologerId = JSON.parse(sessionStorage.getItem("user"))?.id;
@@ -62,6 +63,16 @@ export default function AstrologerDashboard() {
         Astrologer Dashboard
       </h1>
 
+      {/* Total Talk Time */}
+      <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 mb-6 rounded-lg shadow-md">
+        <p className="font-semibold text-lg">
+          Total Talk Time:{" "}
+          <span className="text-purple-700">
+            {astrologer.totalTalkTime || "00:00"}
+          </span>
+        </p>
+      </div>
+
       {/* Consultation Settings */}
       <div className="bg-white shadow-md rounded-xl p-6 mb-6">
         <h2 className="text-xl font-semibold mb-4">Consultation Settings</h2>
@@ -95,14 +106,13 @@ export default function AstrologerDashboard() {
 
       {/* Quick Links */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-  <Link
-    to="/astrologer/dashboard/consultations"
-    className="bg-blue-100 hover:bg-blue-200 text-blue-700 font-semibold rounded-xl shadow-md p-6 text-center"
-  >
-    Consultations
-  </Link>
-</div>
-
+        <Link
+          to="/astrologer/dashboard/consultations"
+          className="bg-blue-100 hover:bg-blue-200 text-blue-700 font-semibold rounded-xl shadow-md p-6 text-center"
+        >
+          Consultations
+        </Link>
+      </div>
     </div>
   );
 }

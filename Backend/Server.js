@@ -231,7 +231,7 @@ io.on("connection", (socket) => {
     return m * 60 + s;
   }
 
-  // --- Save talk time into Consultation + Astrologer
+  // --- Save talk time into Consultation + Astrologer + Admin
   async function finalizeConsultation(roomId, endedByTimer = false) {
     try {
       const c = await Consultation.findById(roomId);
@@ -259,10 +259,16 @@ io.on("connection", (socket) => {
         await astro.save();
       }
 
-      // ✅ Save unused to Admin
+      // ✅ Save unused to Admin (both seconds + clock)
       const unused = timer.secondsLeft;
       if (unused > 0) {
-        await Admin.updateOne({}, { $inc: { remainingSeconds: unused } });
+        await Admin.updateOne(
+          {},
+          {
+            $inc: { remainingSeconds: unused }, // keep numeric
+            $set: { remainingTime: formatClock(unused) }, // 👈 store MM:SS
+          }
+        );
       }
 
       delete activeTimers[roomId];
@@ -271,8 +277,6 @@ io.on("connection", (socket) => {
     }
   }
 });
-
-
 
 
 
