@@ -37,6 +37,7 @@ const registerAstrologer = async (req, res) => {
       systemsKnown,
       languagesKnown,
       categories,
+      description,   // ✅ added description
     } = req.body;
 
     // Check email
@@ -70,6 +71,7 @@ const registerAstrologer = async (req, res) => {
       systemsKnown: Array.isArray(systemsKnown) ? systemsKnown : [systemsKnown],
       languagesKnown: Array.isArray(languagesKnown) ? languagesKnown : [languagesKnown],
       categories: Array.isArray(categories) ? categories : [categories],
+      description,   // ✅ save description
       photo: photoUrl,
     });
 

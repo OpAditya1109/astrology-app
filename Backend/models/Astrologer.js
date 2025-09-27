@@ -20,6 +20,9 @@ const astrologerSchema = new mongoose.Schema(
     // ✅ Verification field
     isVerified: { type: Boolean, default: false },
 
+    // ✅ New field: description / bio
+    description: { type: String, default: "" },
+
     // ✅ Rates for different modes
     rates: {
       chat: { type: Number, default: 0 },

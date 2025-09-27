@@ -53,19 +53,21 @@ const categoryOptions = [
 
 const AstrologerRegister = () => {
   const navigate = useNavigate();
-  const [form, setForm] = useState({
-    name: "",
-    email: "",
-    password: "",
-    gender: "",
-    mobile: "",
-    experience: "",
-    city: "",
-    country: "",
-    systemsKnown: [],
-    languagesKnown: [],
-    categories: [],
-  });
+const [form, setForm] = useState({
+  name: "",
+  email: "",
+  password: "",
+  gender: "",
+  mobile: "",
+  experience: "",
+  city: "",
+  country: "",
+  systemsKnown: [],
+  languagesKnown: [],
+  categories: [],
+  description: "",   // ✅ added description
+});
+
   const [photo, setPhoto] = useState(null);
   const [loading, setLoading] = useState(false);
   const [popup, setPopup] = useState({ show: false, type: "success", message: "" });
@@ -120,7 +122,7 @@ const AstrologerRegister = () => {
 
       setTimeout(() => {
         setPopup({ ...popup, show: false });
-        navigate("/login"); // redirect after popup
+        navigate("/Thankyou"); // redirect after popup
       }, 2500);
 
     } catch (err) {
@@ -301,6 +303,23 @@ const AstrologerRegister = () => {
               classNamePrefix="react-select"
             />
           </div>
+          {/* Description */}
+<div>
+  <label className="block mb-1 font-semibold">
+    About / Description <span className="text-red-500">*</span>
+  </label>
+  <textarea
+    name="description"
+    required
+    value={form.description}
+    onChange={handleChange}
+    disabled={loading}
+    rows="4"
+    placeholder="Write about your experience, expertise, or introduction..."
+    className="w-full border rounded-xl px-3 py-2 focus:ring-2 focus:ring-orange-400 outline-none"
+  />
+</div>
+
 
           {/* Email */}
           <div>
