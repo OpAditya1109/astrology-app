@@ -182,35 +182,32 @@ useEffect(() => {
   };
 
 const extendConsultation = async () => {
-  if (extending) return; // prevent double click
+  if (extending) return;
   setExtending(true);
 
-  const extendCost = extendMinutes * extendRate;
-
-  if (userWallet < extendCost) {
-    alert(`Insufficient balance. You have ₹${userWallet}`);
-    setExtending(false);
-    setShowExtendModal(false);
-    return;
-  }
-
   try {
-    const res = await fetch(`https://bhavanaastro.onrender.com/api/users/deduct`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ userId: currentUser.id, amount: extendCost, consultationId: roomId, extendMinutes }),
-    });
-
-    if (!res.ok) {
-      const errorData = await res.json();
-      throw new Error(errorData.message || "Deduction failed");
+    const extendCost = extendMinutes * extendRate;
+    if (userWallet < extendCost) {
+      alert(`Insufficient balance. You have ₹${userWallet}`);
+      return;
     }
 
-    const data = await res.json();
-    setUserWallet(data.balance); // update wallet
+    const res = await fetch("https://bhavanaastro.onrender.com/api/users/deduct", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        userId: currentUser.id,
+        amount: extendCost,
+        consultationId: roomId,
+        extendMinutes,
+      }),
+    });
 
+    if (!res.ok) throw new Error("Deduction failed");
+    const data = await res.json();
+
+    setUserWallet(data.balance);
     socket.emit("extendConsultationTimer", { roomId, extendMinutes });
-    setShowExtendModal(false); // ✅ close modal after success
   } catch (err) {
     console.error("Failed to extend consultation:", err);
     alert("Failed to extend consultation. Try again.");
@@ -218,6 +215,7 @@ const extendConsultation = async () => {
     setExtending(false);
   }
 };
+
 
 
 
