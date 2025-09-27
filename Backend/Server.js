@@ -72,7 +72,7 @@ const io = new Server(server, {
 app.set("io", io);
 
 
-const activeTimers = {}; // { roomId: { interval, secondsLeft, totalAllocated } }
+const activeTimers = {}; // { roomId: { interval, secondsLeft, totalAllocated, startTime } }
 const waitingMessages = {};
 
 io.on("connection", (socket) => {
@@ -119,8 +119,16 @@ io.on("connection", (socket) => {
 
       // Start timer if astrologer sends first message
       const astrologer = await Astrologer.findById(consultation.astrologerId);
-      if (astrologer && sender === astrologer._id.toString() && !consultation.timer?.isRunning) {
-        consultation.timer = { startTime: new Date(), durationMinutes: 5, isRunning: true };
+      if (
+        astrologer &&
+        sender === astrologer._id.toString() &&
+        !consultation.timer?.isRunning
+      ) {
+        consultation.timer = {
+          startTime: new Date(),
+          durationMinutes: 5,
+          isRunning: true,
+        };
         await consultation.save();
         startTimer(roomId, consultation.timer.durationMinutes * 60);
       }
@@ -136,7 +144,9 @@ io.on("connection", (socket) => {
 
     activeTimers[roomId].secondsLeft += addSeconds;
     activeTimers[roomId].totalAllocated += addSeconds; // ✅ track full purchased
-    io.to(roomId).emit("timerUpdate", { secondsLeft: activeTimers[roomId].secondsLeft });
+    io.to(roomId).emit("timerUpdate", {
+      secondsLeft: activeTimers[roomId].secondsLeft,
+    });
   });
 
   // --- Timer manual start ---
@@ -183,11 +193,14 @@ io.on("connection", (socket) => {
     activeTimers[roomId] = {
       secondsLeft: seconds,
       totalAllocated: seconds,
+      startTime: Date.now(),
       interval: setInterval(async () => {
         if (!activeTimers[roomId]) return;
 
         activeTimers[roomId].secondsLeft--;
-        io.to(roomId).emit("timerUpdate", { secondsLeft: activeTimers[roomId].secondsLeft });
+        io.to(roomId).emit("timerUpdate", {
+          secondsLeft: activeTimers[roomId].secondsLeft,
+        });
 
         if (activeTimers[roomId].secondsLeft <= 0) {
           await finalizeConsultation(roomId, true); // auto end
@@ -205,6 +218,13 @@ io.on("connection", (socket) => {
     delete activeTimers[roomId];
   }
 
+  // --- Format seconds to MM:SS ---
+  function formatClock(seconds) {
+    const m = Math.floor(seconds / 60).toString().padStart(2, "0");
+    const s = (seconds % 60).toString().padStart(2, "0");
+    return `${m}:${s}`;
+  }
+
   // Save talk seconds into Consultation + Astrologer
   async function finalizeConsultation(roomId, endedByTimer = false) {
     try {
@@ -214,22 +234,24 @@ io.on("connection", (socket) => {
       const timer = activeTimers[roomId];
       if (!timer) return;
 
-      // --- Actual talked seconds based on difference ---
+      // --- Actual talked seconds ---
       const talkedSeconds = timer.totalAllocated - timer.secondsLeft;
 
-      // Save consultation data
+      // ✅ Save consultation data
       c.timer.isRunning = false;
-      c.talkSeconds = (c.talkSeconds || 0) + talkedSeconds;
+      c.talkSeconds = (c.talkSeconds || 0) + talkedSeconds; // raw seconds
+      c.talkTime = formatClock(c.talkSeconds); // formatted clock
       await c.save();
 
-      // Update astrologer stats
+      // ✅ Update astrologer stats
       const astro = await Astrologer.findById(c.astrologerId);
       if (astro) {
         astro.totalTalkSeconds = (astro.totalTalkSeconds || 0) + talkedSeconds;
+        astro.totalTalkTime = formatClock(astro.totalTalkSeconds);
         await astro.save();
       }
 
-      // Calculate unused
+      // ✅ Calculate unused
       const unused = timer.totalAllocated - talkedSeconds;
       if (unused > 0) {
         await Admin.updateOne({}, { $inc: { remainingSeconds: unused } });
@@ -241,6 +263,7 @@ io.on("connection", (socket) => {
     }
   }
 });
+
 
 
 
