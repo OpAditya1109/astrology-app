@@ -7,25 +7,58 @@ export default function AstrologerDashboard() {
   const [astrologer, setAstrologer] = useState({
     rates: { chat: 0, video: 0, audio: 0 },
     online: { chat: false, video: false, audio: false },
-    totalTalkTime: "00:00",
   });
+  const [totalTalkTime, setTotalTalkTime] = useState("00:00");
 
-  const user = JSON.parse(sessionStorage.getItem("user"));
-  const astrologerId = user?.id;
+  const astrologerId = JSON.parse(sessionStorage.getItem("user"))?.id;
 
-  // Load astrologer from sessionStorage first
+  // Fetch astrologer profile
   useEffect(() => {
-    if (user) {
-      setAstrologer((prev) => ({
-        ...prev,
-        name: user.name,
-        email: user.email,
-        totalTalkTime: user.totalTalkTime || "00:00",
-      }));
-    }
-  }, [user]);
+    const fetchAstrologer = async () => {
+      try {
+        const res = await axios.get(
+          `https://bhavanaastro.onrender.com/api/Consult-astrologers/${astrologerId}`
+        );
+        setAstrologer(res.data);
+      } catch (err) {
+        console.error("Failed to fetch astrologer data:", err);
+      }
+    };
 
-  // Save rates/online in DB
+    const fetchSession = async () => {
+      try {
+        const res = await axios.get(
+          `https://bhavanaastro.onrender.com/api/Consult-astrologers/session/${astrologerId}`
+        );
+        setTotalTalkTime(res.data.totalTalkTime); // expect "MM:SS" or "HH:MM:SS"
+      } catch (err) {
+        console.error("Failed to fetch session data:", err);
+      }
+    };
+
+    if (astrologerId) {
+      fetchAstrologer();
+      fetchSession();
+    }
+  }, [astrologerId]);
+
+  // Toggle online status
+  const handleToggle = (mode) => {
+    setAstrologer((prev) => ({
+      ...prev,
+      online: { ...prev.online, [mode]: !prev.online[mode] },
+    }));
+  };
+
+  // Update rates
+  const handleRateChange = (mode, value) => {
+    setAstrologer((prev) => ({
+      ...prev,
+      rates: { ...prev.rates, [mode]: Number(value) },
+    }));
+  };
+
+  // Save settings to DB
   const saveSettings = async () => {
     try {
       await axios.put(
@@ -33,12 +66,6 @@ export default function AstrologerDashboard() {
         { rates: astrologer.rates, online: astrologer.online }
       );
       alert("Settings updated successfully!");
-
-      // ✅ update sessionStorage also so reload keeps new state
-      sessionStorage.setItem(
-        "user",
-        JSON.stringify({ ...user, rates: astrologer.rates, online: astrologer.online })
-      );
     } catch (err) {
       console.error(err);
       alert("Failed to update settings.");
@@ -55,9 +82,7 @@ export default function AstrologerDashboard() {
       <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 mb-6 rounded-lg shadow-md">
         <p className="font-semibold text-lg">
           Total Talk Time:{" "}
-          <span className="text-purple-700">
-            {astrologer.totalTalkTime || "00:00"}
-          </span>
+          <span className="text-purple-700">{totalTalkTime}</span>
         </p>
       </div>
 
@@ -71,24 +96,14 @@ export default function AstrologerDashboard() {
             <input
               type="checkbox"
               checked={astrologer.online[mode]}
-              onChange={() =>
-                setAstrologer((prev) => ({
-                  ...prev,
-                  online: { ...prev.online, [mode]: !prev.online[mode] },
-                }))
-              }
+              onChange={() => handleToggle(mode)}
               className="w-5 h-5"
             />
             <label className="ml-4">Rate (₹):</label>
             <input
               type="number"
               value={astrologer.rates[mode]}
-              onChange={(e) =>
-                setAstrologer((prev) => ({
-                  ...prev,
-                  rates: { ...prev.rates, [mode]: Number(e.target.value) },
-                }))
-              }
+              onChange={(e) => handleRateChange(mode, e.target.value)}
               className="border rounded px-2 py-1 w-24"
             />
           </div>

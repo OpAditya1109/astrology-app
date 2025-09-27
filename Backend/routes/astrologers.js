@@ -76,7 +76,7 @@ router.get("/:id", async (req, res) => {
   }
 });
 // GET astrologer from session
-router.get("/session", async (req, res) => {
+router.get("/session/:id", async (req, res) => {
   try {
     const astrologerId = req.session.user?.id; // stored in session
     if (!astrologerId) return res.status(401).json({ error: "Not logged in" });
