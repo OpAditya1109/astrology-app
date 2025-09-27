@@ -71,10 +71,6 @@ const io = new Server(server, {
 // Attach io to app so routes can emit events
 app.set("io", io);
 
-// --- Active timers storage ---
-const activeTimers = {};
-
-// --- Handle socket connections ---
 
 
 
@@ -100,16 +96,6 @@ io.on("connection", (socket) => {
     }
     socket.to(roomId).emit("peer-joined", { socketId: socket.id });
 
-    // --- Send waiting system message ---
-// Instead of io.to(roomId).emit
-socket.emit("newMessage", {
-  sender: "system",
-  text: "⏳ Waiting for astrologer to start the consultation...",
-  system: true,
-  createdAt: new Date(),
-});
-
-
     // Load previous messages
     try {
       const consultation = await Consultation.findById(roomId);
@@ -121,7 +107,7 @@ socket.emit("newMessage", {
     }
   });
 
-  // --- Send chat message (registered once) ---
+  // --- Send chat message ---
   socket.on("sendMessage", async ({ roomId, sender, text, kundaliUrl, system }) => {
     try {
       const consultation = await Consultation.findById(roomId);
@@ -160,26 +146,11 @@ socket.emit("newMessage", {
   });
 
   // --- Join astrologer room ---
-const astrologerJoinedRooms = {};
-
-socket.on("joinAstrologerRoom", async (astrologerId) => {
-  socket.join(astrologerId);
-
-  const consultation = await Consultation.findOne({ astrologerId });
-  if (!consultation) return;
-  const roomId = consultation._id.toString();
-
-  if (!astrologerJoinedRooms[roomId]) {
-    socket.to(roomId).emit("newMessage", {
-      sender: "system",
-      text: "✅ Astrologer has joined. Consultation started!",
-      system: true,
-      createdAt: new Date(),
-    });
-    astrologerJoinedRooms[roomId] = true;
-  }
-});
-
+  socket.on("joinAstrologerRoom", async (astrologerId) => {
+    socket.join(astrologerId);
+    console.log(`📌 Astrologer ${socket.id} joined room: ${astrologerId}`);
+    // Removed "Astrologer has joined" message — frontend will handle display
+  });
 
   // --- Video call signaling ---
   socket.on("call-user", ({ to, offer }) => {
