@@ -10,7 +10,7 @@ export default function ChatPage() {
   const [modalImg, setModalImg] = useState(null);
   const [consultationEnded, setConsultationEnded] = useState(false);
   const [isEnding, setIsEnding] = useState(false);
-
+const [skipExtendPrompt, setSkipExtendPrompt] = useState(false);
   const [keyboardPadding, setKeyboardPadding] = useState(0);
   const [showExtendModal, setShowExtendModal] = useState(false);
   const [extendRate, setExtendRate] = useState(0);
@@ -137,21 +137,23 @@ setExtendRate(data.ratePerMinute || 0);
   }, []);
 
   // Show extend modal when time is almost up
-  useEffect(() => {
-    if (
-      secondsLeft !== null &&
-      secondsLeft <= 60 &&
-      !showExtendModal &&
-      !consultationEnded &&
-      extendRate > 0
-    ) {
-      const maxMinutes = Math.floor(userWallet / extendRate);
-      if (maxMinutes > 0) {
-        setExtendMinutes(Math.min(5, maxMinutes));
-        setShowExtendModal(true);
-      }
+useEffect(() => {
+  if (
+    secondsLeft !== null &&
+    secondsLeft <= 60 &&
+    !showExtendModal &&
+    !skipExtendPrompt &&
+    !consultationEnded &&
+    extendRate > 0
+  ) {
+    const maxMinutes = Math.floor(userWallet / extendRate);
+    if (maxMinutes > 0) {
+      setExtendMinutes(Math.min(5, maxMinutes));
+      setShowExtendModal(true);
     }
-  }, [secondsLeft, userWallet, showExtendModal, consultationEnded, extendRate]);
+  }
+}, [secondsLeft, userWallet, showExtendModal, consultationEnded, extendRate, skipExtendPrompt]);
+
 
   const endConsultation = async (alertMessage) => {
     setIsEnding(true);
@@ -189,7 +191,7 @@ setExtendRate(data.ratePerMinute || 0);
 
     try {
       const token = sessionStorage.getItem("token");
-      await fetch(`https://bhavanaastro.onrender.com/api/users/${userId}/deduct`, {
+      await fetch(`https://bhavanaastro.onrender.com/api/users/deduct`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({ amount: extendCost, consultationId: roomId }),
@@ -320,12 +322,15 @@ setExtendRate(data.ratePerMinute || 0);
               >
                 Yes, Extend
               </button>
-              <button
-                onClick={() => setShowExtendModal(false)}
-                className="bg-gray-400 text-white px-4 py-2 rounded-lg"
-              >
-                No, End
-              </button>
+             <button
+  onClick={() => {
+    setShowExtendModal(false);
+    setSkipExtendPrompt(true); // skip auto-popup
+  }}
+  className="bg-gray-400 text-white px-4 py-2 rounded-lg"
+>
+  No, End
+</button>
             </div>
           </div>
         </div>

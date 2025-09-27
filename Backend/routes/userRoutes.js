@@ -41,7 +41,7 @@ router.get("/profile", async (req, res) => {
 
 router.post("/deduct", async (req, res) => {
   try {
-    const userId = req.user.id; // JWT middleware required
+const { userId } = req.body;
     const { amount, consultationId } = req.body;
 
     if (!amount || amount <= 0) return res.status(400).json({ message: "Invalid amount" });
