@@ -15,7 +15,7 @@ router.get("/", async (req, res) => {
       limit = 6,
     } = req.query;
 
-    const query = {};
+    const query = { verified: true }; // ✅ only verified astrologers
 
     if (name) query.name = { $regex: name, $options: "i" };
     if (experience) query.experience = { $gte: Number(experience) };
@@ -30,7 +30,7 @@ router.get("/", async (req, res) => {
       .skip(skip)
       .limit(Number(limit))
       .sort({ experience: -1 })
- .select("name experience languagesKnown categories systemsKnown city country photo online rates"); // ✅ added online & rates
+      .select("name experience languagesKnown categories systemsKnown city country photo online rates");
 
     res.json({
       total,
@@ -44,6 +44,7 @@ router.get("/", async (req, res) => {
   }
 });
 
+// Update rates & online status
 router.put("/update-rates-online/:id", async (req, res) => {
   try {
     const { rates, online } = req.body;
@@ -58,13 +59,16 @@ router.put("/update-rates-online/:id", async (req, res) => {
     res.status(500).json({ error: "Server error" });
   }
 });
-// GET /api/astrologers/:id
+
+// GET single astrologer
 router.get("/:id", async (req, res) => {
   try {
-    const astrologer = await Astrologer.findById(req.params.id).select(
-      "name email experience languagesKnown categories systemsKnown city country photo rates online"
-    );
-    if (!astrologer) return res.status(404).json({ error: "Astrologer not found" });
+    const astrologer = await Astrologer.findOne({
+      _id: req.params.id,
+      verified: true, // ✅ only verified astrologer
+    }).select("name email experience languagesKnown categories systemsKnown city country photo rates online");
+
+    if (!astrologer) return res.status(404).json({ error: "Astrologer not found or not verified" });
     res.json(astrologer);
   } catch (error) {
     console.error(error);
