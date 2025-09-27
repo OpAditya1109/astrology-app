@@ -26,7 +26,7 @@ export default function ChatPage() {
   // Fetch consultation details and user wallet
   useEffect(() => {
     if (!roomId) return;
-
+  setSecondsLeft(50);
     const fetchConsultation = async () => {
       try {
         const res = await fetch(

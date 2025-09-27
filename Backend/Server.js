@@ -122,7 +122,7 @@ socket.on("sendMessage", async ({ roomId, sender, text, kundaliUrl, system }) =>
       delete waitingMessages[roomId]; // cleanup
     }
 
-    let secondsLeft = 5 * 60;
+    let secondsLeft = 60;
     io.to(roomId).emit("timerUpdate", { secondsLeft });
 
     activeTimers[roomId] = setInterval(() => {
