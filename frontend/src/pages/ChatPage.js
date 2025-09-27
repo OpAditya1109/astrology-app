@@ -24,7 +24,7 @@ export default function ChatPage() {
     if (!socket.connected) socket.connect();
 
     socket.emit("joinRoom", roomId);
-    socket.emit("startConsultationTimer", { roomId, durationMinutes: 5 });
+    // socket.emit("startConsultationTimer", { roomId, durationMinutes: 5 });
 
     const userData = JSON.parse(sessionStorage.getItem("user"));
     const introSentKey = `introSent_${roomId}`;

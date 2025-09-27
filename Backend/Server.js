@@ -132,8 +132,8 @@ socket.on("sendMessage", async ({ roomId, sender, text, kundaliUrl, system }) =>
     const newMessage = {
       sender,
       text,
-      kundaliUrl: kundaliUrl || null,   // ✅ include kundali url
-      system: system || false,         // ✅ support system intro messages
+      kundaliUrl: kundaliUrl || null,
+      system: system || false,
       senderModel: "User",
       createdAt: new Date(),
     };
@@ -142,8 +142,32 @@ socket.on("sendMessage", async ({ roomId, sender, text, kundaliUrl, system }) =>
     await consultation.save();
     io.to(roomId).emit("newMessage", newMessage);
 
-    // ✅ AI reply logic unchanged
+    // --- Start 5-min timer only when astrologer sends first message ---
     const astrologer = await Astrologer.findById(consultation.astrologerId);
+    if (
+      astrologer &&
+      sender === astrologer._id.toString() && // sender is astrologer
+      !activeTimers[roomId] // timer not already running
+    ) {
+      let secondsLeft = 5 * 60; // 5 minutes
+      console.log(`⏱️ Timer started for room ${roomId} because astrologer sent first message`);
+
+      io.to(roomId).emit("timerUpdate", { secondsLeft });
+
+      activeTimers[roomId] = setInterval(() => {
+        secondsLeft--;
+        io.to(roomId).emit("timerUpdate", { secondsLeft });
+
+        if (secondsLeft <= 0) {
+          clearInterval(activeTimers[roomId]);
+          delete activeTimers[roomId];
+          io.to(roomId).emit("timerEnded");
+          console.log(`⏰ Timer ended for room ${roomId}`);
+        }
+      }, 1000);
+    }
+
+    // ✅ AI reply logic (unchanged)
     if (astrologer && astrologer.isAI) {
       const aiReply = await getAstrologyResponse(text);
       const aiMessage = {
@@ -160,6 +184,7 @@ socket.on("sendMessage", async ({ roomId, sender, text, kundaliUrl, system }) =>
     console.error("❌ Error sending message:", error.message);
   }
 });
+
 
 
 
