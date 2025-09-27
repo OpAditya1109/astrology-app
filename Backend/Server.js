@@ -78,42 +78,37 @@ io.on("connection", (socket) => {
   console.log("⚡ New client connected:", socket.id);
 
   // --- Join user room ---
-  socket.on("joinRoom", async (roomId) => {
-    socket.join(roomId);
-    const consultation = await Consultation.findById(roomId);
+socket.on("joinRoom", async (roomId) => {
+  socket.join(roomId);
+  const consultation = await Consultation.findById(roomId);
 
-    if (consultation?.timer?.isRunning) {
-      // Calculate remaining seconds
-      const elapsed = Math.floor((Date.now() - new Date(consultation.timer.startTime)) / 1000);
-      let remaining = consultation.timer.durationMinutes * 60 - elapsed;
-      if (remaining < 0) remaining = 0;
+  if (consultation?.timer?.isRunning) {
+    // Use DB value
+    let remaining = consultation.timer.durationMinutes * 60 - Math.floor((Date.now() - new Date(consultation.timer.startTime)) / 1000);
 
-      io.to(socket.id).emit("timerUpdate", { secondsLeft: remaining });
+    // Save to activeTimers
+    activeTimers[roomId] = {
+      secondsLeft: remaining,
+      interval: setInterval(async () => {
+        activeTimers[roomId].secondsLeft--;
+        io.to(roomId).emit("timerUpdate", { secondsLeft: activeTimers[roomId].secondsLeft });
 
-      // Start interval if not already running in memory
-      if (!activeTimers[roomId]) {
-        activeTimers[roomId] = {
-          secondsLeft: remaining,
-          interval: setInterval(async () => {
-            activeTimers[roomId].secondsLeft--;
-            io.to(roomId).emit("timerUpdate", { secondsLeft: activeTimers[roomId].secondsLeft });
+        if (activeTimers[roomId].secondsLeft <= 0) {
+          clearInterval(activeTimers[roomId].interval);
+          delete activeTimers[roomId];
+          io.to(roomId).emit("timerEnded");
 
-            if (activeTimers[roomId].secondsLeft <= 0) {
-              clearInterval(activeTimers[roomId].interval);
-              delete activeTimers[roomId];
-              io.to(roomId).emit("timerEnded");
+          const c = await Consultation.findById(roomId);
+          if (c?.timer) {
+            c.timer.isRunning = false;
+            await c.save();
+          }
+        }
+      }, 1000)
+    };
+  }
+});
 
-              const c = await Consultation.findById(roomId);
-              if (c?.timer) {
-                c.timer.isRunning = false;
-                await c.save();
-              }
-            }
-          }, 1000)
-        };
-      }
-    }
-  });
 
   // --- Send message ---
   socket.on("sendMessage", async ({ roomId, sender, text, kundaliUrl, system }) => {
