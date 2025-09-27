@@ -2,10 +2,11 @@ const express = require("express");
 const router = express.Router();
 const Consultation = require("../models/Consultation");
 const User = require("../models/User");
-const { creditAdminWallet } = require("../controllers/adminController"); // Admin wallet helper
-const sendEmail = require("../utils/email"); // Import email helper
 const Astrologer = require("../models/Astrologer");
+const { creditAdminWallet } = require("../controllers/adminController");
+const sendEmail = require("../utils/email");
 
+// ➤ Create a new consultation
 router.post("/", async (req, res) => {
   try {
     const { userId, userName, astrologerId, topic, mode, rate, kundaliUrl } = req.body;
@@ -35,7 +36,7 @@ router.post("/", async (req, res) => {
       referenceId: astrologerId,
     });
 
-    // 4️⃣ Check if consultation already exists
+    // 4️⃣ Check if consultation exists
     let consultation = await Consultation.findOne({ userId, astrologerId });
     if (!consultation) {
       // 5️⃣ Create new consultation
@@ -48,12 +49,12 @@ router.post("/", async (req, res) => {
         messages: [],
         status: "ongoing",
         kundaliUrl: kundaliUrl || null,
+        rate: rate || 0, // <--- added rate field
       });
-
       await consultation.save();
     }
 
-    // --- EMIT SOCKET EVENT ---
+    // 6️⃣ Emit socket event
     const io = req.app.get("io");
     io.to(astrologerId.toString()).emit("newConsultation", {
       _id: consultation._id,
@@ -64,31 +65,11 @@ router.post("/", async (req, res) => {
       bookedAt: consultation.bookedAt,
       status: consultation.status,
       kundaliUrl: consultation.kundaliUrl,
+      rate: consultation.rate,
     });
 
-    // --- SEND EMAIL TO ASTROLOGER ---
-//     try {
-//       const astrologer = await Astrologer.findById(astrologerId);
-//       if (astrologer?.email) {
-//         const emailSubject = "New Consultation Booked";
-//         const emailBody = `
-// Hello ${astrologer.name},
-
-// A new ${mode} consultation has been booked.
-
-// Topic: "${topic}"
-// Booked At: ${consultation.bookedAt.toLocaleString()}
-
-// Please check your dashboard to start the consultation.
-
-// Thanks,
-// Bhavana Astro
-//         `;
-//         await sendEmail(astrologer.email, emailSubject, emailBody);
-//       }
-//     } catch (emailErr) {
-//       console.error("Failed to send email:", emailErr);
-//     }
+    // 7️⃣ Optional: send email to astrologer (commented)
+    // try { ... } catch (emailErr) { console.error(emailErr); }
 
     res.status(201).json(consultation);
   } catch (err) {
@@ -97,18 +78,15 @@ router.post("/", async (req, res) => {
   }
 });
 
-
 // ➤ Get all consultations for an astrologer
 router.get("/:astrologerId", async (req, res) => {
   try {
-    const consultations = await Consultation.find({
-      astrologerId: req.params.astrologerId,
-    })
+    const consultations = await Consultation.find({ astrologerId: req.params.astrologerId })
       .populate("userId", "name email dob")
       .sort({ bookedAt: -1 })
       .lean();
 
-    const mapped = consultations.map((c) => ({
+    const mapped = consultations.map(c => ({
       _id: c._id,
       userId: c.userId._id,
       userName: c.userId.name,
@@ -116,6 +94,7 @@ router.get("/:astrologerId", async (req, res) => {
       bookedAt: c.bookedAt,
       mode: c.mode,
       status: c.status || "ongoing",
+      rate: c.rate || 0, // include rate here
     }));
 
     res.json(mapped);
@@ -131,11 +110,12 @@ router.get("/details/:consultationId", async (req, res) => {
       .populate("userId", "name email dob")
       .populate("astrologerId", "name email");
 
-    if (!consultation) {
-      return res.status(404).json({ error: "Consultation not found" });
-    }
+    if (!consultation) return res.status(404).json({ error: "Consultation not found" });
 
-    res.json(consultation);
+    res.json({
+      ...consultation.toObject(),
+      ratePerMinute: consultation.rate, // for frontend extend modal
+    });
   } catch (err) {
     res.status(500).json({ error: "Failed to fetch consultation" });
   }
@@ -144,14 +124,17 @@ router.get("/details/:consultationId", async (req, res) => {
 // ➤ Add a new message to consultation
 router.post("/:consultationId/messages", async (req, res) => {
   try {
-    const { sender, text } = req.body;
+    const { sender, text, kundaliUrl, system } = req.body;
 
     const consultation = await Consultation.findById(req.params.consultationId);
-    if (!consultation) {
-      return res.status(404).json({ error: "Consultation not found" });
-    }
+    if (!consultation) return res.status(404).json({ error: "Consultation not found" });
 
-    consultation.messages.push({ sender, text });
+    consultation.messages.push({
+      sender,
+      text,
+      kundaliUrl: kundaliUrl || null,
+      system: system || false,
+    });
     await consultation.save();
 
     res.status(201).json(consultation.messages);
@@ -164,9 +147,7 @@ router.post("/:consultationId/messages", async (req, res) => {
 router.get("/:consultationId/messages", async (req, res) => {
   try {
     const consultation = await Consultation.findById(req.params.consultationId);
-    if (!consultation) {
-      return res.status(404).json({ error: "Consultation not found" });
-    }
+    if (!consultation) return res.status(404).json({ error: "Consultation not found" });
 
     res.json(consultation.messages);
   } catch (err) {
@@ -174,57 +155,16 @@ router.get("/:consultationId/messages", async (req, res) => {
   }
 });
 
-// DELETE consultation by ID
+// ➤ Delete consultation
 router.delete("/:id", async (req, res) => {
   try {
     const deleted = await Consultation.findByIdAndDelete(req.params.id);
-    if (!deleted) {
-      return res.status(404).json({ error: "Consultation not found" });
-    }
+    if (!deleted) return res.status(404).json({ error: "Consultation not found" });
+
     res.json({ message: "Consultation ended and deleted" });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 });
-
-// ➤ End consultation and update astrologer stats
-// router.post("/:id/end", async (req, res) => {
-//   try {
-//     const { duration } = req.body; // in minutes
-
-//     const consultation = await Consultation.findById(req.params.id);
-//     if (!consultation) return res.status(404).json({ error: "Consultation not found" });
-
-//     consultation.status = "completed";
-//     consultation.endTime = new Date();
-//     consultation.duration = duration;
-//     await consultation.save();
-
-//     // Update astrologer stats
-//     const astro = await Astrologer.findById(consultation.astrologerId);
-//     if (!astro) return res.status(404).json({ error: "Astrologer not found" });
-
-//     if (consultation.mode === "chat") {
-//       astro.stats.totalChats += 1;
-//       astro.stats.chatMinutes += duration;
-//     }
-//     if (consultation.mode === "video") {
-//       astro.stats.totalVideos += 1;
-//       astro.stats.videoMinutes += duration;
-//     }
-//     if (consultation.mode === "audio") {
-//       astro.stats.totalAudios += 1;
-//       astro.stats.audioMinutes += duration;
-//     }
-
-//     await astro.save();
-
-//     res.json({ message: "Consultation ended", consultation });
-//   } catch (err) {
-//     console.error(err);
-//     res.status(500).json({ error: "Failed to end consultation" });
-//   }
-// });
-
 
 module.exports = router;

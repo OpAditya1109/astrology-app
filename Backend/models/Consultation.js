@@ -47,13 +47,19 @@ const consultationSchema = new mongoose.Schema({
   messages: [
     {
       sender: { type: mongoose.Schema.Types.ObjectId, refPath: 'messages.senderModel' },
-      senderModel: { type: String, enum: ['User', 'Astrologer'] }, // track sender type
+      senderModel: { type: String, enum: ['User', 'Astrologer'] },
       text: String,
-      kundaliUrl: { type: String, default: null }, // optional kundali per message (for system msgs)
-      system: { type: Boolean, default: false }, // to identify system messages
+      kundaliUrl: { type: String, default: null },
+      system: { type: Boolean, default: false },
       createdAt: { type: Date, default: Date.now },
     }
-  ]
+  ],
+
+  // ✅ Add rate per minute for this consultation
+  rate: {
+    type: Number,
+    default: 0,
+  }
 });
 
 // ✅ Prevent duplicate consultation rooms between same user & astrologer
