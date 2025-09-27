@@ -42,49 +42,36 @@ router.get("/profile", async (req, res) => {
 
 router.post("/deduct", async (req, res) => {
   try {
-    // Get userId from session
     const userId = req.session.userId;
     if (!userId) return res.status(401).json({ message: "User not logged in" });
 
     const { amount, consultationId, extendMinutes } = req.body;
     if (!amount || amount <= 0) return res.status(400).json({ message: "Invalid amount" });
+    if (extendMinutes && extendMinutes <= 0) return res.status(400).json({ message: "Invalid extend minutes" });
 
     const user = await User.findById(userId);
     if (!user) return res.status(404).json({ message: "User not found" });
+    if (user.wallet.balance < amount) return res.status(400).json({ message: "Insufficient balance" });
 
-    if (user.wallet.balance < amount)
-      return res.status(400).json({ message: "Insufficient balance" });
-
-    // Deduct wallet balance
     user.wallet.balance -= amount;
-    user.wallet.transactions.push({
-      type: "debit",
-      amount,
-      date: new Date(),
-      consultationId: consultationId || null,
-    });
-
+    user.wallet.transactions.push({ type: "debit", amount, date: new Date(), consultationId: consultationId || null });
     await user.save();
 
-    // --- Extend consultation timer in DB ---
+    let updatedTimer = null;
     if (consultationId && extendMinutes) {
       const consultation = await Consultation.findById(consultationId);
       if (consultation) {
-        // If timer exists, extend it; otherwise, create it
         if (consultation.timer?.isRunning) {
           consultation.timer.durationMinutes += extendMinutes;
         } else {
-          consultation.timer = {
-            startTime: new Date(),
-            durationMinutes: extendMinutes,
-            isRunning: true,
-          };
+          consultation.timer = { startTime: new Date(), durationMinutes: extendMinutes, isRunning: true };
         }
         await consultation.save();
+        updatedTimer = consultation.timer;
       }
     }
 
-    res.json({ balance: user.wallet.balance, transactions: user.wallet.transactions });
+    res.json({ balance: user.wallet.balance, transactions: user.wallet.transactions, consultationTimer: updatedTimer });
   } catch (err) {
     console.error("Deduct route error:", err);
     res.status(500).json({ error: err.message });
