@@ -88,7 +88,7 @@ socket.on("joinRoom", async (roomId) => {
   const consultation = await Consultation.findById(roomId);
   if (consultation) {
     const waitingMessage = {
-      sender: "system",
+      sender: "null",
       text: "⏳ Waiting for astrologer to start the consultation...",
       system: true,
       createdAt: new Date(),
