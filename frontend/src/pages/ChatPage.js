@@ -29,7 +29,7 @@ export default function ChatPage() {
   setSecondsLeft(50);
     const fetchConsultation = async () => {
       try {
-       const res = await fetch(`https://bhavanaastro.onrender.com/api/consultations/${roomId}/details`);
+       const res = await fetch(`https://bhavanaastro.onrender.com/api/consultations/details/${roomId}`);
 if (!res.ok) {
   console.error("Failed to fetch consultation details", res.status, res.statusText);
   return;
