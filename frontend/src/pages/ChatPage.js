@@ -181,30 +181,37 @@ useEffect(() => {
     }, 3000);
   };
 
-  const extendConsultation = async () => {
-    const extendCost = extendMinutes * extendRate;
-    if (userWallet < extendCost) {
-      alert(`Insufficient balance. You have ₹${userWallet}`);
-      setShowExtendModal(false);
-      return;
+const extendConsultation = async () => {
+  const extendCost = extendMinutes * extendRate;
+
+  if (userWallet < extendCost) {
+    alert(`Insufficient balance. You have ₹${userWallet}`);
+    setShowExtendModal(false);
+    return;
+  }
+
+  try {
+    const res = await fetch(`https://bhavanaastro.onrender.com/api/users/deduct`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ amount: extendCost, consultationId: roomId }),
+    });
+
+    if (!res.ok) {
+      const errorData = await res.json();
+      throw new Error(errorData.message || "Deduction failed");
     }
 
-    try {
-      const token = sessionStorage.getItem("token");
-      await fetch(`https://bhavanaastro.onrender.com/api/users/deduct`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ amount: extendCost, consultationId: roomId }),
-      });
+    const data = await res.json();
+    setUserWallet(data.balance); // update wallet
+    socket.emit("startConsultationTimer", { roomId, durationMinutes: extendMinutes });
+    setShowExtendModal(false);
+  } catch (err) {
+    console.error("Failed to extend consultation:", err);
+    alert("Failed to extend consultation. Try again.");
+  }
+};
 
-      setUserWallet((prev) => prev - extendCost);
-      socket.emit("startConsultationTimer", { roomId, durationMinutes: extendMinutes });
-      setShowExtendModal(false);
-    } catch (err) {
-      console.error("Failed to extend consultation:", err);
-      alert("Failed to extend consultation. Try again.");
-    }
-  };
 
   const sendMessage = () => {
     if (!input.trim() || consultationEnded) return;

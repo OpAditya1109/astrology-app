@@ -1,6 +1,7 @@
 const express = require("express");
 const { registerUser } = require("../controllers/userController");
 const User = require("../models/User");
+const Consultation = require("../models/Consultation");
 
 const router = express.Router();
 
@@ -41,9 +42,11 @@ router.get("/profile", async (req, res) => {
 
 router.post("/deduct", async (req, res) => {
   try {
-const { userId } = req.body;
-    const { amount, consultationId } = req.body;
+    // Get userId from session
+    const userId = req.session.userId;
+    if (!userId) return res.status(401).json({ message: "User not logged in" });
 
+    const { amount, consultationId, extendMinutes } = req.body;
     if (!amount || amount <= 0) return res.status(400).json({ message: "Invalid amount" });
 
     const user = await User.findById(userId);
@@ -52,9 +55,8 @@ const { userId } = req.body;
     if (user.wallet.balance < amount)
       return res.status(400).json({ message: "Insufficient balance" });
 
-    // Deduct balance
+    // Deduct wallet balance
     user.wallet.balance -= amount;
-    // Add transaction history
     user.wallet.transactions.push({
       type: "debit",
       amount,
@@ -64,9 +66,29 @@ const { userId } = req.body;
 
     await user.save();
 
+    // --- Extend consultation timer in DB ---
+    if (consultationId && extendMinutes) {
+      const consultation = await Consultation.findById(consultationId);
+      if (consultation) {
+        // If timer exists, extend it; otherwise, create it
+        if (consultation.timer?.isRunning) {
+          consultation.timer.durationMinutes += extendMinutes;
+        } else {
+          consultation.timer = {
+            startTime: new Date(),
+            durationMinutes: extendMinutes,
+            isRunning: true,
+          };
+        }
+        await consultation.save();
+      }
+    }
+
     res.json({ balance: user.wallet.balance, transactions: user.wallet.transactions });
   } catch (err) {
+    console.error("Deduct route error:", err);
     res.status(500).json({ error: err.message });
   }
 });
+
 module.exports = router;
