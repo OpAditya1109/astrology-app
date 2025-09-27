@@ -137,20 +137,25 @@ setExtendRate(data.ratePerMinute || 0);
   }, []);
 
   // Show extend modal when time is almost up
+// Show extend modal logic
 useEffect(() => {
-  if (
-    secondsLeft !== null &&
-    secondsLeft <= 60 &&
-    !showExtendModal &&
-    !skipExtendPrompt &&
-    !consultationEnded &&
-    extendRate > 0
-  ) {
-    const maxMinutes = Math.floor(userWallet / extendRate);
-    if (maxMinutes > 0) {
-      setExtendMinutes(Math.min(5, maxMinutes));
-      setShowExtendModal(true);
-    }
+  if (consultationEnded || extendRate <= 0) return;
+
+  const maxAffordableMinutes = Math.floor(userWallet / extendRate);
+  if (maxAffordableMinutes <= 0) return; // can't afford anything
+
+  // Show modal at 60s if not already shown or skipped
+  if (secondsLeft <= 60 && !showExtendModal && !skipExtendPrompt) {
+    const extension = Math.min(maxAffordableMinutes, 5);
+    setExtendMinutes(extension);
+    setShowExtendModal(true);
+  }
+
+  // Show modal again at 10s if user hasn't chosen
+  if (secondsLeft <= 10 && !showExtendModal) {
+    const extension = Math.min(maxAffordableMinutes, 5);
+    setExtendMinutes(extension);
+    setShowExtendModal(true);
   }
 }, [secondsLeft, userWallet, showExtendModal, consultationEnded, extendRate, skipExtendPrompt]);
 
@@ -205,15 +210,17 @@ const extendConsultation = async () => {
     const data = await res.json();
     setUserWallet(data.balance); // update wallet
 
-    // Tell server to extend timer in memory (Option B)
+    // Tell server to extend timer
     socket.emit("extendConsultationTimer", { roomId, extendMinutes });
 
     setShowExtendModal(false);
+    setSkipExtendPrompt(false); // allow future extensions if time comes again
   } catch (err) {
     console.error("Failed to extend consultation:", err);
     alert("Failed to extend consultation. Try again.");
   }
 };
+
 
 
 
@@ -333,15 +340,16 @@ const extendConsultation = async () => {
               >
                 Yes, Extend
               </button>
-             <button
+<button
   onClick={() => {
     setShowExtendModal(false);
-    setSkipExtendPrompt(true); // skip auto-popup
+    setSkipExtendPrompt(true); // only skip this popup, can show later
   }}
   className="bg-gray-400 text-white px-4 py-2 rounded-lg"
 >
   No, End
 </button>
+
             </div>
           </div>
         </div>
