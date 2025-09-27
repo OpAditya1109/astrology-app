@@ -67,7 +67,8 @@ const consultationSchema = new mongoose.Schema({
     durationMinutes: { type: Number, default: 5 }, // total duration in minutes
     isRunning: { type: Boolean, default: false },
   },
-  talkSeconds: { type: Number, default: 0 },
+talkSeconds: { type: Number, default: 0 }, // total actual talked time in seconds
+
 
 });
 
