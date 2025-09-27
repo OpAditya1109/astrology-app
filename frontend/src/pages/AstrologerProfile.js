@@ -89,20 +89,36 @@ export default function AstrologerProfile() {
 const shareProfile = async () => {
   const profileUrl = `${window.location.origin}/astrologer/${id}`;
 
-  if (navigator.share) {
-    // If the browser supports native sharing
+  if (navigator.canShare && navigator.canShare({ files: [] })) {
+    try {
+      const response = await fetch(astrologer.photo);
+      const blob = await response.blob();
+      const file = new File([blob], "astrologer.jpg", { type: blob.type });
+
+      await navigator.share({
+        title: "Check out this astrologer!",
+        text: `I found this astrologer on Bhavana Astro: ${astrologer.name}`,
+        url: profileUrl,
+        files: [file],
+      });
+
+      console.log("Profile shared successfully with image!");
+    } catch (err) {
+      console.error("Error sharing profile with image:", err);
+    }
+  } else if (navigator.share) {
+    // Fallback: share URL + text only
     try {
       await navigator.share({
         title: "Check out this astrologer!",
         text: `I found this astrologer on Bhavana Astro: ${astrologer.name}`,
         url: profileUrl,
       });
-      console.log("Profile shared successfully!");
     } catch (err) {
       console.error("Error sharing profile:", err);
     }
   } else {
-    // Fallback: copy to clipboard
+    // Fallback: copy URL
     try {
       await navigator.clipboard.writeText(profileUrl);
       setCopied(true);
@@ -114,6 +130,7 @@ const shareProfile = async () => {
     }
   }
 };
+
 
 
   if (loading) return <p className="text-gray-500">Loading profile...</p>;
