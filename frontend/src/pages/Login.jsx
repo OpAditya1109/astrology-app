@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { useNavigate, Link } from "react-router-dom";
+import Swal from "sweetalert2"; // ✅ Import
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -8,7 +9,6 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  // Auto-redirect if already logged in
   useEffect(() => {
     const storedUser =
       JSON.parse(sessionStorage.getItem("user")) ||
@@ -34,7 +34,6 @@ export default function Login() {
         { email, password }
       );
 
-      // Save user + token in sessionStorage & localStorage
       const userData = {
         token: data.token,
         id: data.user._id || data.user.id,
@@ -51,9 +50,23 @@ export default function Login() {
       sessionStorage.setItem("user", JSON.stringify(userData));
       localStorage.setItem("user", JSON.stringify(userData));
 
-      redirectByRole(userData.role);
+      // ✅ Success Popup
+      Swal.fire({
+        title: "Login Successful 🎉",
+        text: `Welcome back, ${userData.name}!`,
+        icon: "success",
+        confirmButtonColor: "#2563eb",
+      }).then(() => {
+        redirectByRole(userData.role);
+      });
     } catch (err) {
-      alert(err.response?.data?.message || "Login failed");
+      // ❌ Error Popup
+      Swal.fire({
+        title: "Login Failed",
+        text: err.response?.data?.message || "Invalid credentials",
+        icon: "error",
+        confirmButtonColor: "#ef4444",
+      });
     } finally {
       setLoading(false);
     }
@@ -105,7 +118,6 @@ export default function Login() {
           </div>
         )}
 
-        {/* Links Section */}
         <div className="mt-6 text-center space-y-2">
           <p className="text-sm">
             New account?{" "}
