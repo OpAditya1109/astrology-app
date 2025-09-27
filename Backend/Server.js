@@ -130,12 +130,15 @@ io.on("connection", (socket) => {
   });
 
   // --- Extend consultation timer ---
-  socket.on("extendConsultationTimer", ({ roomId, extendMinutes }) => {
-    if (!activeTimers[roomId]) return; // Timer must be running
-    const addSeconds = extendMinutes * 60;
-    activeTimers[roomId].secondsLeft += addSeconds;
-    io.to(roomId).emit("timerUpdate", { secondsLeft: activeTimers[roomId].secondsLeft });
-  });
+socket.on("extendConsultationTimer", ({ roomId, extendMinutes }) => {
+  if (!activeTimers[roomId]) return; // Timer must be running
+  const addSeconds = extendMinutes * 60;
+
+  activeTimers[roomId].secondsLeft += addSeconds;
+  activeTimers[roomId].totalAllocated += addSeconds; // ✅ also track allocated time
+
+  io.to(roomId).emit("timerUpdate", { secondsLeft: activeTimers[roomId].secondsLeft });
+});
 
   // --- Timer manual start ---
   socket.on("startConsultationTimer", ({ roomId, durationMinutes = 5 }) => {
@@ -214,15 +217,16 @@ async function finalizeConsultation(roomId, endedByTimer = false) {
     const timer = activeTimers[roomId];
     if (!timer) return;
 
-    // --- Actual talked seconds ---
+    // calculate elapsed
+    const elapsed = Math.floor((Date.now() - timer.startTime) / 1000);
+
     let talkedSeconds;
     if (endedByTimer) {
-      // Full time consumed
+      // if auto-ended → full allocated time is used
       talkedSeconds = timer.totalAllocated;
     } else {
-      // Calculate actual usage based on startTime
-      const elapsed = Math.floor((Date.now() - timer.startTime) / 1000);
-      talkedSeconds = Math.min(elapsed, timer.totalAllocated); // don’t exceed purchased time
+      // if manually stopped → only count actual elapsed
+      talkedSeconds = Math.min(elapsed, timer.totalAllocated);
     }
 
     // Save consultation data
@@ -237,7 +241,7 @@ async function finalizeConsultation(roomId, endedByTimer = false) {
       await astro.save();
     }
 
-    // ⚡ Handle unused minutes → push to Admin
+    // Calculate unused
     const unused = timer.totalAllocated - talkedSeconds;
     if (unused > 0) {
       await Admin.updateOne({}, { $inc: { remainingSeconds: unused } });
