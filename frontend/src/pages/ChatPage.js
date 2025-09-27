@@ -20,7 +20,6 @@ export default function ChatPage() {
 
   useEffect(() => {
     if (!roomId) return;
-
     if (!socket.connected) socket.connect();
 
     socket.emit("joinRoom", roomId);
@@ -135,7 +134,7 @@ export default function ChatPage() {
   };
 
   const formatTime = (sec) => {
-    if (sec === null) return "Waiting..."; // timer not started
+    if (sec === null) return "Waiting...";
     const m = Math.floor(sec / 60).toString().padStart(2, "0");
     const s = (sec % 60).toString().padStart(2, "0");
     return `${m}:${s}`;
@@ -143,9 +142,18 @@ export default function ChatPage() {
 
   return (
     <div className="h-screen flex flex-col bg-gray-50">
+      {/* Header with end button */}
       <header className="bg-purple-700 text-white p-4 text-lg font-semibold flex justify-between items-center">
         <span>Chat Room ({consultationId})</span>
-        <span className="bg-purple-900 px-3 py-1 rounded">{formatTime(secondsLeft)}</span>
+        <div className="flex items-center gap-2">
+          <span className="bg-purple-900 px-3 py-1 rounded">{formatTime(secondsLeft)}</span>
+          <button
+            onClick={() => endConsultation("❌ Consultation ended by user")}
+            className="bg-red-600 hover:bg-red-700 px-3 py-1 rounded text-white text-sm"
+          >
+            End Consultation
+          </button>
+        </div>
       </header>
 
       <div
