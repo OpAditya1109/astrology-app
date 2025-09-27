@@ -191,18 +191,11 @@ const extendConsultation = async () => {
   }
 
   try {
-   const currentUser = JSON.parse(sessionStorage.getItem("user"));
-const res = await fetch(`https://bhavanaastro.onrender.com/api/users/deduct`, {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({
-    userId: currentUser.id,   // ✅ must be here
-    amount: extendCost,
-    consultationId: roomId,
-    extendMinutes
-  }),
-});
-
+    const res = await fetch(`https://bhavanaastro.onrender.com/api/users/deduct`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userId: currentUser.id, amount: extendCost, consultationId: roomId, extendMinutes }),
+    });
 
     if (!res.ok) {
       const errorData = await res.json();
@@ -211,13 +204,17 @@ const res = await fetch(`https://bhavanaastro.onrender.com/api/users/deduct`, {
 
     const data = await res.json();
     setUserWallet(data.balance); // update wallet
-    socket.emit("startConsultationTimer", { roomId, durationMinutes: extendMinutes });
+
+    // Tell server to extend timer in memory (Option B)
+    socket.emit("extendConsultationTimer", { roomId, extendMinutes });
+
     setShowExtendModal(false);
   } catch (err) {
     console.error("Failed to extend consultation:", err);
     alert("Failed to extend consultation. Try again.");
   }
 };
+
 
 
   const sendMessage = () => {

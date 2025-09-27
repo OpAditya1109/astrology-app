@@ -42,7 +42,6 @@ router.get("/profile", async (req, res) => {
 
 router.post("/deduct", async (req, res) => {
   try {
-    // ✅ Get userId from request body
     const { userId, amount, consultationId, extendMinutes } = req.body;
 
     if (!userId) return res.status(401).json({ message: "User not logged in" });
@@ -63,15 +62,15 @@ router.post("/deduct", async (req, res) => {
     });
     await user.save();
 
-    // Extend consultation timer if needed
+    // Update DB timer for reference only
     let updatedTimer = null;
     if (consultationId && extendMinutes) {
       const consultation = await Consultation.findById(consultationId);
       if (consultation) {
-        if (consultation.timer?.isRunning) {
-          consultation.timer.durationMinutes += extendMinutes;
-        } else {
+        if (!consultation.timer) {
           consultation.timer = { startTime: new Date(), durationMinutes: extendMinutes, isRunning: true };
+        } else {
+          consultation.timer.durationMinutes += extendMinutes; // just update DB
         }
         await consultation.save();
         updatedTimer = consultation.timer;
