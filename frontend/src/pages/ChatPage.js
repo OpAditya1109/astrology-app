@@ -329,15 +329,19 @@ const extendConsultation = async () => {
               Extend {extendMinutes} min at ₹{extendRate}/min = ₹{extendMinutes * extendRate}?
             </p>
             <div className="flex justify-center gap-4">
-            <button
+           <button
   onClick={() => {
-    setShowExtendModal(false);   // 👈 close immediately
-    extendConsultation();        // process in background
+    setShowExtendModal(false);     // close immediately
+    setSkipExtendPrompt(true);     // 👈 prevent auto-popup reopening
+    extendConsultation();
+    // reset skip after 10s, so future prompts can still appear
+    setTimeout(() => setSkipExtendPrompt(false), 10000);
   }}
   className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700"
 >
   Yes, Extend
 </button>
+
 
 
              <button
