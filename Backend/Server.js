@@ -87,17 +87,17 @@ socket.on("joinRoom", async (roomId) => {
 
   const consultation = await Consultation.findById(roomId);
   if (consultation) {
-    const waitingMessage = {
-      sender: "null",
-      text: "⏳ Waiting for astrologer to start the consultation...",
-      system: true,
-      createdAt: new Date(),
-    };
-    consultation.messages.push(waitingMessage);
-    await consultation.save();
-    io.to(roomId).emit("newMessage", waitingMessage);
+    // const waitingMessage = {
+    //   sender: "null",
+    //   text: "⏳ Waiting for astrologer to start the consultation...",
+    //   system: true,
+    //   createdAt: new Date(),
+    // };
+    // consultation.messages.push(waitingMessage);
+    // await consultation.save();
+    // io.to(roomId).emit("newMessage", waitingMessage);
 
-    waitingMessages[roomId] = waitingMessage._id; // store globally
+    // waitingMessages[roomId] = waitingMessage._id; // store globally
   }
 });
 
