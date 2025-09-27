@@ -15,7 +15,7 @@ router.get("/", async (req, res) => {
       limit = 6,
     } = req.query;
 
-    const query = { verified: true }; // ✅ only verified astrologers
+    const query = { isVerified: true }; // ✅ only verified astrologers
 
     if (name) query.name = { $regex: name, $options: "i" };
     if (experience) query.experience = { $gte: Number(experience) };
