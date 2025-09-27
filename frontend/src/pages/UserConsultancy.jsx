@@ -5,10 +5,6 @@ import { useNavigate } from "react-router-dom";
 export default function UserConsultancy() {
   const [consultations, setConsultations] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [startingConsultationId, setStartingConsultationId] = useState(null);
-  const [activeTab, setActiveTab] = useState("Chat"); // "Chat", "Video", "Voice"
-  const [userBalance, setUserBalance] = useState(0); // user wallet balance
-
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -26,203 +22,87 @@ export default function UserConsultancy() {
       }
     };
 
-    const fetchUserBalance = async () => {
-      const currentUser = JSON.parse(sessionStorage.getItem("user"));
-      if (!currentUser?.id) {
-        navigate("/login");
-        return;
-      }
-      try {
-        const res = await axios.get(
-          `https://bhavanaastro.onrender.com/api/users/${currentUser.id}/details`
-        );
-        setUserBalance(res.data.wallet?.balance || 0);
-      } catch (err) {
-        console.error("Error fetching user balance:", err);
-      }
-    };
-
     fetchAstrologers();
-    fetchUserBalance();
-  }, [navigate]);
-
-  const startConsultation = async (astrologerId, mode, route, rate) => {
-    const currentUser = JSON.parse(sessionStorage.getItem("user"));
-    if (!currentUser?.id) {
-      alert("Please login first.");
-      navigate("/login");
-      return;
-    }
-
-    const first5MinCost = rate * 5; // calculate first 5 minutes cost
-
-    // Check wallet balance
-    if (userBalance < first5MinCost) {
-      alert(
-        `Insufficient wallet balance. First 5 min cost: ₹${first5MinCost}`
-      );
-      navigate("/user/wallet");
-      return;
-    }
-
-    setStartingConsultationId(astrologerId);
-
-    try {
-      const token = sessionStorage.getItem("token");
-
-      const res = await axios.post(
-        "https://bhavanaastro.onrender.com/api/consultations",
-        {
-          userId: currentUser.id,
-          astrologerId,
-          topic: mode === "Chat" ? "General Chat" : `${mode} Call`,
-          mode,
-          rate, // send rate so backend can calculate first5MinCost
-          kundaliUrl: currentUser.kundaliUrl || null,
-        },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-
-      // Update user balance in frontend immediately
-      setUserBalance((prev) => prev - first5MinCost);
-
-      navigate(`${route}/${res.data._id}`, { state: { mode } });
-    } catch (err) {
-      console.error(`Error starting ${mode}:`, err);
-      alert(`Failed to start ${mode}. Try again.`);
-    } finally {
-      setStartingConsultationId(null);
-    }
-  };
-
-  // Filter astrologers based on active tab
-  const filtered = consultations.filter((c) => {
-    if (activeTab === "Chat") return c.online?.chat;
-    if (activeTab === "Video") return c.online?.video;
-    if (activeTab === "Voice") return c.online?.audio;
-    return true;
-  });
+  }, []);
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <h2 className="text-2xl font-semibold mb-6 text-purple-700">
-        Consultations
+    <div className="min-h-screen bg-gray-100 p-8">
+      <h2 className="text-4xl font-bold mb-10 text-purple-700 text-center">
+        Find Your Astrologer
       </h2>
 
-      {/* Tabs */}
-      <div className="flex gap-4 mb-6">
-        {["Chat", "Video", "Voice"].map((tab) => (
-          <button
-            key={tab}
-            onClick={() => setActiveTab(tab)}
-            className={`px-4 py-2 rounded-lg font-semibold ${
-              activeTab === tab
-                ? "bg-purple-600 text-white"
-                : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-            }`}
-          >
-            {tab}
-          </button>
-        ))}
-      </div>
-
       {loading ? (
-        <p className="text-gray-500">Loading astrologers...</p>
-      ) : filtered.length === 0 ? (
-        <p className="text-gray-500">
-          No astrologers available for {activeTab}.
-        </p>
+        <p className="text-gray-500 text-center text-lg">Loading astrologers...</p>
+      ) : consultations.length === 0 ? (
+        <p className="text-gray-500 text-center text-lg">No astrologers available.</p>
       ) : (
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filtered.map((c) => (
+        <div className="grid sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          {consultations.map((astrologer) => (
             <div
-              key={c._id}
-              className="bg-white shadow-md rounded-2xl p-6 hover:shadow-xl transition flex flex-col items-center text-center"
+              key={astrologer._id}
+              className="bg-white rounded-3xl shadow-lg hover:shadow-2xl transition duration-300 p-6 flex flex-col items-center text-center"
             >
-              <img
-                src={c.photo || "https://via.placeholder.com/150"}
-                alt={c.name}
-                className="w-24 h-24 rounded-full object-cover mb-4 border-4 border-purple-200"
-              />
-              <h3 className="text-xl font-bold text-purple-700 mb-1">
-                {c.name}
-              </h3>
-              <p className="text-sm text-gray-500 mb-2">
-                {c.systemsKnown?.join(", ") || ""}
-              </p>
-              <p className="text-gray-500 mb-1">Exp - {c.experience} yrs</p>
-              <p className="text-gray-500 mb-1">
-                {c.languagesKnown?.join(", ") || ""}
-              </p>
-              <p className="text-gray-500 mb-4">
-                {c.categories?.join(", ") || ""}
-              </p>
-
-              {/* Buttons for all three modes */}
-              <div className="flex gap-2 flex-wrap justify-center">
-                <button
-                  onClick={() =>
-                    startConsultation(
-                      c._id,
-                      "Chat",
-                      "/chat",
-                      c.rates?.chat || 0
-                    )
-                  }
-                  disabled={!c.online?.chat || startingConsultationId === c._id}
-                  className={`px-4 py-2 text-white rounded-lg ${
-                    !c.online?.chat
-                      ? "bg-gray-400 cursor-not-allowed"
-                      : "bg-purple-600 hover:bg-purple-700"
+              {/* Profile Picture */}
+              <div className="relative">
+                <img
+                  src={astrologer.photo || "https://via.placeholder.com/150"}
+                  alt={astrologer.name}
+                  className="w-28 h-28 rounded-full object-cover border-4 border-purple-300 shadow-md"
+                />
+                {/* Online Badge */}
+                <span
+                  className={`absolute bottom-0 right-0 w-5 h-5 rounded-full border-2 border-white ${
+                    astrologer.online?.chat ? "bg-green-500" : "bg-red-500"
                   }`}
-                >
-                  Chat ₹{c.rates?.chat || 0}
-                </button>
-
-                <button
-                  onClick={() =>
-                    startConsultation(
-                      c._id,
-                      "Video",
-                      "/video-call",
-                      c.rates?.video || 0
-                    )
-                  }
-                  disabled={!c.online?.video || startingConsultationId === c._id}
-                  className={`px-4 py-2 text-white rounded-lg ${
-                    !c.online?.video
-                      ? "bg-gray-400 cursor-not-allowed"
-                      : "bg-green-600 hover:bg-green-700"
-                  }`}
-                >
-                  Video ₹{c.rates?.video || 0}
-                </button>
-
-                <button
-                  onClick={() =>
-                    startConsultation(
-                      c._id,
-                      "Audio",
-                      "/video-call",
-                      c.rates?.audio || 0
-                    )
-                  }
-                  disabled={!c.online?.audio || startingConsultationId === c._id}
-                  className={`px-4 py-2 text-white rounded-lg ${
-                    !c.online?.audio
-                      ? "bg-gray-400 cursor-not-allowed"
-                      : "bg-blue-600 hover:bg-blue-700"
-                  }`}
-                >
-                  Voice ₹{c.rates?.audio || 0}
-                </button>
-                 <button
-    onClick={() => navigate(`/astrologer/${c._id}`)}
-    className="px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600"
-  >
-    View Profile
-  </button>
+                  title={astrologer.online?.chat ? "Online" : "Offline"}
+                />
               </div>
+
+              {/* Name & Experience */}
+              <h3 className="text-2xl font-semibold text-purple-700 mt-4 mb-1">
+                {astrologer.name}
+              </h3>
+              <p className="text-gray-500 mb-2">{astrologer.experience} yrs experience</p>
+
+              {/* Systems & Languages */}
+              <p className="text-gray-500 text-sm mb-1">
+                <strong>Systems:</strong> {astrologer.systemsKnown?.join(", ") || "N/A"}
+              </p>
+              <p className="text-gray-500 text-sm mb-1">
+                <strong>Languages:</strong> {astrologer.languagesKnown?.join(", ") || "N/A"}
+              </p>
+
+              {/* Categories */}
+              <p className="text-gray-500 text-sm mb-3">
+                <strong>Specialty:</strong> {astrologer.categories?.join(", ") || "N/A"}
+              </p>
+
+              {/* Rates */}
+              <div className="flex gap-3 mb-4 flex-wrap justify-center">
+                {astrologer.rates?.chat && (
+                  <span className="px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-sm font-medium">
+                    💬 ₹{astrologer.rates.chat}/min
+                  </span>
+                )}
+                {astrologer.rates?.video && (
+                  <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-medium">
+                    📹 ₹{astrologer.rates.video}/min
+                  </span>
+                )}
+                {astrologer.rates?.audio && (
+                  <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-medium">
+                    🎙 ₹{astrologer.rates.audio}/min
+                  </span>
+                )}
+              </div>
+
+              {/* View Profile Button */}
+              <button
+                onClick={() => navigate(`/astrologer/${astrologer._id}`)}
+                className="mt-auto px-6 py-2 bg-yellow-500 text-white font-semibold rounded-xl hover:bg-yellow-600 transition"
+              >
+                View Profile
+              </button>
             </div>
           ))}
         </div>
