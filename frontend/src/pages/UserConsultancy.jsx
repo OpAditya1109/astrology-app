@@ -216,6 +216,12 @@ export default function UserConsultancy() {
                 >
                   Voice ₹{c.rates?.audio || 0}
                 </button>
+                 <button
+    onClick={() => navigate(`/astrologer/${c._id}`)}
+    className="px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600"
+  >
+    View Profile
+  </button>
               </div>
             </div>
           ))}

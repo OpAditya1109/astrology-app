@@ -4,6 +4,7 @@ import ThankYouPage from "./pages/ThankYou";
 import ScrollToTop from "./ScrollToTop";
 import UserRegister from "./pages/UserRegister";
 import Login from "./pages/Login";
+import AstrologerProfile from "./pages/AstrologerProfile";  
 import AstrologerRegister from "./pages/AstrologerRegister";
 import Navbar from "./components/Navbar";
 import Consultancy from "./pages/Consultancy";
@@ -74,6 +75,7 @@ function App() {
 
           <Route path="/" element={<Home />} />
           <Route path="/thank-you" element={<ThankYouPage />} />
+           <Route path="/astrologer/:id" element={<AstrologerProfile />} />
            <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password/:token" element={<ResetPassword />} />
             <Route path="/free-kundali" element={<FreeKundali />} />
