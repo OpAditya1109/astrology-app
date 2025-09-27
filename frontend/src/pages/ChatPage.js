@@ -6,17 +6,55 @@ export default function ChatPage() {
   const { consultationId } = useParams();
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
-  const [secondsLeft, setSecondsLeft] = useState(null); // null = timer not started
+  const [secondsLeft, setSecondsLeft] = useState(null);
   const [modalImg, setModalImg] = useState(null);
   const [consultationEnded, setConsultationEnded] = useState(false);
   const [isEnding, setIsEnding] = useState(false);
 
   const [keyboardPadding, setKeyboardPadding] = useState(0);
+  const [showExtendModal, setShowExtendModal] = useState(false);
+  const [extendRate, setExtendRate] = useState(0);
+  const [extendMinutes, setExtendMinutes] = useState(5);
+  const [userWallet, setUserWallet] = useState(0);
+
   const messagesEndRef = useRef(null);
 
   const currentUser = JSON.parse(sessionStorage.getItem("user"));
   const userId = currentUser?.id || "guest";
   const roomId = consultationId;
+
+  // Fetch consultation details and user wallet
+  useEffect(() => {
+    if (!roomId) return;
+
+    const fetchConsultation = async () => {
+      try {
+        const res = await fetch(
+          `https://bhavanaastro.onrender.com/api/consultations/${roomId}/details`
+        );
+        const data = await res.json();
+        setExtendRate(data.ratePerMinute || 0);
+      } catch (err) {
+        console.error("Failed to fetch consultation rate:", err);
+      }
+    };
+
+    const fetchWallet = async () => {
+      if (!currentUser?.id) return;
+      try {
+        const res = await fetch(
+          `https://bhavanaastro.onrender.com/api/users/${currentUser.id}/details`
+        );
+        const data = await res.json();
+        setUserWallet(data.wallet?.balance || 0);
+      } catch (err) {
+        console.error("Failed to fetch wallet:", err);
+      }
+    };
+
+    fetchConsultation();
+    fetchWallet();
+  }, [roomId, currentUser?.id]);
 
   useEffect(() => {
     if (!roomId) return;
@@ -24,33 +62,30 @@ export default function ChatPage() {
 
     socket.emit("joinRoom", roomId);
 
-    const userData = JSON.parse(sessionStorage.getItem("user"));
+    // Send intro message once
     const introSentKey = `introSent_${roomId}`;
-    if (userData && !sessionStorage.getItem(introSentKey)) {
+    if (currentUser && !sessionStorage.getItem(introSentKey)) {
       const introMessage = {
-        sender: userData.id,
-        text: `👤 Name: ${userData.name}\n📅 DOB: ${new Date(
-          userData.dob
+        sender: currentUser.id,
+        text: `👤 Name: ${currentUser.name}\n📅 DOB: ${new Date(
+          currentUser.dob
         ).toLocaleDateString("en-IN")}\n🕒 Birth Time: ${
-          userData.birthTime || "-"
-        }\n📍 Birth Place: ${userData.birthPlace || "-"}`,
-        kundaliUrl: userData.kundaliUrl || null,
+          currentUser.birthTime || "-"
+        }\n📍 Birth Place: ${currentUser.birthPlace || "-"}`,
+        kundaliUrl: currentUser.kundaliUrl || null,
         system: true,
       };
       socket.emit("sendMessage", { roomId, ...introMessage });
       sessionStorage.setItem(introSentKey, "true");
     }
 
+    // Fetch chat messages
     fetch(`https://bhavanaastro.onrender.com/api/consultations/${roomId}/messages`)
       .then((res) => res.json())
-      .then((data) => {
-        if (Array.isArray(data)) setMessages(data);
-        else if (data?.messages && Array.isArray(data.messages)) setMessages(data.messages);
-        else setMessages([]);
-      })
+      .then((data) => setMessages(Array.isArray(data) ? data : data?.messages || []))
       .catch(() => setMessages([]));
 
-    // --- Socket handlers ---
+    // Socket handlers
     const handleNewMessage = (message) => setMessages((prev) => [...prev, message]);
     const handleTimerUpdate = ({ secondsLeft }) => setSecondsLeft(secondsLeft);
     const handleTimerEnd = () => endConsultation("⏰ Consultation timer ended!");
@@ -82,7 +117,7 @@ export default function ChatPage() {
     };
   }, [roomId, isEnding]);
 
-  // Auto-scroll when messages or keyboard open
+  // Auto-scroll
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, keyboardPadding]);
@@ -90,15 +125,30 @@ export default function ChatPage() {
   // Keyboard padding detection
   useEffect(() => {
     const handleResize = () => {
-      const viewportHeight = window.innerHeight;
-      const docHeight = document.documentElement.clientHeight;
-      const diff = docHeight - viewportHeight;
+      const diff = document.documentElement.clientHeight - window.innerHeight;
       setKeyboardPadding(diff > 0 ? diff : 0);
       setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
     };
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
+
+  // Show extend modal when time is almost up
+  useEffect(() => {
+    if (
+      secondsLeft !== null &&
+      secondsLeft <= 60 &&
+      !showExtendModal &&
+      !consultationEnded &&
+      extendRate > 0
+    ) {
+      const maxMinutes = Math.floor(userWallet / extendRate);
+      if (maxMinutes > 0) {
+        setExtendMinutes(Math.min(5, maxMinutes));
+        setShowExtendModal(true);
+      }
+    }
+  }, [secondsLeft, userWallet, showExtendModal, consultationEnded, extendRate]);
 
   const endConsultation = async (alertMessage) => {
     setIsEnding(true);
@@ -126,6 +176,31 @@ export default function ChatPage() {
     }, 3000);
   };
 
+  const extendConsultation = async () => {
+    const extendCost = extendMinutes * extendRate;
+    if (userWallet < extendCost) {
+      alert(`Insufficient balance. You have ₹${userWallet}`);
+      setShowExtendModal(false);
+      return;
+    }
+
+    try {
+      const token = sessionStorage.getItem("token");
+      await fetch(`https://bhavanaastro.onrender.com/api/users/${userId}/deduct`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ amount: extendCost, consultationId: roomId }),
+      });
+
+      setUserWallet((prev) => prev - extendCost);
+      socket.emit("startConsultationTimer", { roomId, durationMinutes: extendMinutes });
+      setShowExtendModal(false);
+    } catch (err) {
+      console.error("Failed to extend consultation:", err);
+      alert("Failed to extend consultation. Try again.");
+    }
+  };
+
   const sendMessage = () => {
     if (!input.trim() || consultationEnded) return;
     const newMsg = { sender: userId, text: input };
@@ -142,7 +217,7 @@ export default function ChatPage() {
 
   return (
     <div className="h-screen flex flex-col bg-gray-50">
-      {/* Header with end button */}
+      {/* Header */}
       <header className="bg-purple-700 text-white p-4 text-lg font-semibold flex justify-between items-center">
         <span>Chat Room ({consultationId})</span>
         <div className="flex items-center gap-2">
@@ -190,7 +265,7 @@ export default function ChatPage() {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input bar */}
+      {/* Input */}
       <div
         className="fixed bottom-0 left-0 right-0 p-4 flex border-t bg-white"
         style={{ paddingBottom: keyboardPadding > 0 ? keyboardPadding : "env(safe-area-inset-bottom)" }}
@@ -212,6 +287,7 @@ export default function ChatPage() {
         </button>
       </div>
 
+      {/* Kundali modal */}
       {modalImg && (
         <div
           className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50"
@@ -222,6 +298,33 @@ export default function ChatPage() {
             alt="Kundali Large"
             className="max-h-[90vh] max-w-[90vw] rounded-lg shadow-lg"
           />
+        </div>
+      )}
+
+      {/* Extend modal */}
+      {showExtendModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg shadow-lg text-center">
+            <p className="mb-4">
+              ⏰ Consultation is about to end.<br/>
+              Wallet: ₹{userWallet}<br/>
+              Extend {extendMinutes} min at ₹{extendRate}/min = ₹{extendMinutes * extendRate}?
+            </p>
+            <div className="flex justify-center gap-4">
+              <button
+                onClick={extendConsultation}
+                className="bg-green-600 text-white px-4 py-2 rounded-lg"
+              >
+                Yes, Extend
+              </button>
+              <button
+                onClick={() => setShowExtendModal(false)}
+                className="bg-gray-400 text-white px-4 py-2 rounded-lg"
+              >
+                No, End
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
