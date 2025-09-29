@@ -226,6 +226,12 @@ socket.on("joinVideoRoom", async ({ roomId, role }) => {
     io.to(peerId).emit("video-peer-joined", { socketId: socket.id });
   });
 });
+socket.on("video-timer-started", ({ startTime, durationMinutes }) => {
+  console.log("⏱ got timer:", startTime, durationMinutes);
+  const elapsed = Math.floor((Date.now() - new Date(startTime)) / 1000);
+  const remaining = durationMinutes * 60 - elapsed;
+  setSecondsLeft(Math.max(remaining, 0));
+});
 
 
   // --- WebRTC signaling events (scoped to videoRoom) ---
