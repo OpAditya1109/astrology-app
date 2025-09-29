@@ -184,8 +184,6 @@ io.on("connection", (socket) => {
 
 
 // ================= VIDEO CALL SOCKET LOGIC =================
-// ================= VIDEO CALL SOCKET LOGIC =================
-
 // --- Join Video Room ---
 socket.on("joinVideoRoom", async ({ roomId, role }) => {
   const videoRoomId = `${roomId}-video`;
@@ -194,39 +192,36 @@ socket.on("joinVideoRoom", async ({ roomId, role }) => {
 
   try {
     const consultation = await Consultation.findById(roomId);
-    if (!consultation) return;
 
-    // Send remaining timer if running
-    if (consultation.timer?.isRunning) {
+    if (consultation?.timer?.isRunning) {
       const totalSeconds = consultation.timer.durationMinutes * 60;
       const elapsed = Math.floor((Date.now() - new Date(consultation.timer.startTime)) / 1000);
       const remaining = totalSeconds - elapsed;
+
+      // Send timer to newly joined peer
       socket.emit("video-timer-started", { remaining: Math.max(remaining, 0) });
     }
-
-    // Emit call mode explicitly
-    const callMode = consultation.callMode || "Video";
-    socket.emit("video-call-mode", { mode: callMode });
-
-    // Send existing peers
-    const peers = [...(io.sockets.adapter.rooms.get(videoRoomId) || [])].filter(id => id !== socket.id);
-    socket.emit("video-existing-peers", { peers });
-    peers.forEach(peerId => io.to(peerId).emit("video-peer-joined", { socketId: socket.id }));
   } catch (err) {
     console.error("joinVideoRoom -> DB error:", err);
   }
+
+  // Send existing peers
+  const peers = [...(io.sockets.adapter.rooms.get(videoRoomId) || [])].filter(id => id !== socket.id);
+  socket.emit("video-existing-peers", { peers });
+  peers.forEach(peerId => io.to(peerId).emit("video-peer-joined", { socketId: socket.id }));
 });
 
 // --- Request Current Video Timer ---
 socket.on("request-video-timer", async ({ roomId }) => {
   try {
     const consultation = await Consultation.findById(roomId);
-    if (!consultation?.timer?.isRunning) return;
 
-    const totalSeconds = consultation.timer.durationMinutes * 60;
-    const elapsed = Math.floor((Date.now() - new Date(consultation.timer.startTime)) / 1000);
-    const remaining = totalSeconds - elapsed;
-    socket.emit("video-timer-started", { remaining: Math.max(remaining, 0) });
+    if (consultation?.timer?.isRunning) {
+      const totalSeconds = consultation.timer.durationMinutes * 60;
+      const elapsed = Math.floor((Date.now() - new Date(consultation.timer.startTime)) / 1000);
+      const remaining = totalSeconds - elapsed;
+      socket.emit("video-timer-started", { remaining: Math.max(remaining, 0) });
+    }
   } catch (err) {
     console.error(err);
   }
@@ -246,20 +241,21 @@ socket.on("video-answer-call", async ({ roomId, to, answer }) => {
 
   try {
     const consultation = await Consultation.findById(roomId);
+
     if (!consultation) return;
 
-    // Start call timer if not running
+    // Initialize timer if not running
     if (!consultation.timer?.isRunning) {
       consultation.timer = consultation.timer || {};
       consultation.timer.startTime = new Date();
       consultation.timer.durationMinutes = consultation.timer.durationMinutes || 5;
       consultation.timer.isRunning = true;
-      consultation.callMode = consultation.callMode || "Video";
       await consultation.save();
 
       const videoRoomId = `${roomId}-video`;
       const totalSeconds = consultation.timer.durationMinutes * 60;
 
+      // Create active timer
       if (!activeTimers[roomId]) {
         activeTimers[roomId] = {
           secondsLeft: totalSeconds,
@@ -269,19 +265,26 @@ socket.on("video-answer-call", async ({ roomId, to, answer }) => {
             if (!activeTimers[roomId]) return;
 
             activeTimers[roomId].secondsLeft--;
-            io.to(videoRoomId).emit("video-timer-started", { remaining: activeTimers[roomId].secondsLeft });
+
+            // Emit remaining seconds to all peers
+            io.to(videoRoomId).emit("video-timer-started", {
+              remaining: activeTimers[roomId].secondsLeft,
+            });
 
             if (activeTimers[roomId].secondsLeft <= 0) {
               clearInterval(activeTimers[roomId].interval);
               delete activeTimers[roomId];
-              await finalizeVideoConsultation(roomId, true);
+
+              await finalizeVideoConsultation(roomId, true); // auto end
               io.to(videoRoomId).emit("timerEnded");
             }
           }, 1000),
         };
       }
 
+      // Broadcast initial remaining seconds
       io.to(videoRoomId).emit("video-timer-started", { remaining: activeTimers[roomId].secondsLeft });
+
       console.log(`⏱ Timer started for consultation ${roomId}`);
     }
   } catch (err) {
@@ -297,25 +300,27 @@ socket.on("video-ice-candidate", ({ roomId, to, candidate }) => {
 // --- Leave Video Room ---
 socket.on("leaveVideoRoom", async ({ roomId }) => {
   const videoRoomId = `${roomId}-video`;
-  socket.leave(videoRoomId);
   io.to(videoRoomId).emit("user-left", { message: "User left the call" });
+  socket.leave(videoRoomId);
 
+  // Finalize consultation
   if (activeTimers[roomId]) {
     clearInterval(activeTimers[roomId].interval);
-    await finalizeVideoConsultation(roomId); // do NOT delete DB record immediately
+    await finalizeVideoConsultation(roomId); // update DB
   }
 });
 
 socket.on("endVideoCall", async ({ roomId }) => {
   if (activeTimers[roomId]) {
     clearInterval(activeTimers[roomId].interval);
-    await finalizeVideoConsultation(roomId); // finalize but allow DB cleanup later
+    await finalizeVideoConsultation(roomId); // finalize & delete from DB
   }
 });
 
 // --- Disconnect handler ---
 socket.on("disconnect", async () => {
   const rooms = Array.from(socket.rooms).filter(r => r !== socket.id);
+
   for (const room of rooms) {
     if (room.endsWith("-video")) {
       const roomId = room.replace("-video", "");
@@ -326,8 +331,12 @@ socket.on("disconnect", async () => {
         delete activeTimers[roomId];
       }
 
-      // ✅ Do NOT delete consultation immediately; allow reconnection
-      console.log(`⚠ User ${socket.id} disconnected from ${roomId}-video`);
+      try {
+        await Consultation.findByIdAndDelete(roomId);
+        console.log(`🗑 Consultation ${roomId} deleted on disconnect`);
+      } catch (err) {
+        console.error("Error deleting consultation:", err);
+      }
     }
   }
 });
@@ -335,6 +344,7 @@ socket.on("disconnect", async () => {
 // --- Extend Video Timer ---
 socket.on("extendVideoTimer", async ({ roomId, extendMinutes }) => {
   const videoRoomId = `${roomId}-video`;
+
   try {
     const consultation = await Consultation.findById(roomId);
     if (!consultation?.timer || !activeTimers[roomId]) return;
@@ -348,14 +358,15 @@ socket.on("extendVideoTimer", async ({ roomId, extendMinutes }) => {
     consultation.timer.durationMinutes = Math.ceil((talkedSeconds + activeTimers[roomId].secondsLeft) / 60);
     await consultation.save();
 
+    // Emit updated remaining seconds
     io.to(videoRoomId).emit("video-timer-started", { remaining: activeTimers[roomId].secondsLeft });
+
     console.log(`⏱ Video timer extended by ${extendMinutes} min for consultation ${roomId}`);
   } catch (err) {
     console.error("Error extending video consultation timer:", err);
   }
 });
 
-// --- Finalize Video Consultation ---
 async function finalizeVideoConsultation(roomId, endedByTimer = false) {
   try {
     const consultation = await Consultation.findById(roomId);
@@ -368,21 +379,30 @@ async function finalizeVideoConsultation(roomId, endedByTimer = false) {
       delete activeTimers[roomId];
     }
 
+    // --- Update consultation ---
     consultation.timer = consultation.timer || {};
     consultation.timer.isRunning = false;
-    consultation.talkTime = formatClock(talkedSeconds);
+    consultation.talkTime = formatClock(talkedSeconds); // actual time used
     await consultation.save();
 
+    // --- Update astrologer stats ---
     const astro = await Astrologer.findById(consultation.astrologerId);
     if (astro) {
       if (consultation.callMode === "Video") {
         const prevVideoSeconds = clockToSeconds(astro.totalVideoTime || "00:00");
         astro.totalVideoTime = formatClock(prevVideoSeconds + talkedSeconds);
-      } else {
+      } else if (consultation.callMode === "Audio") {
         const prevAudioSeconds = clockToSeconds(astro.totalAudioTime || "00:00");
         astro.totalAudioTime = formatClock(prevAudioSeconds + talkedSeconds);
       }
       await astro.save();
+      console.log(`✨ Astrologer ${astro._id} stats updated (Video: ${astro.totalVideoTime}, Audio: ${astro.totalAudioTime})`);
+    }
+
+    // Delete consultation if call ended manually
+    if (!endedByTimer) {
+      await Consultation.findByIdAndDelete(roomId);
+      console.log(`🗑 Consultation ${roomId} deleted`);
     }
 
     io.to(`${roomId}-video`).emit("consultationEnded", {
@@ -390,15 +410,11 @@ async function finalizeVideoConsultation(roomId, endedByTimer = false) {
       talkTime: consultation.talkTime,
     });
 
-    // Optionally delete DB record only if endedByTimer is true
-    if (endedByTimer) {
-      await Consultation.findByIdAndDelete(roomId);
-      console.log(`🗑 Consultation ${roomId} deleted (auto)`);
-    }
   } catch (err) {
     console.error("finalizeVideoConsultation error:", err);
   }
 }
+
 
 
 
