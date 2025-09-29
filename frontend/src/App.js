@@ -46,6 +46,7 @@ import AdminDashboard from "./pages/AdminDashboard";
 import FreeKundali from "./pages/FreeKundali";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
+import HealingAcce from "./pages/HealingAcce"
 // 🔹 Helper: Get logged-in user from storage
 const getStoredUser = () => {
   return (
@@ -97,6 +98,7 @@ function App() {
           <Route path="/disclaimer" element={<Disclaimer />} />
           <Route path="/pricing-policy" element={<PricingPolicy />} />
           <Route path="/shop/bracelet" element={<BraceletPage />} />
+          <Route path="/shop/healing-accessories" element={<HealingAcce />} />
           <Route path="/shop/rudraksha" element={<RudrakshaPage />} />
           <Route path="/shop/mala" element={<MalaPage />} />
           <Route path="/shop/gemstone" element={<GemstonePage />} />

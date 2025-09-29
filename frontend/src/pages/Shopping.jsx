@@ -6,6 +6,7 @@ export default function Shopping() {
     { name: "Mala", img: "/shop/mala.png", link: "/shop/mala" },
     { name: "Gemstone", img: "/shop/gemstone.png", link: "/shop/gemstone" },
     { name: "Rudraksha", img: "/shop/rudraksha.png", link: "/shop/rudraksha" },
+    { name: "Healing Accessories", img: "/shop/healing-accessories.png", link: "/shop/healing-accessories" }, // added
   ];
 
   return (
