@@ -104,12 +104,18 @@ export default function VideoCall() {
     });
 
     // Call answered by astrologer
-    socket.on("video-call-answered", async ({ answer }) => {
-      const pc = peerConnectionRef.current;
-      if (!pc) return;
-      await pc.setRemoteDescription(answer);
-      setStatus("Connected");
-    });
+   socket.on("video-call-answered", async ({ answer }) => {
+  const pc = peerConnectionRef.current;
+  if (!pc) return;
+  await pc.setRemoteDescription(answer);
+  setStatus("Connected");
+
+  // Show timer immediately if already received
+  if (secondsLeft === null && socketRef.current) {
+    socketRef.current.emit("joinVideoRoom", { roomId: consultationId, role: "user" });
+  }
+});
+
 
     // Timer starts only when astrologer accepts
  socket.on("video-timer-started", ({ remaining }) => {

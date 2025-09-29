@@ -197,7 +197,7 @@ socket.on("joinVideoRoom", async ({ roomId, role }) => {
     }
 
     // --- Send timer state if already running ---
-    if (consultation.timer.isRunning) {
+ if (consultation.timer.isRunning) {
   const totalSeconds = consultation.timer.durationMinutes * 60;
   const elapsed = Math.floor((Date.now() - new Date(consultation.timer.startTime)) / 1000);
   const remaining = totalSeconds - elapsed;
