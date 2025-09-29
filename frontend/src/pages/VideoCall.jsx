@@ -182,11 +182,19 @@ export default function VideoCall() {
     setIsVideoOff(!videoTrack.enabled);
   };
 
-  const endCall = () => {
-    if (peerConnectionRef.current) peerConnectionRef.current.close();
-    if (socketRef.current) socketRef.current.disconnect();
-    navigate(-1);
-  };
+const endCall = () => {
+  const socket = socketRef.current;
+  const videoRoomId = `${consultationId}-video`;
+
+  if (socket) {
+    socket.emit("leaveVideoRoom", { roomId: consultationId });
+    socket.disconnect();
+  }
+
+  if (peerConnectionRef.current) peerConnectionRef.current.close();
+  navigate(-1);
+};
+
 
   const formatTime = (s) => `${Math.floor(s / 60).toString().padStart(2, "0")}:${(s % 60).toString().padStart(2, "0")}`;
 

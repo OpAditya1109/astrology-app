@@ -263,6 +263,11 @@ socket.on("video-answer-call", async ({ roomId, to, answer }) => {
   socket.on("video-ice-candidate", ({ roomId, to, candidate }) => {
     if (to) io.to(to).emit("video-ice-candidate", { from: socket.id, candidate });
   });
+socket.on("leaveVideoRoom", ({ roomId }) => {
+  const videoRoomId = `${roomId}-video`;
+  socket.to(videoRoomId).emit("peer-left");
+  socket.leave(videoRoomId);
+});
 
 
 
