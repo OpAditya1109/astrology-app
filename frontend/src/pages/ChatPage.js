@@ -369,7 +369,7 @@ export default function ChatPage() {
                 onClick={async () => {
                    console.log({
       consultationId: roomId,
-      astrologerId: currentUser.astrologerId,
+     astrologerId: consultationId?.astrologerId,
       userId: currentUser.id,
       rating: reviewRating,
       feedback: reviewFeedback,
@@ -381,7 +381,7 @@ export default function ChatPage() {
                       headers: { "Content-Type": "application/json" },
                       body: JSON.stringify({
                         consultationId: roomId,
-                        astrologerId: currentUser.astrologerId,
+                      astrologerId: consultationId?.astrologerId, 
                         rating: reviewRating,
                         feedback: reviewFeedback,
                         userId: currentUser.id,
