@@ -242,7 +242,7 @@ export default function VideoCall() {
       const data = await res.json();
 
       setUserWallet(data.balance);
-      socketRef.current.emit("extendConsultationTimer", { roomId: consultationId, extendMinutes });
+      socketRef.current.emit("extendVideoTimer", { roomId: consultationId, extendMinutes });
     } catch (err) {
       console.error(err);
       alert("Failed to extend call. Try again.");
