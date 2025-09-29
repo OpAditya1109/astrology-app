@@ -110,6 +110,7 @@ export default function VideoCall() {
     // Timer
     socket.on("video-timer-started", ({ remaining }) => {
       setSecondsLeft(remaining);
+       setStatus("Connected");
     });
 
     // ICE candidate from peer
