@@ -312,6 +312,33 @@ socket.on("disconnect", async () => {
     }
   }
 });
+// --- Extend consultation timer ---
+socket.on("extendConsultationTimer", async ({ roomId, extendMinutes }) => {
+  const videoRoomId = `${roomId}-video`;
+  try {
+    const consultation = await Consultation.findById(roomId);
+    if (!consultation) return;
+
+    // Update timer duration
+    consultation.timer.durationMinutes += extendMinutes;
+
+    // If timer already running, recalc remaining time
+    if (consultation.timer.isRunning) {
+      const totalSeconds = consultation.timer.durationMinutes * 60;
+      const elapsed = Math.floor((Date.now() - new Date(consultation.timer.startTime)) / 1000);
+      const remaining = totalSeconds - elapsed;
+
+      // Broadcast updated remaining seconds to all peers
+      io.to(videoRoomId).emit("video-timer-started", { remaining: Math.max(remaining, 0) });
+
+      console.log(`⏱ Timer extended by ${extendMinutes} min for consultation ${roomId}`);
+    }
+
+    await consultation.save();
+  } catch (err) {
+    console.error("Error extending consultation timer:", err);
+  }
+});
 
 
 

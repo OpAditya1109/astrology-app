@@ -29,7 +29,37 @@ export default function VideoCall() {
   const [isVideoOff, setIsVideoOff] = useState(callMode === "Audio");
   const [secondsLeft, setSecondsLeft] = useState(null);
 
+  // Extension logic
+  const [showExtendModal, setShowExtendModal] = useState(false);
+  const [extendMinutes, setExtendMinutes] = useState(5);
+  const [extendRate, setExtendRate] = useState(0);
+  const [userWallet, setUserWallet] = useState(0);
+  const [extending, setExtending] = useState(false);
+  const [skipExtendPrompt, setSkipExtendPrompt] = useState(false);
+
   const ICE_SERVERS = { iceServers: [{ urls: "stun:stun.l.google.com:19302" }] };
+
+  const currentUser = JSON.parse(sessionStorage.getItem("user"));
+
+  // Fetch consultation rate and wallet
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const res = await fetch(`https://bhavanaastro.onrender.com/api/consultations/details/${consultationId}`);
+        const data = await res.json();
+        setExtendRate(data.ratePerMinute || 0);
+
+        if (currentUser?.id) {
+          const walletRes = await fetch(`https://bhavanaastro.onrender.com/api/users/${currentUser.id}/details`);
+          const walletData = await walletRes.json();
+          setUserWallet(walletData.wallet?.balance || 0);
+        }
+      } catch (err) {
+        console.error("Fetch error:", err);
+      }
+    };
+    fetchData();
+  }, [consultationId]);
 
   useEffect(() => {
     const socket = io(SOCKET_SERVER_URL, { transports: ["websocket"] });
@@ -46,7 +76,6 @@ export default function VideoCall() {
           audio: true,
         });
         if (localVideoRef.current) localVideoRef.current.srcObject = stream;
-
         stream.getTracks().forEach((track) => pc.addTrack(track, stream));
       } catch (e) {
         console.error("getUserMedia error:", e);
@@ -70,12 +99,10 @@ export default function VideoCall() {
       }
     };
 
-    // --- Join Room once ---
+    // --- Join Room ---
     socket.emit("joinVideoRoom", { roomId: consultationId, role });
 
     // === Signaling ===
-
-    // Existing peers
     socket.on("video-existing-peers", async ({ peers }) => {
       if (role === "user" && peers.length > 0) {
         targetSocketRef.current = peers[0];
@@ -86,22 +113,16 @@ export default function VideoCall() {
       }
     });
 
-    // Astrologer: incoming call
     socket.on("video-incoming-call", async ({ from, offer }) => {
       targetSocketRef.current = from;
       setStatus("Ringing...");
-      const pc = peerConnectionRef.current;
       await pc.setRemoteDescription(offer);
-
       const answer = await pc.createAnswer();
       await pc.setLocalDescription(answer);
-
       socket.emit("video-answer-call", { roomId: consultationId, to: from, answer });
     });
 
-    // Call answered by astrologer
     socket.on("video-call-answered", async ({ answer }) => {
-      const pc = peerConnectionRef.current;
       if (!pc) return;
       await pc.setRemoteDescription(answer);
       setStatus("Connected");
@@ -110,36 +131,26 @@ export default function VideoCall() {
     // Timer
     socket.on("video-timer-started", ({ remaining }) => {
       setSecondsLeft(remaining);
-       setStatus("Connected");
+      setStatus("Connected");
     });
 
-    // ICE candidate from peer
     socket.on("video-ice-candidate", async ({ candidate }) => {
       try {
-        const pc = peerConnectionRef.current;
         if (!pc) return;
-        await pc.addIceCandidate(
-          candidate?.candidate ? candidate : new RTCIceCandidate(candidate)
-        );
+        await pc.addIceCandidate(candidate?.candidate ? candidate : new RTCIceCandidate(candidate));
       } catch (err) {
         console.error("Error adding ICE candidate:", err);
       }
     });
 
-socket.on("user-left", ({ message }) => {
-  setStatus(message); // show "User left"
-
-  if (remoteVideoRef.current?.srcObject) {
-    remoteVideoRef.current.srcObject.getTracks().forEach((t) => t.stop());
-    remoteVideoRef.current.srcObject = null;
-  }
-
-  // Redirect after 5 seconds
-  setTimeout(() => {
-    navigate(-1);
-  }, 5000);
-});
-
+    socket.on("user-left", ({ message }) => {
+      setStatus(message);
+      if (remoteVideoRef.current?.srcObject) {
+        remoteVideoRef.current.srcObject.getTracks().forEach((t) => t.stop());
+        remoteVideoRef.current.srcObject = null;
+      }
+      setTimeout(() => navigate(-1), 5000);
+    });
 
     return () => {
       socket.removeAllListeners();
@@ -160,11 +171,27 @@ socket.on("user-left", ({ message }) => {
     if (secondsLeft === 0) endCall();
   }, [status, secondsLeft]);
 
+  // --- Show extend modal ---
+  useEffect(() => {
+    if (
+      secondsLeft !== null &&
+      secondsLeft <= 60 &&
+      !showExtendModal &&
+      !skipExtendPrompt &&
+      extendRate > 0
+    ) {
+      const maxMinutes = Math.floor(userWallet / extendRate);
+      if (maxMinutes > 0) {
+        setExtendMinutes(Math.min(5, maxMinutes));
+        setShowExtendModal(true);
+      }
+    }
+  }, [secondsLeft, showExtendModal, skipExtendPrompt, userWallet, extendRate]);
+
   const startCall = async () => {
     const pc = peerConnectionRef.current;
     const socket = socketRef.current;
     if (!pc || !socket || !targetSocketRef.current) return;
-
     const offer = await pc.createOffer();
     await pc.setLocalDescription(offer);
     socket.emit("video-call-user", { roomId: consultationId, to: targetSocketRef.current, offer });
@@ -189,19 +216,50 @@ socket.on("user-left", ({ message }) => {
     setIsVideoOff(!videoTrack.enabled);
   };
 
-const endCall = () => {
-  const socket = socketRef.current;
-  const videoRoomId = `${consultationId}-video`;
+  const extendConsultation = async () => {
+    if (extending) return;
+    setExtending(true);
 
-  if (socket) {
-    socket.emit("leaveVideoRoom", { roomId: consultationId });
-    socket.disconnect();
-  }
+    try {
+      const extendCost = extendMinutes * extendRate;
+      if (userWallet < extendCost) {
+        alert(`Insufficient balance. You have ₹${userWallet}`);
+        return;
+      }
 
-  if (peerConnectionRef.current) peerConnectionRef.current.close();
-  navigate(-1);
-};
+      const res = await fetch("https://bhavanaastro.onrender.com/api/users/deduct", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId: currentUser.id,
+          amount: extendCost,
+          consultationId,
+          extendMinutes,
+        }),
+      });
 
+      if (!res.ok) throw new Error("Deduction failed");
+      const data = await res.json();
+
+      setUserWallet(data.balance);
+      socketRef.current.emit("extendConsultationTimer", { roomId: consultationId, extendMinutes });
+    } catch (err) {
+      console.error(err);
+      alert("Failed to extend call. Try again.");
+    } finally {
+      setExtending(false);
+    }
+  };
+
+  const endCall = () => {
+    const socket = socketRef.current;
+    if (socket) {
+      socket.emit("leaveVideoRoom", { roomId: consultationId });
+      socket.disconnect();
+    }
+    if (peerConnectionRef.current) peerConnectionRef.current.close();
+    navigate(-1);
+  };
 
   const formatTime = (s) => `${Math.floor(s / 60).toString().padStart(2, "0")}:${(s % 60).toString().padStart(2, "0")}`;
 
@@ -226,6 +284,41 @@ const endCall = () => {
           <img src={isVideoOff ? videoOffIcon : videoOnIcon} alt="Video" className="w-6 h-6" />
         </button>}
       </div>
+
+      {/* Extend Modal */}
+      {showExtendModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg shadow-lg text-center">
+            <p className="mb-4">
+              ⏰ Call is about to end.<br/>
+              Wallet: ₹{userWallet}<br/>
+              Extend {extendMinutes} min at ₹{extendRate}/min = ₹{extendMinutes * extendRate}?
+            </p>
+            <div className="flex justify-center gap-4">
+              <button
+                onClick={() => {
+                  setShowExtendModal(false);
+                  setSkipExtendPrompt(true);
+                  extendConsultation();
+                  setTimeout(() => setSkipExtendPrompt(false), 10000);
+                }}
+                className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700"
+              >
+                Yes, Extend
+              </button>
+              <button
+                onClick={() => {
+                  setShowExtendModal(false);
+                  setSkipExtendPrompt(true);
+                }}
+                className="bg-gray-400 text-white px-4 py-2 rounded-lg"
+              >
+                No, End
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
