@@ -20,7 +20,7 @@ export default function AudioCall() {
   const localAudioRef = useRef(null);
   const remoteAudioRef = useRef(null);
 
-  const localStreamRef = useRef(null); // Persist stream for mute/unmute
+  const localStreamRef = useRef(null);
 
   const [status, setStatus] = useState("Connecting...");
   const [isMuted, setIsMuted] = useState(false);
@@ -77,7 +77,7 @@ export default function AudioCall() {
     fetchData();
   }, [consultationId]);
 
-  // Setup WebRTC & Socket.IO
+  // WebRTC & Socket.IO
   useEffect(() => {
     const socket = io(SOCKET_SERVER_URL, { transports: ["websocket"] });
     socketRef.current = socket;
@@ -85,7 +85,6 @@ export default function AudioCall() {
     const pc = new RTCPeerConnection(ICE_SERVERS);
     peerConnectionRef.current = pc;
 
-    // --- Local media ---
     (async () => {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -99,12 +98,10 @@ export default function AudioCall() {
       }
     })();
 
-    // --- Remote audio ---
     pc.ontrack = (event) => {
       if (remoteAudioRef.current) remoteAudioRef.current.srcObject = event.streams[0];
     };
 
-    // --- ICE candidates ---
     pc.onicecandidate = (event) => {
       if (event.candidate && targetSocketRef.current) {
         socket.emit("audio-ice-candidate", {
@@ -115,10 +112,8 @@ export default function AudioCall() {
       }
     };
 
-    // --- Join Room ---
     socket.emit("joinAudioRoom", { roomId: consultationId, role });
 
-    // --- Signaling ---
     socket.on("audio-existing-peers", async ({ peers }) => {
       if (role === "user" && peers.length > 0) {
         targetSocketRef.current = peers[0];
@@ -226,6 +221,13 @@ export default function AudioCall() {
       setExtending(false);
     }
   };
+
+  // --- Show Extend Modal when call is about to end ---
+  useEffect(() => {
+    if (!skipExtendPrompt && secondsLeft !== null && secondsLeft <= 30) {
+      setShowExtendModal(true);
+    }
+  }, [secondsLeft, skipExtendPrompt]);
 
   const formatTime = (s) => `${Math.floor(s / 60).toString().padStart(2, "0")}:${(s % 60).toString().padStart(2, "0")}`;
 
