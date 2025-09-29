@@ -278,13 +278,21 @@ socket.on("leaveVideoRoom", async ({ roomId }) => {
     clearInterval(activeTimers[roomId].interval);
     delete activeTimers[roomId];
   }
+
+  // Delete consultation from DB
+  try {
+    await Consultation.findByIdAndDelete(roomId);
+    console.log(`🗑 Consultation ${roomId} deleted from DB after user left`);
+  } catch (err) {
+    console.error("Error deleting consultation:", err);
+  }
 });
 
 // --- Disconnect handler ---
-socket.on("disconnect", () => {
+socket.on("disconnect", async () => {
   const rooms = Array.from(socket.rooms).filter((r) => r !== socket.id);
 
-  rooms.forEach((room) => {
+  for (const room of rooms) {
     if (room.endsWith("-video")) {
       const roomId = room.replace("-video", "");
       io.to(room).emit("user-left", { message: "User left the call" });
@@ -293,8 +301,16 @@ socket.on("disconnect", () => {
         clearInterval(activeTimers[roomId].interval);
         delete activeTimers[roomId];
       }
+
+      // Delete consultation from DB
+      try {
+        await Consultation.findByIdAndDelete(roomId);
+        console.log(`🗑 Consultation ${roomId} deleted from DB on disconnect`);
+      } catch (err) {
+        console.error("Error deleting consultation:", err);
+      }
     }
-  });
+  }
 });
 
 
