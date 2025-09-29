@@ -21,6 +21,9 @@ export default function AudioCall() {
   const localAudioRef = useRef(null);
   const remoteAudioRef = useRef(null);
 
+  // Store local audio track for reliable mute/unmute
+  const localTrackRef = useRef(null);
+
   const [status, setStatus] = useState("Connecting...");
   const [isMuted, setIsMuted] = useState(false);
   const [secondsLeft, setSecondsLeft] = useState(null);
@@ -36,6 +39,7 @@ export default function AudioCall() {
   const ICE_SERVERS = { iceServers: [{ urls: "stun:stun.l.google.com:19302" }] };
   const currentUser = JSON.parse(sessionStorage.getItem("user"));
 
+  // End call
   const endCall = () => {
     const socket = socketRef.current;
     if (socket) {
@@ -75,6 +79,7 @@ export default function AudioCall() {
     fetchData();
   }, [consultationId]);
 
+  // Setup WebRTC & Socket.IO
   useEffect(() => {
     const socket = io(SOCKET_SERVER_URL, { transports: ["websocket"] });
     socketRef.current = socket;
@@ -87,6 +92,10 @@ export default function AudioCall() {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         if (localAudioRef.current) localAudioRef.current.srcObject = stream;
+
+        // Store track for mute/unmute
+        localTrackRef.current = stream.getAudioTracks()[0];
+
         stream.getTracks().forEach((track) => pc.addTrack(track, stream));
       } catch (e) {
         console.error("getUserMedia error:", e);
@@ -182,13 +191,11 @@ export default function AudioCall() {
     socket.emit("audio-call-user", { roomId: consultationId, to: targetSocketRef.current, offer });
   };
 
+  // --- Working Mute/Unmute ---
   const toggleMute = () => {
-    const stream = localAudioRef.current?.srcObject;
-    if (!stream) return;
-    const audioTrack = stream.getAudioTracks()[0];
-    if (!audioTrack) return;
-    audioTrack.enabled = !audioTrack.enabled;
-    setIsMuted(!audioTrack.enabled);
+    if (!localTrackRef.current) return;
+    localTrackRef.current.enabled = !localTrackRef.current.enabled;
+    setIsMuted(!localTrackRef.current.enabled);
   };
 
   const extendConsultation = async () => {
