@@ -12,17 +12,15 @@ export default function AudioCall() {
   const { consultationId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
-
   const role = location.state?.role || "user";
 
   const peerConnectionRef = useRef(null);
-  const targetSocketRef = useRef(null);
   const socketRef = useRef(null);
+  const targetSocketRef = useRef(null);
   const localAudioRef = useRef(null);
   const remoteAudioRef = useRef(null);
 
-  // Store local audio track for reliable mute/unmute
-  const localTrackRef = useRef(null);
+  const localStreamRef = useRef(null); // Persist stream for mute/unmute
 
   const [status, setStatus] = useState("Connecting...");
   const [isMuted, setIsMuted] = useState(false);
@@ -39,7 +37,6 @@ export default function AudioCall() {
   const ICE_SERVERS = { iceServers: [{ urls: "stun:stun.l.google.com:19302" }] };
   const currentUser = JSON.parse(sessionStorage.getItem("user"));
 
-  // End call
   const endCall = () => {
     const socket = socketRef.current;
     if (socket) {
@@ -49,11 +46,12 @@ export default function AudioCall() {
     }
 
     if (peerConnectionRef.current) peerConnectionRef.current.close();
-    if (localAudioRef.current?.srcObject) {
-      localAudioRef.current.srcObject.getTracks().forEach((t) => t.stop());
+    if (localStreamRef.current) {
+      localStreamRef.current.getTracks().forEach((t) => t.stop());
     }
     if (remoteAudioRef.current?.srcObject) {
       remoteAudioRef.current.srcObject.getTracks().forEach((t) => t.stop());
+      remoteAudioRef.current.srcObject = null;
     }
 
     navigate(-1);
@@ -87,14 +85,12 @@ export default function AudioCall() {
     const pc = new RTCPeerConnection(ICE_SERVERS);
     peerConnectionRef.current = pc;
 
-    // --- Local media (audio only) ---
+    // --- Local media ---
     (async () => {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        localStreamRef.current = stream;
         if (localAudioRef.current) localAudioRef.current.srcObject = stream;
-
-        // Store track for mute/unmute
-        localTrackRef.current = stream.getAudioTracks()[0];
 
         stream.getTracks().forEach((track) => pc.addTrack(track, stream));
       } catch (e) {
@@ -148,7 +144,6 @@ export default function AudioCall() {
       setStatus("Connected");
     });
 
-    // Timer
     socket.on("audio-timer-started", ({ remaining }) => {
       setSecondsLeft(remaining);
       setStatus("Connected");
@@ -175,9 +170,7 @@ export default function AudioCall() {
     return () => {
       socket.removeAllListeners();
       socket.disconnect();
-      if (localAudioRef.current?.srcObject) {
-        localAudioRef.current.srcObject.getTracks().forEach((t) => t.stop());
-      }
+      if (localStreamRef.current) localStreamRef.current.getTracks().forEach((t) => t.stop());
       pc.close();
     };
   }, [consultationId, role]);
@@ -186,16 +179,19 @@ export default function AudioCall() {
     const pc = peerConnectionRef.current;
     const socket = socketRef.current;
     if (!pc || !socket || !targetSocketRef.current) return;
+
     const offer = await pc.createOffer();
     await pc.setLocalDescription(offer);
     socket.emit("audio-call-user", { roomId: consultationId, to: targetSocketRef.current, offer });
   };
 
-  // --- Working Mute/Unmute ---
   const toggleMute = () => {
-    if (!localTrackRef.current) return;
-    localTrackRef.current.enabled = !localTrackRef.current.enabled;
-    setIsMuted(!localTrackRef.current.enabled);
+    if (!localStreamRef.current) return;
+    const audioTrack = localStreamRef.current.getAudioTracks()[0];
+    if (!audioTrack) return;
+
+    audioTrack.enabled = !audioTrack.enabled;
+    setIsMuted(!audioTrack.enabled);
   };
 
   const extendConsultation = async () => {
@@ -240,14 +236,24 @@ export default function AudioCall() {
       {/* Status + Timer */}
       <div className="absolute top-4 left-4 flex gap-4 items-center">
         <div className="bg-black bg-opacity-50 text-white px-4 py-2 rounded-lg">{status}</div>
-        {status === "Connected" && secondsLeft !== null && <div className="bg-black bg-opacity-50 text-green-400 px-4 py-2 rounded-lg font-mono">{formatTime(secondsLeft)}</div>}
+        {status === "Connected" && secondsLeft !== null && (
+          <div className="bg-black bg-opacity-50 text-green-400 px-4 py-2 rounded-lg font-mono">{formatTime(secondsLeft)}</div>
+        )}
       </div>
 
-      <button onClick={endCall} className="absolute top-4 right-4 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-full shadow-lg transition">End</button>
+      <button
+        onClick={endCall}
+        className="absolute top-4 right-4 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-full shadow-lg transition"
+      >
+        End
+      </button>
 
       {/* Controls */}
       <div className="absolute bottom-4 flex gap-6 bg-black bg-opacity-60 px-6 py-3 rounded-full">
-        <button onClick={toggleMute} className="p-3 rounded-full bg-white shadow-md hover:bg-gray-200 transition">
+        <button
+          onClick={toggleMute}
+          className="p-3 rounded-full bg-white shadow-md hover:bg-gray-200 transition"
+        >
           <img src={isMuted ? micOffIcon : micOnIcon} alt="Mic" className="w-6 h-6" />
         </button>
       </div>
@@ -257,8 +263,8 @@ export default function AudioCall() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white p-6 rounded-lg shadow-lg text-center">
             <p className="mb-4">
-              ⏰ Call is about to end.<br/>
-              Wallet: ₹{userWallet}<br/>
+              ⏰ Call is about to end.<br />
+              Wallet: ₹{userWallet}<br />
               Extend {extendMinutes} min at ₹{extendRate}/min = ₹{extendMinutes * extendRate}?
             </p>
             <div className="flex justify-center gap-4">
