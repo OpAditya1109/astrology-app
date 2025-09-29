@@ -81,23 +81,37 @@ io.on("connection", (socket) => {
 
   // --- Join user room ---
   socket.on("joinRoom", async (roomId) => {
-    try {
-      socket.join(roomId);
-      const consultation = await Consultation.findById(roomId);
-      if (!consultation) return;
+  try {
+    socket.join(roomId);
+    const consultation = await Consultation.findById(roomId);
+    if (!consultation) return;
 
-      // Restore running timer from DB
-      if (consultation.timer?.isRunning) {
-        const remaining =
-          consultation.timer.durationMinutes * 60 -
-          Math.floor((Date.now() - new Date(consultation.timer.startTime)) / 1000);
+    // --- Restore running timer from DB ---
+    if (consultation.timer?.isRunning) {
+      const remaining =
+        consultation.timer.durationMinutes * 60 -
+        Math.floor((Date.now() - new Date(consultation.timer.startTime)) / 1000);
 
-        startTimer(roomId, remaining);
-      }
-    } catch (err) {
-      console.error("joinRoom error:", err);
+      startTimer(roomId, remaining);
     }
-  });
+
+    // --- Get other peers already in this room ---
+    const peers = [...(io.sockets.adapter.rooms.get(roomId) || [])]
+      .filter((id) => id !== socket.id);
+
+    // Tell this socket who’s already here
+    socket.emit("existing-peers", { peers });
+
+    // Notify existing peers about the new joiner
+    peers.forEach((peerId) => {
+      io.to(peerId).emit("peer-joined", { socketId: socket.id });
+    });
+
+  } catch (err) {
+    console.error("joinRoom error:", err);
+  }
+});
+
 
   // --- Send message ---
   socket.on("sendMessage", async ({ roomId, sender, text, kundaliUrl, system }) => {
