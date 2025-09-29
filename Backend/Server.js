@@ -241,7 +241,6 @@ socket.on("video-answer-call", async ({ roomId, to, answer }) => {
 
   try {
     const consultation = await Consultation.findById(roomId);
-
     if (!consultation) return;
 
     // Initialize timer if not running
@@ -388,15 +387,10 @@ async function finalizeVideoConsultation(roomId, endedByTimer = false) {
     // --- Update astrologer stats ---
     const astro = await Astrologer.findById(consultation.astrologerId);
     if (astro) {
-      if (consultation.callMode === "Video") {
-        const prevVideoSeconds = clockToSeconds(astro.totalVideoTime || "00:00");
-        astro.totalVideoTime = formatClock(prevVideoSeconds + talkedSeconds);
-      } else if (consultation.callMode === "Audio") {
-        const prevAudioSeconds = clockToSeconds(astro.totalAudioTime || "00:00");
-        astro.totalAudioTime = formatClock(prevAudioSeconds + talkedSeconds);
-      }
+      const prevVideoSeconds = clockToSeconds(astro.totalVideoTime || "00:00");
+      astro.totalVideoTime = formatClock(prevVideoSeconds + talkedSeconds);
       await astro.save();
-      console.log(`✨ Astrologer ${astro._id} stats updated (Video: ${astro.totalVideoTime}, Audio: ${astro.totalAudioTime})`);
+      console.log(`✨ Astrologer ${astro._id} stats updated (Video: ${astro.totalVideoTime})`);
     }
 
     // Delete consultation if call ended manually
@@ -414,6 +408,8 @@ async function finalizeVideoConsultation(roomId, endedByTimer = false) {
     console.error("finalizeVideoConsultation error:", err);
   }
 }
+
+
 
 
 
