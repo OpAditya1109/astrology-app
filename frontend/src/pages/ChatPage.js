@@ -227,19 +227,18 @@ export default function ChatPage() {
   return (
     <div className="h-screen flex flex-col bg-gray-50">
       {/* Header */}
-      <header className="bg-purple-700 text-white p-4 text-lg font-semibold flex justify-between items-center">
-        <span>Chat Room ({consultationId})</span>
-        <div className="flex items-center gap-2">
-          <span className="bg-purple-900 px-3 py-1 rounded">{formatTime(secondsLeft)}</span>
-          <button
-            onClick={() => endConsultation("❌ Consultation ended by user")}
-            className="bg-red-600 hover:bg-red-700 px-3 py-1 rounded text-white text-sm"
-          >
-            End Consultation
-          </button>
-        </div>
-      </header>
-
+     <header className="bg-purple-700 text-white p-4 text-lg font-semibold flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
+  <span className="truncate text-center sm:text-left">Chat Room ({consultationId})</span>
+  <div className="flex flex-col sm:flex-row sm:items-center gap-2 w-full sm:w-auto">
+    <span className="bg-purple-900 px-3 py-1 rounded text-center sm:text-sm">{formatTime(secondsLeft)}</span>
+    <button
+      onClick={() => endConsultation("❌ Consultation ended by user")}
+      className="bg-red-600 hover:bg-red-700 px-3 py-1 rounded text-white text-sm w-full sm:w-auto"
+    >
+      End Consultation
+    </button>
+  </div>
+</header>
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-4 space-y-2" style={{ paddingBottom: keyboardPadding + 70 }}>
         {messages.map((msg, i) => (
