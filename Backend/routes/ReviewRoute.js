@@ -4,6 +4,7 @@ const mongoose = require("mongoose");
 const Review = require("../models/Review");
 
 router.post("/", async (req, res) => {
+     console.log("Review body:", req.body);
   try {
     const { consultationId, astrologerId, userId, rating, feedback } = req.body;
 

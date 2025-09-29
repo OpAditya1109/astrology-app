@@ -367,6 +367,14 @@ export default function ChatPage() {
             <div className="flex justify-center gap-4">
               <button
                 onClick={async () => {
+                   console.log({
+      consultationId: roomId,
+      astrologerId: currentUser.astrologerId,
+      userId: currentUser.id,
+      rating: reviewRating,
+      feedback: reviewFeedback,
+    });
+
                   try {
                     await fetch("https://bhavanaastro.onrender.com/api/reviews", {
                       method: "POST",
