@@ -37,6 +37,7 @@ export default function AudioCall() {
   const ICE_SERVERS = { iceServers: [{ urls: "stun:stun.l.google.com:19302" }] };
   const currentUser = JSON.parse(sessionStorage.getItem("user"));
 
+  // End call
   const endCall = () => {
     const socket = socketRef.current;
     if (socket) {
@@ -46,9 +47,7 @@ export default function AudioCall() {
     }
 
     if (peerConnectionRef.current) peerConnectionRef.current.close();
-    if (localStreamRef.current) {
-      localStreamRef.current.getTracks().forEach((t) => t.stop());
-    }
+    if (localStreamRef.current) localStreamRef.current.getTracks().forEach((t) => t.stop());
     if (remoteAudioRef.current?.srcObject) {
       remoteAudioRef.current.srcObject.getTracks().forEach((t) => t.stop());
       remoteAudioRef.current.srcObject = null;
@@ -229,11 +228,24 @@ export default function AudioCall() {
     }
   }, [secondsLeft, skipExtendPrompt]);
 
+  // --- Re-attach remote audio track if lost ---
+  useEffect(() => {
+    if (remoteAudioRef.current && peerConnectionRef.current) {
+      const pc = peerConnectionRef.current;
+      const audioTracks = pc.getReceivers().map(r => r.track).filter(t => t && t.kind === "audio");
+      if (audioTracks.length > 0) {
+        remoteAudioRef.current.srcObject = new MediaStream(audioTracks);
+      }
+    }
+  }, [showExtendModal]);
+
   const formatTime = (s) => `${Math.floor(s / 60).toString().padStart(2, "0")}:${(s % 60).toString().padStart(2, "0")}`;
 
   return (
     <div className="relative w-screen h-screen bg-black overflow-hidden flex flex-col items-center justify-center">
-      <audio ref={remoteAudioRef} autoPlay />
+      {/* Persistent hidden audio elements */}
+      <audio ref={remoteAudioRef} autoPlay controls={false} className="hidden" />
+      <audio ref={localAudioRef} autoPlay controls={false} muted className="hidden" />
 
       {/* Status + Timer */}
       <div className="absolute top-4 left-4 flex gap-4 items-center">
