@@ -84,22 +84,23 @@ router.get("/session/:id", async (req, res) => {
     const astrologer = await Astrologer.findOne({
       _id: astrologerId,
       isVerified: true,
-    }).select("totalTalkTime");
+    }).select("totalChatTime totalVideoTime totalAudioTime "); // fetch all fields
 
     if (!astrologer) {
       return res.status(404).json({ error: "Astrologer not found" });
     }
 
     res.json({
-      chat: res.data.totalChatTime || "00:00",
-      video: res.data.totalVideoTime || "00:00",
-      audio: res.data.totalAudioTime || "00:00",
-    
+
+      chat: astrologer.totalChatTime || "00:00",
+      video: astrologer.totalVideoTime || "00:00",
+      audio: astrologer.totalAudioTime || "00:00",
     });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Server error" });
   }
 });
+
 
 module.exports = router;

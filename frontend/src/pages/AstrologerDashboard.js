@@ -38,12 +38,13 @@ export default function AstrologerDashboard() {
 
         // Assuming your API returns something like:
         // { totalTalkTime: "HH:MM:SS", chatTime: "HH:MM:SS", videoTime: "HH:MM:SS", audioTime: "HH:MM:SS" }
-        setTalkTimes({
-          total: res.data.totalTalkTime || "00:00",
-          chat: res.data.chatTime || "00:00",
-          video: res.data.videoTime || "00:00",
-          audio: res.data.audioTime || "00:00",
-        });
+      setTalkTimes({
+
+  chat: res.data.chat || "00:00",
+  video: res.data.video || "00:00",
+  audio: res.data.audio || "00:00",
+});
+
       } catch (err) {
         console.error("Failed to fetch session data:", err);
       }
