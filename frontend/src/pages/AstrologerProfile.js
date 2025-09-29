@@ -8,7 +8,7 @@ export default function AstrologerProfile() {
   const [loading, setLoading] = useState(true);
   const [startingConsultation, setStartingConsultation] = useState(false);
   const [userBalance, setUserBalance] = useState(0);
-  const [copied, setCopied] = useState(false); // For copy feedback
+  const [copied, setCopied] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -42,7 +42,7 @@ export default function AstrologerProfile() {
     fetchUserBalance();
   }, [id]);
 
-  const startConsultation = async (mode, route, rate) => {
+  const startConsultation = async (mode, rate) => {
     const currentUser = JSON.parse(sessionStorage.getItem("user"));
     if (!currentUser?.id) {
       alert("Please login first.");
@@ -51,7 +51,6 @@ export default function AstrologerProfile() {
     }
 
     const first5MinCost = rate * 5;
-
     if (userBalance < first5MinCost) {
       alert(`Insufficient balance. First 5 min cost: ₹${first5MinCost}`);
       navigate("/user/wallet");
@@ -77,6 +76,12 @@ export default function AstrologerProfile() {
       );
 
       setUserBalance((prev) => prev - first5MinCost);
+
+      // Navigate dynamically based on mode
+      let route = "/chat";
+      if (mode === "Video") route = "/video-call";
+      else if (mode === "Audio") route = "/audio-call";
+
       navigate(`${route}/${res.data._id}`, { state: { mode } });
     } catch (err) {
       console.error(`Error starting ${mode}:`, err);
@@ -86,52 +91,48 @@ export default function AstrologerProfile() {
     }
   };
 
-const shareProfile = async () => {
-  const profileUrl = `${window.location.origin}/astrologer/${id}`;
+  const shareProfile = async () => {
+    const profileUrl = `${window.location.origin}/astrologer/${id}`;
 
-  if (navigator.canShare && navigator.canShare({ files: [] })) {
-    try {
-      const response = await fetch(astrologer.photo);
-      const blob = await response.blob();
-      const file = new File([blob], "astrologer.jpg", { type: blob.type });
+    if (navigator.canShare && navigator.canShare({ files: [] })) {
+      try {
+        const response = await fetch(astrologer.photo);
+        const blob = await response.blob();
+        const file = new File([blob], "astrologer.jpg", { type: blob.type });
 
-      await navigator.share({
-        title: "Check out this astrologer!",
-        text: `I found this astrologer on Bhavana Astro: ${astrologer.name}`,
-        url: profileUrl,
-        files: [file],
-      });
+        await navigator.share({
+          title: "Check out this astrologer!",
+          text: `I found this astrologer on Bhavana Astro: ${astrologer.name}`,
+          url: profileUrl,
+          files: [file],
+        });
 
-      console.log("Profile shared successfully with image!");
-    } catch (err) {
-      console.error("Error sharing profile with image:", err);
+        console.log("Profile shared successfully with image!");
+      } catch (err) {
+        console.error("Error sharing profile with image:", err);
+      }
+    } else if (navigator.share) {
+      try {
+        await navigator.share({
+          title: "Check out this astrologer!",
+          text: `I found this astrologer on Bhavana Astro: ${astrologer.name}`,
+          url: profileUrl,
+        });
+      } catch (err) {
+        console.error("Error sharing profile:", err);
+      }
+    } else {
+      try {
+        await navigator.clipboard.writeText(profileUrl);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+        alert("Link copied to clipboard!");
+      } catch (err) {
+        console.error("Failed to copy URL:", err);
+        alert("Failed to share profile.");
+      }
     }
-  } else if (navigator.share) {
-    // Fallback: share URL + text only
-    try {
-      await navigator.share({
-        title: "Check out this astrologer!",
-        text: `I found this astrologer on Bhavana Astro: ${astrologer.name}`,
-        url: profileUrl,
-      });
-    } catch (err) {
-      console.error("Error sharing profile:", err);
-    }
-  } else {
-    // Fallback: copy URL
-    try {
-      await navigator.clipboard.writeText(profileUrl);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-      alert("Link copied to clipboard!");
-    } catch (err) {
-      console.error("Failed to copy URL:", err);
-      alert("Failed to share profile.");
-    }
-  }
-};
-
-
+  };
 
   if (loading) return <p className="text-gray-500">Loading profile...</p>;
   if (!astrologer) return <p className="text-red-500">Astrologer not found</p>;
@@ -140,43 +141,13 @@ const shareProfile = async () => {
     <div className="min-h-screen bg-gray-50 p-6 flex justify-center">
       <div className="bg-white shadow-lg rounded-2xl p-8 max-w-3xl w-full relative">
         {/* Share Icon */}
-    {/* Share Icon */}
-<div
-  className="absolute top-4 right-4 cursor-pointer"
-  onClick={shareProfile}
-  title={copied ? "Link Copied!" : "Share Profile"}
->
-  <svg
-    fill="#4f7a28"
-    xmlns="http://www.w3.org/2000/svg"
-    width="36px"
-    height="36px"
-    viewBox="-115.92 -115.92 714.84 714.84"
-    className={`${copied ? "animate-pulse" : ""}`}
-  >
-    {/* Background circle */}
-    <rect
-      x="-115.92"
-      y="-115.92"
-      width="714.84"
-      height="714.84"
-      rx="100.0776"
-      fill="#96d35f"
-    />
-    {/* Share icon path */}
-    <path
-      d="M395.72,0c-48.204,0-87.281,39.078-87.281,87.281c0,2.036,0.164,4.03,0.309,6.029l-161.233,75.674
-      c-15.668-14.971-36.852-24.215-60.231-24.215c-48.204,0.001-87.282,39.079-87.282,87.282c0,48.204,39.078,87.281,87.281,87.281
-      c15.206,0,29.501-3.907,41.948-10.741l69.789,58.806c-3.056,8.896-4.789,18.396-4.789,28.322c0,48.204,39.078,87.281,87.281,87.281
-      c48.205,0,87.281-39.078,87.281-87.281s-39.077-87.281-87.281-87.281c-15.205,0-29.5,3.908-41.949,10.74l-69.788-58.805
-      c3.057-8.891,4.789-18.396,4.789-28.322c0-2.035-0.164-4.024-0.308-6.029l161.232-75.674c15.668,14.971,36.852,24.215,60.23,24.215
-      c48.203,0,87.281-39.078,87.281-87.281C482.999,39.079,443.923,0,395.72,0z"
-    />
-  </svg>
-</div>
-
-
-
+        <div
+          className="absolute top-4 right-4 cursor-pointer"
+          onClick={shareProfile}
+          title={copied ? "Link Copied!" : "Share Profile"}
+        >
+          {/* SVG icon here */}
+        </div>
 
         {/* Profile Header */}
         <div className="flex flex-col items-center">
@@ -238,11 +209,10 @@ const shareProfile = async () => {
           {["Chat", "Video", "Audio"].map((mode) => {
             const rate = astrologer.rates?.[mode.toLowerCase()] || 0;
             const online = astrologer.online?.[mode.toLowerCase()];
-            const route = mode === "Chat" ? "/chat" : "/video-call";
             return (
               <button
                 key={mode}
-                onClick={() => startConsultation(mode, route, rate)}
+                onClick={() => startConsultation(mode, rate)}
                 disabled={!online || startingConsultation}
                 className={`px-4 py-2 rounded-lg text-white ${
                   !online ? "bg-gray-400 cursor-not-allowed" :

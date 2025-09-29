@@ -20,6 +20,7 @@ import AstrologerChat from "./pages/AstrologerChat";
 import AIConsultation from "./pages/AIConsultation";
 import MatchMakingForm from "./pages/MatchMakingForm";
 import VideoCall from "./pages/VideoCall";
+import AudioCall from "./pages/AudioCall";
 import WalletSuccess from "./pages/WalletSuccess";
 import Astrochat from "./pages/AstroChat";
 import Layout from "./pages/Footer"; // 👈 imported as Layout
@@ -181,6 +182,15 @@ function App() {
             element={
               <ProtectedRoute allowedRoles={["user", "astrologer"]}>
                 <VideoCall />
+              </ProtectedRoute>
+            }
+          />
+
+ <Route
+            path="/audio-call/:consultationId"
+            element={
+              <ProtectedRoute allowedRoles={["user", "astrologer"]}>
+                <AudioCall/>
               </ProtectedRoute>
             }
           />

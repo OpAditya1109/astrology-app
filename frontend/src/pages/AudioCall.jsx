@@ -5,27 +5,24 @@ import { io } from "socket.io-client";
 // Icons
 import micOnIcon from "../assets/mic-on.png";
 import micOffIcon from "../assets/mic-off.png";
-import videoOnIcon from "../assets/video-on.png";
-import videoOffIcon from "../assets/video-off.png";
 
 const SOCKET_SERVER_URL = "https://bhavanaastro.onrender.com";
 
-export default function VideoCall() {
+export default function AudioCall() {
   const { consultationId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
 
   const role = location.state?.role || "user";
 
-  const localVideoRef = useRef(null);
-  const remoteVideoRef = useRef(null);
   const peerConnectionRef = useRef(null);
   const targetSocketRef = useRef(null);
   const socketRef = useRef(null);
+  const localAudioRef = useRef(null);
+  const remoteAudioRef = useRef(null);
 
   const [status, setStatus] = useState("Connecting...");
   const [isMuted, setIsMuted] = useState(false);
-  const [isVideoOff, setIsVideoOff] = useState(false);
   const [secondsLeft, setSecondsLeft] = useState(null);
 
   // Extension logic
@@ -42,17 +39,17 @@ export default function VideoCall() {
   const endCall = () => {
     const socket = socketRef.current;
     if (socket) {
-      socket.emit("endVideoCall", { roomId: consultationId });
-      socket.emit("leaveVideoRoom", { roomId: consultationId });
+      socket.emit("endAudioCall", { roomId: consultationId });
+      socket.emit("leaveAudioRoom", { roomId: consultationId });
       socket.disconnect();
     }
 
     if (peerConnectionRef.current) peerConnectionRef.current.close();
-    if (localVideoRef.current?.srcObject) {
-      localVideoRef.current.srcObject.getTracks().forEach((t) => t.stop());
+    if (localAudioRef.current?.srcObject) {
+      localAudioRef.current.srcObject.getTracks().forEach((t) => t.stop());
     }
-    if (remoteVideoRef.current?.srcObject) {
-      remoteVideoRef.current.srcObject.getTracks().forEach((t) => t.stop());
+    if (remoteAudioRef.current?.srcObject) {
+      remoteAudioRef.current.srcObject.getTracks().forEach((t) => t.stop());
     }
 
     navigate(-1);
@@ -85,29 +82,27 @@ export default function VideoCall() {
     const pc = new RTCPeerConnection(ICE_SERVERS);
     peerConnectionRef.current = pc;
 
-    // --- Local media (video + audio only) ---
+    // --- Local media (audio only) ---
     (async () => {
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-        if (localVideoRef.current) localVideoRef.current.srcObject = stream;
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        if (localAudioRef.current) localAudioRef.current.srcObject = stream;
         stream.getTracks().forEach((track) => pc.addTrack(track, stream));
       } catch (e) {
         console.error("getUserMedia error:", e);
-        setStatus("Camera/Mic permission denied");
+        setStatus("Mic permission denied");
       }
     })();
 
-    // --- Remote stream ---
+    // --- Remote audio ---
     pc.ontrack = (event) => {
-      if (remoteVideoRef.current) {
-        remoteVideoRef.current.srcObject = event.streams[0];
-      }
+      if (remoteAudioRef.current) remoteAudioRef.current.srcObject = event.streams[0];
     };
 
     // --- ICE candidates ---
     pc.onicecandidate = (event) => {
       if (event.candidate && targetSocketRef.current) {
-        socket.emit("video-ice-candidate", {
+        socket.emit("audio-ice-candidate", {
           roomId: consultationId,
           to: targetSocketRef.current,
           candidate: event.candidate,
@@ -116,10 +111,10 @@ export default function VideoCall() {
     };
 
     // --- Join Room ---
-    socket.emit("joinVideoRoom", { roomId: consultationId, role });
+    socket.emit("joinAudioRoom", { roomId: consultationId, role });
 
     // --- Signaling ---
-    socket.on("video-existing-peers", async ({ peers }) => {
+    socket.on("audio-existing-peers", async ({ peers }) => {
       if (role === "user" && peers.length > 0) {
         targetSocketRef.current = peers[0];
         setStatus("Ringing...");
@@ -129,28 +124,28 @@ export default function VideoCall() {
       }
     });
 
-    socket.on("video-incoming-call", async ({ from, offer }) => {
+    socket.on("audio-incoming-call", async ({ from, offer }) => {
       targetSocketRef.current = from;
       setStatus("Ringing...");
       await pc.setRemoteDescription(offer);
       const answer = await pc.createAnswer();
       await pc.setLocalDescription(answer);
-      socket.emit("video-answer-call", { roomId: consultationId, to: from, answer });
+      socket.emit("audio-answer-call", { roomId: consultationId, to: from, answer });
     });
 
-    socket.on("video-call-answered", async ({ answer }) => {
+    socket.on("audio-call-answered", async ({ answer }) => {
       if (!pc) return;
       await pc.setRemoteDescription(answer);
       setStatus("Connected");
     });
 
     // Timer
-    socket.on("video-timer-started", ({ remaining }) => {
+    socket.on("audio-timer-started", ({ remaining }) => {
       setSecondsLeft(remaining);
       setStatus("Connected");
     });
 
-    socket.on("video-ice-candidate", async ({ candidate }) => {
+    socket.on("audio-ice-candidate", async ({ candidate }) => {
       try {
         if (!pc) return;
         await pc.addIceCandidate(candidate?.candidate ? candidate : new RTCIceCandidate(candidate));
@@ -161,9 +156,9 @@ export default function VideoCall() {
 
     socket.on("user-left", ({ message }) => {
       setStatus(message);
-      if (remoteVideoRef.current?.srcObject) {
-        remoteVideoRef.current.srcObject.getTracks().forEach((t) => t.stop());
-        remoteVideoRef.current.srcObject = null;
+      if (remoteAudioRef.current?.srcObject) {
+        remoteAudioRef.current.srcObject.getTracks().forEach((t) => t.stop());
+        remoteAudioRef.current.srcObject = null;
       }
       setTimeout(() => navigate(-1), 5000);
     });
@@ -171,8 +166,8 @@ export default function VideoCall() {
     return () => {
       socket.removeAllListeners();
       socket.disconnect();
-      if (localVideoRef.current?.srcObject) {
-        localVideoRef.current.srcObject.getTracks().forEach((t) => t.stop());
+      if (localAudioRef.current?.srcObject) {
+        localAudioRef.current.srcObject.getTracks().forEach((t) => t.stop());
       }
       pc.close();
     };
@@ -184,25 +179,16 @@ export default function VideoCall() {
     if (!pc || !socket || !targetSocketRef.current) return;
     const offer = await pc.createOffer();
     await pc.setLocalDescription(offer);
-    socket.emit("video-call-user", { roomId: consultationId, to: targetSocketRef.current, offer });
+    socket.emit("audio-call-user", { roomId: consultationId, to: targetSocketRef.current, offer });
   };
 
   const toggleMute = () => {
-    const stream = localVideoRef.current?.srcObject;
+    const stream = localAudioRef.current?.srcObject;
     if (!stream) return;
     const audioTrack = stream.getAudioTracks()[0];
     if (!audioTrack) return;
     audioTrack.enabled = !audioTrack.enabled;
     setIsMuted(!audioTrack.enabled);
-  };
-
-  const toggleVideo = () => {
-    const stream = localVideoRef.current?.srcObject;
-    if (!stream) return;
-    const videoTrack = stream.getVideoTracks()[0];
-    if (!videoTrack) return;
-    videoTrack.enabled = !videoTrack.enabled;
-    setIsVideoOff(!videoTrack.enabled);
   };
 
   const extendConsultation = async () => {
@@ -229,7 +215,7 @@ export default function VideoCall() {
       if (!res.ok) throw new Error("Deduction failed");
       const data = await res.json();
       setUserWallet(data.balance);
-      socketRef.current.emit("extendVideoTimer", { roomId: consultationId, extendMinutes });
+      socketRef.current.emit("extendAudioTimer", { roomId: consultationId, extendMinutes });
     } catch (err) {
       console.error(err);
       alert("Failed to extend call. Try again.");
@@ -241,9 +227,8 @@ export default function VideoCall() {
   const formatTime = (s) => `${Math.floor(s / 60).toString().padStart(2, "0")}:${(s % 60).toString().padStart(2, "0")}`;
 
   return (
-    <div className="relative w-screen h-screen bg-black overflow-hidden">
-      <video ref={remoteVideoRef} autoPlay playsInline className="absolute inset-0 w-full h-full object-cover" />
-      <video ref={localVideoRef} autoPlay playsInline muted className="absolute bottom-4 right-4 w-40 h-28 bg-black rounded-lg shadow-lg border-2 border-white" />
+    <div className="relative w-screen h-screen bg-black overflow-hidden flex flex-col items-center justify-center">
+      <audio ref={remoteAudioRef} autoPlay />
 
       {/* Status + Timer */}
       <div className="absolute top-4 left-4 flex gap-4 items-center">
@@ -254,12 +239,9 @@ export default function VideoCall() {
       <button onClick={endCall} className="absolute top-4 right-4 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-full shadow-lg transition">End</button>
 
       {/* Controls */}
-      <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex gap-6 bg-black bg-opacity-60 px-6 py-3 rounded-full">
+      <div className="absolute bottom-4 flex gap-6 bg-black bg-opacity-60 px-6 py-3 rounded-full">
         <button onClick={toggleMute} className="p-3 rounded-full bg-white shadow-md hover:bg-gray-200 transition">
           <img src={isMuted ? micOffIcon : micOnIcon} alt="Mic" className="w-6 h-6" />
-        </button>
-        <button onClick={toggleVideo} className="p-3 rounded-full bg-white shadow-md hover:bg-gray-200 transition">
-          <img src={isVideoOff ? videoOffIcon : videoOnIcon} alt="Video" className="w-6 h-6" />
         </button>
       </div>
 

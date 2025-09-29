@@ -33,7 +33,6 @@ export default function AstrologerConsultations() {
           { headers: { Authorization: `Bearer ${token}` } }
         );
 
-        // Keep the actual mode from backend (don't default to "Chat")
         const uniqueConsultations = Array.from(
           new Map(res.data.map((c) => [c._id, c])).values()
         );
@@ -77,7 +76,7 @@ export default function AstrologerConsultations() {
   };
 
   const handleStartAudioCall = (consultationId) => {
-    navigate(`/video-call/${consultationId}?mode=Audio`);
+    navigate(`/audio-call/${consultationId}?mode=Audio`);
   };
 
   const handleEndChat = async (consultationId) => {
@@ -106,14 +105,14 @@ export default function AstrologerConsultations() {
 
   return (
     <div className="p-6">
-      <h1 className="text-2xl font-bold text-purple-700 mb-6"> Consultations</h1>
+      <h1 className="text-2xl font-bold text-purple-700 mb-6">Consultations</h1>
 
       {filteredConsultations.length === 0 ? (
         <p className="text-gray-500">No consultations booked yet.</p>
       ) : (
         <div className="grid gap-6">
           {filteredConsultations.map((c) => {
-            const modeToUse = c.mode; // Use backend mode directly
+            const modeToUse = c.mode;
 
             return (
               <div
@@ -126,8 +125,6 @@ export default function AstrologerConsultations() {
                   <FaUserCircle className="text-purple-600 text-4xl" />
                   <div>
                     <h2 className="font-semibold text-lg">{c.userName || "User"}</h2>
-        
-
                     <p className="text-gray-600 text-sm">
                       Topic: <span className="font-medium">{c.topic || "-"}</span>
                     </p>
