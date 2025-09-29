@@ -11,10 +11,11 @@ router.post("/", async (req, res) => {
       return res.status(400).json({ message: "Missing required fields" });
     }
 
+    // Let Mongoose cast strings to ObjectId automatically
     const newReview = new Review({
-      consultationId: mongoose.Types.ObjectId(consultationId),
-      astrologerId: mongoose.Types.ObjectId(astrologerId),
-      userId: mongoose.Types.ObjectId(userId),
+      consultationId,
+      astrologerId,
+      userId,
       rating,
       feedback,
     });
