@@ -411,7 +411,189 @@ async function finalizeVideoConsultation(roomId, endedByTimer = false) {
 
 
 
+//Audio calls
+socket.on("joinAudioRoom", async ({ roomId, role }) => {
+    const audioRoomId = `${roomId}-audio`;
+    socket.join(audioRoomId);
+    console.log(`🎤 ${role} (${socket.id}) joined ${audioRoomId}`);
 
+    try {
+      const consultation = await Consultation.findById(roomId);
+      if (consultation?.timer?.isRunning) {
+        const totalSeconds = consultation.timer.durationMinutes * 60;
+        const elapsed = Math.floor((Date.now() - new Date(consultation.timer.startTime)) / 1000);
+        const remaining = totalSeconds - elapsed;
+        socket.emit("audio-timer-started", { remaining: Math.max(remaining, 0) });
+      }
+    } catch (err) {
+      console.error("joinAudioRoom error:", err);
+    }
+
+    const peers = [...(io.sockets.adapter.rooms.get(audioRoomId) || [])].filter(id => id !== socket.id);
+    socket.emit("audio-existing-peers", { peers });
+    peers.forEach(peerId => io.to(peerId).emit("audio-peer-joined", { socketId: socket.id }));
+  });
+
+  // --- User calls astrologer ---
+  socket.on("audio-call-user", ({ roomId, to, offer }) => {
+    if (to) {
+      io.to(to).emit("audio-incoming-call", { from: socket.id, offer });
+      console.log(`📞 Audio call from ${socket.id} to ${to}`);
+    }
+  });
+
+  // --- Astrologer answers call & starts timer ---
+  socket.on("audio-answer-call", async ({ roomId, to, answer }) => {
+    if (to) io.to(to).emit("audio-call-answered", { answer });
+
+    try {
+      const consultation = await Consultation.findById(roomId);
+      if (!consultation) return;
+
+      if (!consultation.timer?.isRunning) {
+        consultation.timer = consultation.timer || {};
+        consultation.timer.startTime = new Date();
+        consultation.timer.durationMinutes = consultation.timer.durationMinutes || 5;
+        consultation.timer.isRunning = true;
+        await consultation.save();
+
+        const audioRoomId = `${roomId}-audio`;
+        const totalSeconds = consultation.timer.durationMinutes * 60;
+
+        if (!activeTimers[roomId]) {
+          activeTimers[roomId] = {
+            secondsLeft: totalSeconds,
+            totalAllocated: totalSeconds,
+            interval: setInterval(async () => {
+              activeTimers[roomId].secondsLeft--;
+              io.to(audioRoomId).emit("audio-timer-started", { remaining: activeTimers[roomId].secondsLeft });
+
+              if (activeTimers[roomId].secondsLeft <= 0) {
+                clearInterval(activeTimers[roomId].interval);
+                delete activeTimers[roomId];
+                await finalizeAudioConsultation(roomId, true);
+                io.to(audioRoomId).emit("timerEnded");
+              }
+            }, 1000),
+          };
+        }
+
+        io.to(audioRoomId).emit("audio-timer-started", { remaining: activeTimers[roomId].secondsLeft });
+        console.log(`⏱ Audio timer started for consultation ${roomId}`);
+      }
+    } catch (err) {
+      console.error("audio-answer-call error:", err);
+    }
+  });
+
+  // --- ICE candidates ---
+  socket.on("audio-ice-candidate", ({ roomId, to, candidate }) => {
+    if (to) io.to(to).emit("audio-ice-candidate", { from: socket.id, candidate });
+  });
+
+  // --- Leave Room ---
+  socket.on("leaveAudioRoom", async ({ roomId }) => {
+    const audioRoomId = `${roomId}-audio`;
+    io.to(audioRoomId).emit("user-left", { message: "User left the call" });
+    socket.leave(audioRoomId);
+
+    if (activeTimers[roomId]) {
+      clearInterval(activeTimers[roomId].interval);
+      await finalizeAudioConsultation(roomId);
+    }
+  });
+
+  socket.on("endAudioCall", async ({ roomId }) => {
+    if (activeTimers[roomId]) {
+      clearInterval(activeTimers[roomId].interval);
+      await finalizeAudioConsultation(roomId);
+    }
+  });
+
+  // --- Extend Timer ---
+  socket.on("extendAudioTimer", async ({ roomId, extendMinutes }) => {
+    const audioRoomId = `${roomId}-audio`;
+    try {
+      const consultation = await Consultation.findById(roomId);
+      if (!consultation?.timer || !activeTimers[roomId]) return;
+
+      const addSeconds = extendMinutes * 60;
+      activeTimers[roomId].secondsLeft += addSeconds;
+      activeTimers[roomId].totalAllocated += addSeconds;
+
+      const talkedSeconds = activeTimers[roomId].totalAllocated - activeTimers[roomId].secondsLeft;
+      consultation.timer.durationMinutes = Math.ceil((talkedSeconds + activeTimers[roomId].secondsLeft) / 60);
+      await consultation.save();
+
+      io.to(audioRoomId).emit("audio-timer-started", { remaining: activeTimers[roomId].secondsLeft });
+      console.log(`⏱ Audio timer extended by ${extendMinutes} min for ${roomId}`);
+    } catch (err) {
+      console.error(err);
+    }
+  });
+
+  // --- Disconnect ---
+  socket.on("disconnect", async () => {
+    const rooms = Array.from(socket.rooms).filter(r => r !== socket.id);
+    for (const room of rooms) {
+      if (room.endsWith("-audio")) {
+        const roomId = room.replace("-audio", "");
+        io.to(room).emit("user-left", { message: "User left the call" });
+
+        if (activeTimers[roomId]) {
+          clearInterval(activeTimers[roomId].interval);
+          delete activeTimers[roomId];
+        }
+
+        try {
+          await Consultation.findByIdAndDelete(roomId);
+          console.log(`🗑 Consultation ${roomId} deleted on disconnect`);
+        } catch (err) {
+          console.error(err);
+        }
+      }
+    }
+  });
+});
+
+// --- Finalize Audio Consultation ---
+async function finalizeAudioConsultation(roomId, endedByTimer = false) {
+  try {
+    const consultation = await Consultation.findById(roomId);
+    if (!consultation) return;
+
+    let talkedSeconds = 0;
+    if (activeTimers[roomId]) {
+      talkedSeconds = activeTimers[roomId].totalAllocated - activeTimers[roomId].secondsLeft;
+      clearInterval(activeTimers[roomId].interval);
+      delete activeTimers[roomId];
+    }
+
+    consultation.timer = consultation.timer || {};
+    consultation.timer.isRunning = false;
+    consultation.talkTime = formatClock(talkedSeconds);
+    await consultation.save();
+
+    const astro = await Astrologer.findById(consultation.astrologerId);
+    if (astro) {
+      const prevAudioSeconds = clockToSeconds(astro.totalAudioTime || "00:00");
+      astro.totalAudioTime = formatClock(prevAudioSeconds + talkedSeconds);
+      await astro.save();
+      console.log(`✨ Astrologer ${astro._id} stats updated (Audio: ${astro.totalAudioTime})`);
+    }
+
+    if (!endedByTimer) {
+      await Consultation.findByIdAndDelete(roomId);
+      console.log(`🗑 Consultation ${roomId} deleted`);
+    }
+
+    io.to(`${roomId}-audio`).emit("consultationEnded", {
+      consultationId: roomId,
+      talkTime: consultation.talkTime,
+    });
+  } catch (err) {
+    console.error("finalizeAudioConsultation error:", err);
+  }
 
 
 
