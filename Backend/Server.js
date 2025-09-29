@@ -310,6 +310,12 @@ socket.on("leaveVideoRoom", async ({ roomId }) => {
   }
 });
 
+socket.on("endVideoCall", async ({ roomId }) => {
+  if (activeTimers[roomId]) {
+    clearInterval(activeTimers[roomId].interval);
+    await finalizeVideoConsultation(roomId); // finalize & delete from DB
+  }
+});
 
 // --- Disconnect handler ---
 socket.on("disconnect", async () => {
@@ -380,9 +386,6 @@ async function finalizeVideoConsultation(roomId, endedByTimer = false) {
     // --- Update astrologer stats ---
     const astro = await Astrologer.findById(consultation.astrologerId);
     if (astro) {
-      // All calls
-      const prevTotalSeconds = clockToSeconds(astro.totalTalkTime || "00:00");
-      astro.totalTalkTime = formatClock(prevTotalSeconds + talkedSeconds);
 
       // Only video calls
       const prevVideoSeconds = clockToSeconds(astro.totalVideoTime || "00:00");

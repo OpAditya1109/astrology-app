@@ -152,6 +152,30 @@ export default function VideoCall() {
       setTimeout(() => navigate(-1), 5000);
     });
 
+const endCall = () => {
+  const socket = socketRef.current;
+  if (socket) {
+    // Emit to backend to finalize & delete consultation
+    socket.emit("endVideoCall", { roomId: consultationId });
+
+    // Leave the room
+    socket.emit("leaveVideoRoom", { roomId: consultationId });
+    socket.disconnect();
+  }
+
+  // Stop local media & peer connection
+  if (peerConnectionRef.current) peerConnectionRef.current.close();
+  if (localVideoRef.current?.srcObject) {
+    localVideoRef.current.srcObject.getTracks().forEach((t) => t.stop());
+  }
+  if (remoteVideoRef.current?.srcObject) {
+    remoteVideoRef.current.srcObject.getTracks().forEach((t) => t.stop());
+  }
+
+  navigate(-1);
+};
+
+
     return () => {
       socket.removeAllListeners();
       socket.disconnect();
@@ -251,15 +275,6 @@ export default function VideoCall() {
     }
   };
 
-  const endCall = () => {
-    const socket = socketRef.current;
-    if (socket) {
-      socket.emit("leaveVideoRoom", { roomId: consultationId });
-      socket.disconnect();
-    }
-    if (peerConnectionRef.current) peerConnectionRef.current.close();
-    navigate(-1);
-  };
 
   const formatTime = (s) => `${Math.floor(s / 60).toString().padStart(2, "0")}:${(s % 60).toString().padStart(2, "0")}`;
 
