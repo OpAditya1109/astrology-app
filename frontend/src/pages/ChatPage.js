@@ -21,6 +21,8 @@ export default function ChatPage() {
   const [reviewRating, setReviewRating] = useState(0);
   const [reviewFeedback, setReviewFeedback] = useState("");
   const messagesEndRef = useRef(null);
+  const [consultation, setConsultation] = useState(null);
+
 
   const currentUser = JSON.parse(sessionStorage.getItem("user"));
   const userId = currentUser?.id || "guest";
@@ -35,6 +37,7 @@ export default function ChatPage() {
         const res = await fetch(`https://bhavanaastro.onrender.com/api/consultations/details/${roomId}`);
         if (!res.ok) return console.error("Failed to fetch consultation details", res.status, res.statusText);
         const data = await res.json();
+        setConsultation(data);
         setExtendRate(data.ratePerMinute || 0);
       } catch (err) {
         console.error("Failed to fetch consultation rate:", err);
@@ -369,7 +372,7 @@ export default function ChatPage() {
                 onClick={async () => {
                    console.log({
       consultationId: roomId,
-     astrologerId: consultationId?.astrologerId,
+     astrologerId: consultation?.astrologerId,
       userId: currentUser.id,
       rating: reviewRating,
       feedback: reviewFeedback,
@@ -381,7 +384,7 @@ export default function ChatPage() {
                       headers: { "Content-Type": "application/json" },
                       body: JSON.stringify({
                         consultationId: roomId,
-                      astrologerId: consultationId?.astrologerId, 
+                      astrologerId: consultation?.astrologerId, 
                         rating: reviewRating,
                         feedback: reviewFeedback,
                         userId: currentUser.id,
