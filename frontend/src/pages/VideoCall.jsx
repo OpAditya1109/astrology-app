@@ -216,26 +216,34 @@ const toggleMute = () => {
   const stream = localVideoRef.current?.srcObject;
   if (!stream) return;
 
-  const audioTrack = stream.getTracks().find((t) => t.kind === "audio");
-  if (!audioTrack) return;
+  // Find audio track
+  const audioTrack = stream.getAudioTracks()[0];
+  if (!audioTrack) {
+    console.warn("No audio track found");
+    return;
+  }
 
-  const newMuted = audioTrack.enabled; // save current state
-  audioTrack.enabled = !audioTrack.enabled; // toggle track
-  setIsMuted(!newMuted); // set button state correctly
+  // Toggle track
+  audioTrack.enabled = !audioTrack.enabled;
+  setIsMuted(!audioTrack.enabled); // true = muted
 };
+
 
 const toggleVideo = () => {
   if (callMode === "Audio") return;
   const stream = localVideoRef.current?.srcObject;
   if (!stream) return;
 
-  const videoTrack = stream.getTracks().find((t) => t.kind === "video");
-  if (!videoTrack) return;
+  const videoTrack = stream.getVideoTracks()[0];
+  if (!videoTrack) {
+    console.warn("No video track found");
+    return;
+  }
 
-  const newVideoState = videoTrack.enabled;
   videoTrack.enabled = !videoTrack.enabled;
-  setIsVideoOff(!newVideoState);
+  setIsVideoOff(!videoTrack.enabled); // true = video off
 };
+
 
   const extendConsultation = async () => {
     if (extending) return;
