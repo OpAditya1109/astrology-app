@@ -17,26 +17,29 @@ const astrologerSchema = new mongoose.Schema(
     role: { type: String, enum: ["astrologer"], default: "astrologer" },
     isAI: { type: Boolean, default: false },
 
-    // ✅ Verification field
+    // Verification field
     isVerified: { type: Boolean, default: false },
 
-    // ✅ New field: description / bio
+    // Description / bio
     description: { type: String, default: "" },
 
-    // ✅ Rates for different modes
+    // Rates for different modes
     rates: {
       chat: { type: Number, default: 0 },
       video: { type: Number, default: 0 },
       audio: { type: Number, default: 0 },
     },
 
-    // ✅ Online availability
+    // Online availability
     online: {
       chat: { type: Boolean, default: false },
       video: { type: Boolean, default: false },
       audio: { type: Boolean, default: false },
     },
-totalTalkTime: { type: String, default: "00:00" },
+
+    // Total talk times
+    totalTalkTime: { type: String, default: "00:00" },       // all calls
+    totalVideoTime: { type: String, default: "00:00" },      // only video calls
   },
   { timestamps: true }
 );

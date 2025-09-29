@@ -275,7 +275,7 @@ socket.on("video-answer-call", async ({ roomId, to, answer }) => {
               clearInterval(activeTimers[roomId].interval);
               delete activeTimers[roomId];
 
-              await finalizeConsultation(roomId, true); // auto end
+              await finalizeVideoConsultation(roomId, true); // auto end
               io.to(videoRoomId).emit("timerEnded");
             }
           }, 1000),
@@ -303,20 +303,13 @@ socket.on("leaveVideoRoom", async ({ roomId }) => {
   io.to(videoRoomId).emit("user-left", { message: "User left the call" });
   socket.leave(videoRoomId);
 
-  // Clear timer
+  // Finalize consultation
   if (activeTimers[roomId]) {
     clearInterval(activeTimers[roomId].interval);
-    delete activeTimers[roomId];
-  }
-
-  // Delete consultation
-  try {
-    await Consultation.findByIdAndDelete(roomId);
-    console.log(`🗑 Consultation ${roomId} deleted after user left`);
-  } catch (err) {
-    console.error("Error deleting consultation:", err);
+    await finalizeVideoConsultation(roomId); // update DB
   }
 });
+
 
 // --- Disconnect handler ---
 socket.on("disconnect", async () => {
@@ -367,6 +360,60 @@ socket.on("extendVideoTimer", async ({ roomId, extendMinutes }) => {
     console.error("Error extending video consultation timer:", err);
   }
 });
+
+async function finalizeVideoConsultation(roomId, endedByTimer = false) {
+  try {
+    const consultation = await Consultation.findById(roomId);
+    if (!consultation?.timer) return;
+
+    const timer = activeTimers[roomId];
+    if (!timer) return;
+
+    const talkedSeconds = timer.totalAllocated - timer.secondsLeft;
+    const talkedClock = formatClock(talkedSeconds);
+
+    // --- Update consultation ---
+    consultation.timer.isRunning = false;
+    consultation.talkTime = talkedClock; // actual time used
+    await consultation.save();
+
+    // --- Update astrologer stats ---
+    const astro = await Astrologer.findById(consultation.astrologerId);
+    if (astro) {
+      // All calls
+      const prevTotalSeconds = clockToSeconds(astro.totalTalkTime || "00:00");
+      astro.totalTalkTime = formatClock(prevTotalSeconds + talkedSeconds);
+
+      // Only video calls
+      const prevVideoSeconds = clockToSeconds(astro.totalVideoTime || "00:00");
+      astro.totalVideoTime = formatClock(prevVideoSeconds + talkedSeconds);
+
+      await astro.save();
+    }
+
+    // --- Save unused time to admin ---
+    const unused = timer.secondsLeft;
+    if (unused > 0) {
+      await Admin.updateOne(
+        {},
+        {
+          $inc: { remainingSeconds: unused },
+          $set: { remainingTime: formatClock(unused) },
+        }
+      );
+    }
+
+    // --- Notify users ---
+    io.to(roomId).emit("consultationEnded", {
+      consultationId: roomId,
+      talkTime: talkedClock,
+    });
+
+    delete activeTimers[roomId];
+  } catch (err) {
+    console.error("finalizeVideoConsultation error:", err);
+  }
+}
 
 
 
