@@ -78,109 +78,116 @@ export default function VideoCall() {
     fetchData();
   }, [consultationId]);
 
-  useEffect(() => {
-    const socket = io(SOCKET_SERVER_URL, { transports: ["websocket"] });
-    socketRef.current = socket;
+useEffect(() => {
+  const socket = io(SOCKET_SERVER_URL, { transports: ["websocket"] });
+  socketRef.current = socket;
 
-    const pc = new RTCPeerConnection(ICE_SERVERS);
-    peerConnectionRef.current = pc;
+  const pc = new RTCPeerConnection(ICE_SERVERS);
+  peerConnectionRef.current = pc;
 
-    // --- Local media ---
-    (async () => {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: callMode === "Video",
-          audio: true,
-        });
+  // --- Local media ---
+  (async () => {
+    try {
+      let stream;
+      if (callMode === "Video") {
+        // Video call: get video + audio
+        stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
         if (localVideoRef.current) localVideoRef.current.srcObject = stream;
-        stream.getTracks().forEach((track) => pc.addTrack(track, stream));
-      } catch (e) {
-        console.error("getUserMedia error:", e);
-        setStatus("Camera/Mic permission denied");
+      } else {
+        // Audio-only call: get only audio
+        stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       }
-    })();
 
-    // --- Remote stream ---
-    pc.ontrack = (event) => {
-      if (remoteVideoRef.current) remoteVideoRef.current.srcObject = event.streams[0];
-    };
+      // Add tracks to peer connection
+      stream.getTracks().forEach((track) => pc.addTrack(track, stream));
 
-    // --- ICE candidates ---
-    pc.onicecandidate = (event) => {
-      if (event.candidate && targetSocketRef.current) {
-        socket.emit("video-ice-candidate", {
-          roomId: consultationId,
-          to: targetSocketRef.current,
-          candidate: event.candidate,
-        });
-      }
-    };
+    } catch (e) {
+      console.error("getUserMedia error:", e);
+      setStatus("Camera/Mic permission denied");
+    }
+  })();
 
-    // --- Join Room ---
-    socket.emit("joinVideoRoom", { roomId: consultationId, role });
+  // --- Remote stream ---
+  pc.ontrack = (event) => {
+    if (remoteVideoRef.current) {
+      remoteVideoRef.current.srcObject = event.streams[0];
+    }
+  };
 
-    // === Signaling ===
-    socket.on("video-existing-peers", async ({ peers }) => {
-      if (role === "user" && peers.length > 0) {
-        targetSocketRef.current = peers[0];
-        setStatus("Ringing...");
-        await startCall();
-      } else if (role === "user") {
-        setStatus("Waiting for astrologer...");
-      }
-    });
+  // --- ICE candidates ---
+  pc.onicecandidate = (event) => {
+    if (event.candidate && targetSocketRef.current) {
+      socket.emit("video-ice-candidate", {
+        roomId: consultationId,
+        to: targetSocketRef.current,
+        candidate: event.candidate,
+      });
+    }
+  };
 
-    socket.on("video-incoming-call", async ({ from, offer }) => {
-      targetSocketRef.current = from;
+  // --- Join Room ---
+  socket.emit("joinVideoRoom", { roomId: consultationId, role });
+
+  // --- Signaling ---
+  socket.on("video-existing-peers", async ({ peers }) => {
+    if (role === "user" && peers.length > 0) {
+      targetSocketRef.current = peers[0];
       setStatus("Ringing...");
-      await pc.setRemoteDescription(offer);
-      const answer = await pc.createAnswer();
-      await pc.setLocalDescription(answer);
-      socket.emit("video-answer-call", { roomId: consultationId, to: from, answer });
-    });
+      await startCall();
+    } else if (role === "user") {
+      setStatus("Waiting for astrologer...");
+    }
+  });
 
-    socket.on("video-call-answered", async ({ answer }) => {
+  socket.on("video-incoming-call", async ({ from, offer }) => {
+    targetSocketRef.current = from;
+    setStatus("Ringing...");
+    await pc.setRemoteDescription(offer);
+    const answer = await pc.createAnswer();
+    await pc.setLocalDescription(answer);
+    socket.emit("video-answer-call", { roomId: consultationId, to: from, answer });
+  });
+
+  socket.on("video-call-answered", async ({ answer }) => {
+    if (!pc) return;
+    await pc.setRemoteDescription(answer);
+    setStatus("Connected");
+  });
+
+  // Timer
+  socket.on("video-timer-started", ({ remaining }) => {
+    setSecondsLeft(remaining);
+    setStatus("Connected");
+  });
+
+  socket.on("video-ice-candidate", async ({ candidate }) => {
+    try {
       if (!pc) return;
-      await pc.setRemoteDescription(answer);
-      setStatus("Connected");
-    });
+      await pc.addIceCandidate(candidate?.candidate ? candidate : new RTCIceCandidate(candidate));
+    } catch (err) {
+      console.error("Error adding ICE candidate:", err);
+    }
+  });
 
-    // Timer
-    socket.on("video-timer-started", ({ remaining }) => {
-      setSecondsLeft(remaining);
-      setStatus("Connected");
-    });
+  socket.on("user-left", ({ message }) => {
+    setStatus(message);
+    if (remoteVideoRef.current?.srcObject) {
+      remoteVideoRef.current.srcObject.getTracks().forEach((t) => t.stop());
+      remoteVideoRef.current.srcObject = null;
+    }
+    setTimeout(() => navigate(-1), 5000);
+  });
 
-    socket.on("video-ice-candidate", async ({ candidate }) => {
-      try {
-        if (!pc) return;
-        await pc.addIceCandidate(candidate?.candidate ? candidate : new RTCIceCandidate(candidate));
-      } catch (err) {
-        console.error("Error adding ICE candidate:", err);
-      }
-    });
+  return () => {
+    socket.removeAllListeners();
+    socket.disconnect();
+    if (localVideoRef.current?.srcObject) {
+      localVideoRef.current.srcObject.getTracks().forEach((t) => t.stop());
+    }
+    pc.close();
+  };
+}, [consultationId, callMode, role]);
 
-    socket.on("user-left", ({ message }) => {
-      setStatus(message);
-      if (remoteVideoRef.current?.srcObject) {
-        remoteVideoRef.current.srcObject.getTracks().forEach((t) => t.stop());
-        remoteVideoRef.current.srcObject = null;
-      }
-      setTimeout(() => navigate(-1), 5000);
-    });
-
-
-
-
-    return () => {
-      socket.removeAllListeners();
-      socket.disconnect();
-      if (localVideoRef.current?.srcObject) {
-        localVideoRef.current.srcObject.getTracks().forEach((t) => t.stop());
-      }
-      pc.close();
-    };
-  }, [consultationId, callMode, role]);
 
   // --- Timer countdown ---
   useEffect(() => {
