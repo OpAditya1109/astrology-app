@@ -181,57 +181,52 @@ io.on("connection", (socket) => {
     console.log(`📌 Astrologer ${socket.id} joined room: ${astrologerId}`);
   });
 
-  // --- Video call signaling ---
-  socket.on("call-user", ({ to, offer }) => {
-    if (to) io.to(to).emit("incoming-call", { from: socket.id, offer });
-  });
-  socket.on("answer-call", ({ to, answer }) => {
-    if (to) io.to(to).emit("call-answered", { from: socket.id, answer });
-  });
-  socket.on("ice-candidate", ({ to, candidate }) => {
-    if (to) io.to(to).emit("ice-candidate", { from: socket.id, candidate });
-  });
 
 
     // --- VIDEO CALL SUB-ROOM ---
- socket.on("joinVideoRoom", async ({ roomId, role }) => {
-    const videoRoomId = `${roomId}-video`;
-    socket.join(videoRoomId);
-    console.log(`🎥 ${role} (${socket.id}) joined ${videoRoomId}`);
+socket.on("joinVideoRoom", async ({ roomId, role }) => {
+  const videoRoomId = `${roomId}-video`;
+  socket.join(videoRoomId);
+  console.log(`🎥 ${role} (${socket.id}) joined ${videoRoomId}`);
 
-    // If astrologer joins, start timer in DB
-    if (role === "astrologer") {
-      try {
-        const consultation = await Consultation.findById(roomId);
-        if (consultation && !consultation.timer.isRunning) {
-          consultation.timer.startTime = new Date();
-          consultation.timer.isRunning = true;
-          await consultation.save();
+  try {
+    const consultation = await Consultation.findById(roomId);
 
-          // Notify both peers about timer start
-          io.to(videoRoomId).emit("video-timer-started", {
-            startTime: consultation.timer.startTime,
-            durationMinutes: consultation.timer.durationMinutes,
-          });
-          console.log(`⏱ Timer started for consultation ${roomId}`);
-        }
-      } catch (err) {
-        console.error("joinVideoRoom -> DB error:", err);
-      }
+    // If astrologer joins, start timer
+    if (role === "astrologer" && consultation && !consultation.timer?.isRunning) {
+      consultation.timer.startTime = new Date();
+      consultation.timer.isRunning = true;
+      await consultation.save();
+
+      io.to(videoRoomId).emit("video-timer-started", {
+        startTime: consultation.timer.startTime,
+        durationMinutes: consultation.timer.durationMinutes,
+      });
+
+      console.log(`⏱ Timer started for consultation ${roomId}`);
     }
 
-    // Get other peers already in this video room
-    const peers = [...(io.sockets.adapter.rooms.get(videoRoomId) || [])]
-      .filter((id) => id !== socket.id);
+    // ✅ Send current timer state to anyone joining late
+    if (consultation?.timer?.isRunning) {
+      socket.emit("video-timer-started", {
+        startTime: consultation.timer.startTime,
+        durationMinutes: consultation.timer.durationMinutes,
+      });
+    }
+  } catch (err) {
+    console.error("joinVideoRoom -> DB error:", err);
+  }
 
-    // Tell this socket who’s already here
-    socket.emit("video-existing-peers", { peers });
+  // Existing peers
+  const peers = [...(io.sockets.adapter.rooms.get(videoRoomId) || [])]
+    .filter((id) => id !== socket.id);
 
-    // Notify existing peers about the new joiner
-    peers.forEach((peerId) => {
-      io.to(peerId).emit("video-peer-joined", { socketId: socket.id });
-    });
+  socket.emit("video-existing-peers", { peers });
+  peers.forEach((peerId) => {
+    io.to(peerId).emit("video-peer-joined", { socketId: socket.id });
   });
+});
+
 
   // --- WebRTC signaling events (scoped to videoRoom) ---
   socket.on("video-call-user", ({ roomId, to, offer }) => {
@@ -250,7 +245,7 @@ io.on("connection", (socket) => {
 
 
 
-  
+
   // --- Disconnect ---
   socket.on("disconnect", () => {
     console.log("❌ Client disconnected:", socket.id);
