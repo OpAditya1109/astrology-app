@@ -388,10 +388,15 @@ async function finalizeVideoConsultation(roomId, endedByTimer = false) {
     // --- Update astrologer stats ---
     const astro = await Astrologer.findById(consultation.astrologerId);
     if (astro) {
-      const prevVideoSeconds = clockToSeconds(astro.totalVideoTime || "00:00");
-      astro.totalVideoTime = formatClock(prevVideoSeconds + talkedSeconds);
+      if (consultation.callMode === "Video") {
+        const prevVideoSeconds = clockToSeconds(astro.totalVideoTime || "00:00");
+        astro.totalVideoTime = formatClock(prevVideoSeconds + talkedSeconds);
+      } else if (consultation.callMode === "Audio") {
+        const prevAudioSeconds = clockToSeconds(astro.totalAudioTime || "00:00");
+        astro.totalAudioTime = formatClock(prevAudioSeconds + talkedSeconds);
+      }
       await astro.save();
-      console.log(`✨ Astrologer ${astro._id} totalVideoTime updated`);
+      console.log(`✨ Astrologer ${astro._id} stats updated (Video: ${astro.totalVideoTime}, Audio: ${astro.totalAudioTime})`);
     }
 
     // Delete consultation if call ended manually
@@ -409,6 +414,7 @@ async function finalizeVideoConsultation(roomId, endedByTimer = false) {
     console.error("finalizeVideoConsultation error:", err);
   }
 }
+
 
 
 

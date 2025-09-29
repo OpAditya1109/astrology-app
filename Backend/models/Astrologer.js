@@ -39,7 +39,8 @@ const astrologerSchema = new mongoose.Schema(
 
     // Total talk times
     totalTalkTime: { type: String, default: "00:00" },       // all calls
-    totalVideoTime: { type: String, default: "00:00" },      // only video calls
+    totalVideoTime: { type: String, default: "00:00" },    // only video calls
+    totalAudioTime: { type: String, default: "00:00" },  
   },
   { timestamps: true }
 );
