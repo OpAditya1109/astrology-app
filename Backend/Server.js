@@ -198,11 +198,13 @@ socket.on("joinVideoRoom", async ({ roomId, role }) => {
 
     // --- Send timer state if already running ---
     if (consultation.timer.isRunning) {
-      socket.emit("video-timer-started", {
-        startTime: consultation.timer.startTime,
-        durationMinutes: consultation.timer.durationMinutes,
-      });
-    }
+  const totalSeconds = consultation.timer.durationMinutes * 60;
+  const elapsed = Math.floor((Date.now() - new Date(consultation.timer.startTime)) / 1000);
+  const remaining = totalSeconds - elapsed;
+
+  socket.emit("video-timer-started", { remaining: Math.max(remaining, 0) });
+}
+
   } catch (err) {
     console.error("joinVideoRoom -> DB error:", err);
   }
@@ -219,8 +221,6 @@ socket.on("joinVideoRoom", async ({ roomId, role }) => {
 });
 
 
-// --- WebRTC signaling (scoped to video rooms) ---
-// User initiates call → astrologer gets ringing
 socket.on("video-call-user", ({ roomId, to, offer }) => {
   if (to) {
     io.to(to).emit("video-incoming-call", { from: socket.id, offer });
@@ -240,11 +240,13 @@ socket.on("video-answer-call", async ({ roomId, to, answer }) => {
       consultation.timer.isRunning = true;
       await consultation.save();
 
-      const videoRoomId = `${roomId}-video`;
-      io.to(videoRoomId).emit("video-timer-started", {
-        startTime: consultation.timer.startTime,
-        durationMinutes: consultation.timer.durationMinutes,
-      });
+    const videoRoomId = `${roomId}-video`;
+const totalSeconds = consultation.timer.durationMinutes * 60;
+const elapsed = Math.floor((Date.now() - new Date(consultation.timer.startTime)) / 1000);
+const remaining = totalSeconds - elapsed;
+
+io.to(videoRoomId).emit("video-timer-started", { remaining: Math.max(remaining, 0) });
+
 
       console.log(`⏱ Timer started for consultation ${roomId}`);
     }

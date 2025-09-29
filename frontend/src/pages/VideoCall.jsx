@@ -112,12 +112,10 @@ export default function VideoCall() {
     });
 
     // Timer starts only when astrologer accepts
-    socket.on("video-timer-started", ({ startTime, durationMinutes }) => {
-      setStatus("Connected");
-      const elapsed = Math.floor((Date.now() - new Date(startTime)) / 1000);
-      const remaining = durationMinutes * 60 - elapsed;
-      setSecondsLeft(Math.max(remaining, 0));
-    });
+ socket.on("video-timer-started", ({ remaining }) => {
+  setSecondsLeft(remaining);
+});
+
 
     // ICE candidate from peer
     socket.on("video-ice-candidate", async ({ candidate }) => {
