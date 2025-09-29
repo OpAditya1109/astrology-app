@@ -29,9 +29,7 @@ export default function VideoCall() {
   const [isVideoOff, setIsVideoOff] = useState(callMode === "Audio");
   const [secondsLeft, setSecondsLeft] = useState(null);
 
-  const ICE_SERVERS = {
-    iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
-  };
+  const ICE_SERVERS = { iceServers: [{ urls: "stun:stun.l.google.com:19302" }] };
 
   useEffect(() => {
     const socket = io(SOCKET_SERVER_URL, { transports: ["websocket"] });
@@ -72,25 +70,23 @@ export default function VideoCall() {
       }
     };
 
-    // --- Join Room ---
+    // --- Join Room once ---
     socket.emit("joinVideoRoom", { roomId: consultationId, role });
 
     // === Signaling ===
 
     // Existing peers
     socket.on("video-existing-peers", async ({ peers }) => {
-      if (role === "user") {
-        if (peers.length > 0) {
-          targetSocketRef.current = peers[0];
-          setStatus("Ringing..."); // waiting for astrologer to pick
-          await startCall();
-        } else {
-          setStatus("Waiting for astrologer...");
-        }
+      if (role === "user" && peers.length > 0) {
+        targetSocketRef.current = peers[0];
+        setStatus("Ringing...");
+        await startCall();
+      } else if (role === "user") {
+        setStatus("Waiting for astrologer...");
       }
     });
 
-    // Astrologer side: incoming call
+    // Astrologer: incoming call
     socket.on("video-incoming-call", async ({ from, offer }) => {
       targetSocketRef.current = from;
       setStatus("Ringing...");
@@ -104,31 +100,26 @@ export default function VideoCall() {
     });
 
     // Call answered by astrologer
-   socket.on("video-call-answered", async ({ answer }) => {
-  const pc = peerConnectionRef.current;
-  if (!pc) return;
-  await pc.setRemoteDescription(answer);
-  setStatus("Connected");
+    socket.on("video-call-answered", async ({ answer }) => {
+      const pc = peerConnectionRef.current;
+      if (!pc) return;
+      await pc.setRemoteDescription(answer);
+      setStatus("Connected");
+    });
 
-  // Show timer immediately if already received
-  if (secondsLeft === null && socketRef.current) {
-    socketRef.current.emit("joinVideoRoom", { roomId: consultationId, role: "user" });
-  }
-});
-
-
-    // Timer starts only when astrologer accepts
- socket.on("video-timer-started", ({ remaining }) => {
-  setSecondsLeft(remaining);
-});
-
+    // Timer
+    socket.on("video-timer-started", ({ remaining }) => {
+      setSecondsLeft(remaining);
+    });
 
     // ICE candidate from peer
     socket.on("video-ice-candidate", async ({ candidate }) => {
       try {
         const pc = peerConnectionRef.current;
         if (!pc) return;
-        await pc.addIceCandidate(candidate?.candidate ? candidate : new RTCIceCandidate(candidate));
+        await pc.addIceCandidate(
+          candidate?.candidate ? candidate : new RTCIceCandidate(candidate)
+        );
       } catch (err) {
         console.error("Error adding ICE candidate:", err);
       }
