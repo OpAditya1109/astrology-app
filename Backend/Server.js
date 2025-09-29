@@ -593,7 +593,6 @@ async function finalizeAudioConsultation(roomId, endedByTimer = false) {
   } catch (err) {
     console.error("finalizeAudioConsultation error:", err);
   }
-
 }
 
 
@@ -702,8 +701,8 @@ async function finalizeConsultation(roomId, endedByTimer = false) {
     console.error("finalizeConsultation error:", err);
   }
 }
+});
 
-};
 
 
 
