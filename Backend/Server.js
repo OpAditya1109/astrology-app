@@ -554,7 +554,6 @@ socket.on("joinAudioRoom", async ({ roomId, role }) => {
       }
     }
   });
-});
 
 // --- Finalize Audio Consultation ---
 async function finalizeAudioConsultation(roomId, endedByTimer = false) {
@@ -595,7 +594,7 @@ async function finalizeAudioConsultation(roomId, endedByTimer = false) {
     console.error("finalizeAudioConsultation error:", err);
   }
 
-
+}
 
 
 
@@ -704,7 +703,7 @@ async function finalizeConsultation(roomId, endedByTimer = false) {
   }
 }
 
-});
+};
 
 
 
