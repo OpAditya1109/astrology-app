@@ -10,13 +10,16 @@ export default function ChatPage() {
   const [modalImg, setModalImg] = useState(null);
   const [consultationEnded, setConsultationEnded] = useState(false);
   const [isEnding, setIsEnding] = useState(false);
-const [skipExtendPrompt, setSkipExtendPrompt] = useState(false);
+  const [skipExtendPrompt, setSkipExtendPrompt] = useState(false);
   const [keyboardPadding, setKeyboardPadding] = useState(0);
   const [showExtendModal, setShowExtendModal] = useState(false);
   const [extendRate, setExtendRate] = useState(0);
   const [extendMinutes, setExtendMinutes] = useState(5);
   const [userWallet, setUserWallet] = useState(0);
-const [extending, setExtending] = useState(false);
+  const [extending, setExtending] = useState(false);
+  const [showReviewModal, setShowReviewModal] = useState(false);
+  const [reviewRating, setReviewRating] = useState(0);
+  const [reviewFeedback, setReviewFeedback] = useState("");
   const messagesEndRef = useRef(null);
 
   const currentUser = JSON.parse(sessionStorage.getItem("user"));
@@ -29,14 +32,10 @@ const [extending, setExtending] = useState(false);
 
     const fetchConsultation = async () => {
       try {
-       const res = await fetch(`https://bhavanaastro.onrender.com/api/consultations/details/${roomId}`);
-if (!res.ok) {
-  console.error("Failed to fetch consultation details", res.status, res.statusText);
-  return;
-}
-const data = await res.json();
-setExtendRate(data.ratePerMinute || 0);
-
+        const res = await fetch(`https://bhavanaastro.onrender.com/api/consultations/details/${roomId}`);
+        if (!res.ok) return console.error("Failed to fetch consultation details", res.status, res.statusText);
+        const data = await res.json();
+        setExtendRate(data.ratePerMinute || 0);
       } catch (err) {
         console.error("Failed to fetch consultation rate:", err);
       }
@@ -45,9 +44,7 @@ setExtendRate(data.ratePerMinute || 0);
     const fetchWallet = async () => {
       if (!currentUser?.id) return;
       try {
-        const res = await fetch(
-          `https://bhavanaastro.onrender.com/api/users/${currentUser.id}/details`
-        );
+        const res = await fetch(`https://bhavanaastro.onrender.com/api/users/${currentUser.id}/details`);
         const data = await res.json();
         setUserWallet(data.wallet?.balance || 0);
       } catch (err) {
@@ -70,11 +67,7 @@ setExtendRate(data.ratePerMinute || 0);
     if (currentUser && !sessionStorage.getItem(introSentKey)) {
       const introMessage = {
         sender: currentUser.id,
-        text: `👤 Name: ${currentUser.name}\n📅 DOB: ${new Date(
-          currentUser.dob
-        ).toLocaleDateString("en-IN")}\n🕒 Birth Time: ${
-          currentUser.birthTime || "-"
-        }\n📍 Birth Place: ${currentUser.birthPlace || "-"}`,
+        text: `👤 Name: ${currentUser.name}\n📅 DOB: ${new Date(currentUser.dob).toLocaleDateString("en-IN")}\n🕒 Birth Time: ${currentUser.birthTime || "-"}\n📍 Birth Place: ${currentUser.birthPlace || "-"}`,
         kundaliUrl: currentUser.kundaliUrl || null,
         system: true,
       };
@@ -137,23 +130,22 @@ setExtendRate(data.ratePerMinute || 0);
   }, []);
 
   // Show extend modal when time is almost up
-useEffect(() => {
-  if (
-    secondsLeft !== null &&
-    secondsLeft <= 60 &&
-    !showExtendModal &&
-    !skipExtendPrompt &&
-    !consultationEnded &&
-    extendRate > 0
-  ) {
-    const maxMinutes = Math.floor(userWallet / extendRate);
-    if (maxMinutes > 0) {
-      setExtendMinutes(Math.min(5, maxMinutes));
-      setShowExtendModal(true);
+  useEffect(() => {
+    if (
+      secondsLeft !== null &&
+      secondsLeft <= 60 &&
+      !showExtendModal &&
+      !skipExtendPrompt &&
+      !consultationEnded &&
+      extendRate > 0
+    ) {
+      const maxMinutes = Math.floor(userWallet / extendRate);
+      if (maxMinutes > 0) {
+        setExtendMinutes(Math.min(5, maxMinutes));
+        setShowExtendModal(true);
+      }
     }
-  }
-}, [secondsLeft, userWallet, showExtendModal, consultationEnded, extendRate, skipExtendPrompt]);
-
+  }, [secondsLeft, userWallet, showExtendModal, consultationEnded, extendRate, skipExtendPrompt]);
 
   const endConsultation = async (alertMessage) => {
     setIsEnding(true);
@@ -176,48 +168,44 @@ useEffect(() => {
     socket.emit("leaveRoom", roomId);
     socket.disconnect();
 
-    setTimeout(() => {
-      window.location.href = "/user/consultancy";
-    }, 3000);
+    // Show review popup
+    setShowReviewModal(true);
   };
 
-const extendConsultation = async () => {
-  if (extending) return;
-  setExtending(true);
+  const extendConsultation = async () => {
+    if (extending) return;
+    setExtending(true);
 
-  try {
-    const extendCost = extendMinutes * extendRate;
-    if (userWallet < extendCost) {
-      alert(`Insufficient balance. You have ₹${userWallet}`);
-      return;
+    try {
+      const extendCost = extendMinutes * extendRate;
+      if (userWallet < extendCost) {
+        alert(`Insufficient balance. You have ₹${userWallet}`);
+        return;
+      }
+
+      const res = await fetch("https://bhavanaastro.onrender.com/api/users/deduct", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId: currentUser.id,
+          amount: extendCost,
+          consultationId: roomId,
+          extendMinutes,
+        }),
+      });
+
+      if (!res.ok) throw new Error("Deduction failed");
+      const data = await res.json();
+
+      setUserWallet(data.balance);
+      socket.emit("extendConsultationTimer", { roomId, extendMinutes });
+    } catch (err) {
+      console.error("Failed to extend consultation:", err);
+      alert("Failed to extend consultation. Try again.");
+    } finally {
+      setExtending(false);
     }
-
-    const res = await fetch("https://bhavanaastro.onrender.com/api/users/deduct", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        userId: currentUser.id,
-        amount: extendCost,
-        consultationId: roomId,
-        extendMinutes,
-      }),
-    });
-
-    if (!res.ok) throw new Error("Deduction failed");
-    const data = await res.json();
-
-    setUserWallet(data.balance);
-    socket.emit("extendConsultationTimer", { roomId, extendMinutes });
-  } catch (err) {
-    console.error("Failed to extend consultation:", err);
-    alert("Failed to extend consultation. Try again.");
-  } finally {
-    setExtending(false);
-  }
-};
-
-
-
+  };
 
   const sendMessage = () => {
     if (!input.trim() || consultationEnded) return;
@@ -249,10 +237,8 @@ const extendConsultation = async () => {
         </div>
       </header>
 
-      <div
-        className="flex-1 overflow-y-auto p-4 space-y-2"
-        style={{ paddingBottom: keyboardPadding + 70 }}
-      >
+      {/* Messages */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-2" style={{ paddingBottom: keyboardPadding + 70 }}>
         {messages.map((msg, i) => (
           <div
             key={i}
@@ -276,9 +262,7 @@ const extendConsultation = async () => {
           </div>
         ))}
         {consultationEnded && (
-          <div className="text-center text-red-600 font-semibold mt-2">
-            ⏰ Consultation has ended
-          </div>
+          <div className="text-center text-red-600 font-semibold mt-2">⏰ Consultation has ended</div>
         )}
         <div ref={messagesEndRef} />
       </div>
@@ -307,15 +291,8 @@ const extendConsultation = async () => {
 
       {/* Kundali modal */}
       {modalImg && (
-        <div
-          className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50"
-          onClick={() => setModalImg(null)}
-        >
-          <img
-            src={modalImg}
-            alt="Kundali Large"
-            className="max-h-[90vh] max-w-[90vw] rounded-lg shadow-lg"
-          />
+        <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50" onClick={() => setModalImg(null)}>
+          <img src={modalImg} alt="Kundali Large" className="max-h-[90vh] max-w-[90vw] rounded-lg shadow-lg" />
         </div>
       )}
 
@@ -324,39 +301,109 @@ const extendConsultation = async () => {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white p-6 rounded-lg shadow-lg text-center">
             <p className="mb-4">
-              ⏰ Consultation is about to end.<br/>
-              Wallet: ₹{userWallet}<br/>
+              ⏰ Consultation is about to end.<br />
+              Wallet: ₹{userWallet}<br />
               Extend {extendMinutes} min at ₹{extendRate}/min = ₹{extendMinutes * extendRate}?
             </p>
             <div className="flex justify-center gap-4">
-           <button
-  onClick={() => {
-    setShowExtendModal(false);     // close immediately
-    setSkipExtendPrompt(true);     // 👈 prevent auto-popup reopening
-    extendConsultation();
-    // reset skip after 10s, so future prompts can still appear
-    setTimeout(() => setSkipExtendPrompt(false), 10000);
-  }}
-  className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700"
->
-  Yes, Extend
-</button>
+              <button
+                onClick={() => {
+                  setShowExtendModal(false);
+                  setSkipExtendPrompt(true);
+                  extendConsultation();
+                  setTimeout(() => setSkipExtendPrompt(false), 10000);
+                }}
+                className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700"
+              >
+                Yes, Extend
+              </button>
+              <button
+                onClick={() => {
+                  setShowExtendModal(false);
+                  setSkipExtendPrompt(true);
+                }}
+                className="bg-gray-400 text-white px-4 py-2 rounded-lg"
+              >
+                No, End
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
+      {/* Review modal */}
+      {showReviewModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg shadow-lg w-96 text-center">
+            <h2 className="text-xl font-semibold mb-4">Rate Your Consultation</h2>
 
+            <div className="mb-4">
+              <label>Rating:</label>
+              <select
+                value={reviewRating}
+                onChange={(e) => setReviewRating(Number(e.target.value))}
+                className="border p-2 rounded w-full mt-1"
+              >
+                <option value={0}>Select Rating</option>
+                <option value={1}>1 Star</option>
+                <option value={2}>2 Stars</option>
+                <option value={3}>3 Stars</option>
+                <option value={4}>4 Stars</option>
+                <option value={5}>5 Stars</option>
+              </select>
+            </div>
 
-             <button
-  onClick={() => {
-    setShowExtendModal(false);
-    setSkipExtendPrompt(true); // skip auto-popup
-  }}
-  className="bg-gray-400 text-white px-4 py-2 rounded-lg"
->
-  No, End
-</button>
+            <div className="mb-4">
+              <label>Feedback (optional):</label>
+              <textarea
+                value={reviewFeedback}
+                onChange={(e) => setReviewFeedback(e.target.value)}
+                className="border p-2 rounded w-full mt-1"
+                rows={3}
+                placeholder="Write your feedback..."
+              />
+            </div>
+
+            <div className="flex justify-center gap-4">
+              <button
+                onClick={async () => {
+                  try {
+                    await fetch("https://bhavanaastro.onrender.com/api/reviews", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({
+                        consultationId: roomId,
+                        astrologerId: currentUser.astrologerId,
+                        rating: reviewRating,
+                        feedback: reviewFeedback,
+                        userId: currentUser.id,
+                      }),
+                    });
+                    alert("Thank you for your review!");
+                    setShowReviewModal(false);
+                    window.location.href = "/user/consultancy";
+                  } catch (err) {
+                    console.error(err);
+                    alert("Failed to submit review.");
+                  }
+                }}
+                className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700"
+              >
+                Submit
+              </button>
+              <button
+                onClick={() => {
+                  setShowReviewModal(false);
+                  window.location.href = "/user/consultancy";
+                }}
+                className="bg-gray-400 text-white px-4 py-2 rounded hover:bg-gray-500"
+              >
+                Skip
+              </button>
             </div>
           </div>
         </div>
       )}
     </div>
   );
-} 
+}
