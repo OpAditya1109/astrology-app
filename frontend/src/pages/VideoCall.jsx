@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { io } from "socket.io-client";
 
-// Import your icons
+// Icons
 import micOnIcon from "../assets/mic-on.png";
 import micOffIcon from "../assets/mic-off.png";
 import videoOnIcon from "../assets/video-on.png";
@@ -14,8 +14,9 @@ export default function VideoCall() {
   const { consultationId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
+
   const callMode = location.state?.mode || "Video"; // "Video" or "Audio"
-  const role = location.state?.role || "user"; // Pass "astrologer" or "user"
+  const role = location.state?.role || "user"; // "user" or "astrologer"
 
   const localVideoRef = useRef(null);
   const remoteVideoRef = useRef(null);
@@ -26,8 +27,6 @@ export default function VideoCall() {
   const [status, setStatus] = useState("Connecting...");
   const [isMuted, setIsMuted] = useState(false);
   const [isVideoOff, setIsVideoOff] = useState(callMode === "Audio");
-
-  // --- Timer (controlled by server) ---
   const [secondsLeft, setSecondsLeft] = useState(null);
 
   const ICE_SERVERS = {
@@ -41,7 +40,7 @@ export default function VideoCall() {
     const pc = new RTCPeerConnection(ICE_SERVERS);
     peerConnectionRef.current = pc;
 
-    // Get user media
+    // --- Local media ---
     (async () => {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({
@@ -63,22 +62,14 @@ export default function VideoCall() {
       }
     })();
 
-    // Remote stream
+    // --- Remote stream ---
     pc.ontrack = (event) => {
       if (remoteVideoRef.current) {
         remoteVideoRef.current.srcObject = event.streams[0];
       }
     };
 
-    // Connection state
-    pc.onconnectionstatechange = () => {
-      const s = pc.connectionState;
-      if (s === "connected") setStatus("Connected");
-      else if (s === "failed") setStatus("Connection failed");
-      else if (s === "disconnected") setStatus("Disconnected");
-    };
-
-    // ICE candidate
+    // --- ICE candidates ---
     pc.onicecandidate = (event) => {
       if (event.candidate && targetSocketRef.current) {
         socket.emit("video-ice-candidate", {
@@ -89,17 +80,17 @@ export default function VideoCall() {
       }
     };
 
-    // ✅ Join video room with role
+    // --- Join Room ---
     socket.emit("joinVideoRoom", { roomId: consultationId, role });
 
-    // --- Signaling ---
+    // === Signaling ===
     socket.on("video-existing-peers", async ({ peers }) => {
-      if (peers && peers.length > 0) {
+      if (role === "user" && peers.length > 0) {
         targetSocketRef.current = peers[0];
         setStatus("Calling...");
         await startCall();
       } else {
-        setStatus("Waiting for the other person...");
+        setStatus("Waiting for astrologer...");
       }
     });
 
@@ -109,30 +100,43 @@ export default function VideoCall() {
       }
     });
 
+    // User is receiving a call (astrologer side)
     socket.on("video-incoming-call", async ({ from, offer }) => {
       try {
         targetSocketRef.current = from;
         await pc.setRemoteDescription(offer);
+
         const answer = await pc.createAnswer();
         await pc.setLocalDescription(answer);
+
         socket.emit("video-answer-call", {
           roomId: consultationId,
           to: from,
           answer,
         });
-        setStatus("Ringing...");
+
+        setStatus("Connecting...");
       } catch (e) {
         console.error("incoming-call error:", e);
       }
     });
 
+    // User gets answer from astrologer
     socket.on("video-call-answered", async ({ answer }) => {
       try {
         await pc.setRemoteDescription(answer);
-        setStatus("Connected");
+        setStatus("Ringing...");
       } catch (e) {
         console.error("call-answered error:", e);
       }
+    });
+
+    // Timer starts only when astrologer accepts
+    socket.on("video-timer-started", ({ startTime, durationMinutes }) => {
+      setStatus("Connected");
+      const elapsed = Math.floor((Date.now() - new Date(startTime)) / 1000);
+      const remaining = durationMinutes * 60 - elapsed;
+      setSecondsLeft(Math.max(remaining, 0));
     });
 
     socket.on("video-ice-candidate", async ({ candidate }) => {
@@ -153,13 +157,6 @@ export default function VideoCall() {
       }
     });
 
-    // ✅ Timer sync from server
-    socket.on("video-timer-started", ({ startTime, durationMinutes }) => {
-      const elapsed = Math.floor((Date.now() - new Date(startTime)) / 1000);
-      const remaining = durationMinutes * 60 - elapsed;
-      setSecondsLeft(Math.max(remaining, 0));
-    });
-
     return () => {
       socket.removeAllListeners();
       socket.disconnect();
@@ -170,7 +167,7 @@ export default function VideoCall() {
     };
   }, [consultationId, callMode, role]);
 
-  // --- Timer Effect ---
+  // --- Timer countdown ---
   useEffect(() => {
     if (status === "Connected" && secondsLeft > 0) {
       const interval = setInterval(() => {
@@ -178,13 +175,12 @@ export default function VideoCall() {
       }, 1000);
       return () => clearInterval(interval);
     }
-
     if (secondsLeft === 0) {
       endCall();
     }
   }, [status, secondsLeft]);
 
-  // Start call
+  // --- Start call ---
   const startCall = async () => {
     const pc = peerConnectionRef.current;
     const socket = socketRef.current;
@@ -203,7 +199,7 @@ export default function VideoCall() {
     }
   };
 
-  // Controls
+  // --- Controls ---
   const toggleMute = () => {
     const stream = localVideoRef.current?.srcObject;
     if (stream) {
@@ -233,7 +229,6 @@ export default function VideoCall() {
     navigate(-1);
   };
 
-  // Format timer mm:ss
   const formatTime = (s) => {
     const m = Math.floor(s / 60)
       .toString()

@@ -192,8 +192,13 @@ socket.on("joinVideoRoom", async ({ roomId, role }) => {
   try {
     const consultation = await Consultation.findById(roomId);
 
-    // If astrologer joins, start timer
-    if (role === "astrologer" && consultation && !consultation.timer?.isRunning) {
+    if (!consultation) {
+      console.warn(`❌ Consultation not found for ${roomId}`);
+      return;
+    }
+
+    // --- Start timer ONLY when astrologer joins first time ---
+    if (role === "astrologer" && !consultation.timer.isRunning) {
       consultation.timer.startTime = new Date();
       consultation.timer.isRunning = true;
       await consultation.save();
@@ -206,8 +211,8 @@ socket.on("joinVideoRoom", async ({ roomId, role }) => {
       console.log(`⏱ Timer started for consultation ${roomId}`);
     }
 
-    // ✅ Send current timer state to anyone joining late
-    if (consultation?.timer?.isRunning) {
+    // --- Send timer state if already running (for late joiners) ---
+    if (consultation.timer.isRunning) {
       socket.emit("video-timer-started", {
         startTime: consultation.timer.startTime,
         durationMinutes: consultation.timer.durationMinutes,
@@ -217,36 +222,33 @@ socket.on("joinVideoRoom", async ({ roomId, role }) => {
     console.error("joinVideoRoom -> DB error:", err);
   }
 
-  // Existing peers
+  // --- Handle peers inside video room ---
   const peers = [...(io.sockets.adapter.rooms.get(videoRoomId) || [])]
     .filter((id) => id !== socket.id);
 
   socket.emit("video-existing-peers", { peers });
+
   peers.forEach((peerId) => {
     io.to(peerId).emit("video-peer-joined", { socketId: socket.id });
   });
 });
-socket.on("video-timer-started", ({ startTime, durationMinutes }) => {
-  console.log("⏱ got timer:", startTime, durationMinutes);
-  const elapsed = Math.floor((Date.now() - new Date(startTime)) / 1000);
-  const remaining = durationMinutes * 60 - elapsed;
-  setSecondsLeft(Math.max(remaining, 0));
+
+
+// --- WebRTC signaling (scoped to video rooms) ---
+socket.on("video-call-user", ({ roomId, to, offer }) => {
+  const videoRoomId = `${roomId}-video`;
+  if (to) io.to(to).emit("video-incoming-call", { from: socket.id, offer, videoRoomId });
 });
 
+socket.on("video-answer-call", ({ roomId, to, answer }) => {
+  const videoRoomId = `${roomId}-video`;
+  if (to) io.to(to).emit("video-call-answered", { from: socket.id, answer, videoRoomId });
+});
 
-  // --- WebRTC signaling events (scoped to videoRoom) ---
-  socket.on("video-call-user", ({ roomId, to, offer }) => {
-    if (to) io.to(to).emit("video-incoming-call", { from: socket.id, offer });
-  });
-
-  socket.on("video-answer-call", ({ roomId, to, answer }) => {
-    if (to) io.to(to).emit("video-call-answered", { from: socket.id, answer });
-  });
-
-  socket.on("video-ice-candidate", ({ roomId, to, candidate }) => {
-    if (to) io.to(to).emit("video-ice-candidate", { from: socket.id, candidate });
-  });
-
+socket.on("video-ice-candidate", ({ roomId, to, candidate }) => {
+  const videoRoomId = `${roomId}-video`;
+  if (to) io.to(to).emit("video-ice-candidate", { from: socket.id, candidate, videoRoomId });
+});
 
 
 
