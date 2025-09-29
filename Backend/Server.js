@@ -677,10 +677,10 @@ async function finalizeConsultation(roomId, endedByTimer = false) {
     // ✅ Update astrologer stats
     const astro = await Astrologer.findById(c.astrologerId);
     if (astro) {
-      const prevSeconds = clockToSeconds(astro.totalTalkTime || "00:00");
+      const prevSeconds = clockToSeconds(astro.totalChatTime || "00:00");
       const newTotalSeconds = prevSeconds + talkedSeconds;
 
-      astro.totalTalkTime = formatClock(newTotalSeconds);
+      astro.totalChatTime = formatClock(newTotalSeconds);
       await astro.save();
     }
 

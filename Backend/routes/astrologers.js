@@ -91,7 +91,10 @@ router.get("/session/:id", async (req, res) => {
     }
 
     res.json({
-      totalTalkTime: astrologer.totalTalkTime || "00:00",
+      chat: res.data.totalChatTime || "00:00",
+      video: res.data.totalVideoTime || "00:00",
+      audio: res.data.totalAudioTime || "00:00",
+    
     });
   } catch (error) {
     console.error(error);

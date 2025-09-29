@@ -94,8 +94,8 @@ export default function AstrologerDashboard() {
       {/* Total Talk Times */}
       <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 mb-6 rounded-lg shadow-md">
         <p className="font-semibold text-lg">
-          Total Talk Time:{" "}
-          <span className="text-purple-700">{talkTimes.total}</span>
+           Talk Time:{" "}
+       
         </p>
         <p>
           Chat Time: <span className="text-purple-700">{talkTimes.chat}</span>
