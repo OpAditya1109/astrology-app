@@ -1,4 +1,3 @@
-// src/pages/astrologer/Dashboard.js
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import axios from "axios";
@@ -8,7 +7,13 @@ export default function AstrologerDashboard() {
     rates: { chat: 0, video: 0, audio: 0 },
     online: { chat: false, video: false, audio: false },
   });
-  const [totalTalkTime, setTotalTalkTime] = useState("00:00");
+
+  const [talkTimes, setTalkTimes] = useState({
+    total: "00:00",
+    chat: "00:00",
+    video: "00:00",
+    audio: "00:00",
+  });
 
   const astrologerId = JSON.parse(sessionStorage.getItem("user"))?.id;
 
@@ -30,7 +35,15 @@ export default function AstrologerDashboard() {
         const res = await axios.get(
           `https://bhavanaastro.onrender.com/api/Consult-astrologers/session/${astrologerId}`
         );
-        setTotalTalkTime(res.data.totalTalkTime); // expect "MM:SS" or "HH:MM:SS"
+
+        // Assuming your API returns something like:
+        // { totalTalkTime: "HH:MM:SS", chatTime: "HH:MM:SS", videoTime: "HH:MM:SS", audioTime: "HH:MM:SS" }
+        setTalkTimes({
+          total: res.data.totalTalkTime || "00:00",
+          chat: res.data.chatTime || "00:00",
+          video: res.data.videoTime || "00:00",
+          audio: res.data.audioTime || "00:00",
+        });
       } catch (err) {
         console.error("Failed to fetch session data:", err);
       }
@@ -78,11 +91,20 @@ export default function AstrologerDashboard() {
         Astrologer Dashboard
       </h1>
 
-      {/* Total Talk Time */}
+      {/* Total Talk Times */}
       <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 mb-6 rounded-lg shadow-md">
         <p className="font-semibold text-lg">
           Total Talk Time:{" "}
-          <span className="text-purple-700">{totalTalkTime}</span>
+          <span className="text-purple-700">{talkTimes.total}</span>
+        </p>
+        <p>
+          Chat Time: <span className="text-purple-700">{talkTimes.chat}</span>
+        </p>
+        <p>
+          Video Time: <span className="text-purple-700">{talkTimes.video}</span>
+        </p>
+        <p>
+          Audio Time: <span className="text-purple-700">{talkTimes.audio}</span>
         </p>
       </div>
 
