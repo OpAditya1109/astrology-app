@@ -194,10 +194,31 @@ io.on("connection", (socket) => {
 
 
     // --- VIDEO CALL SUB-ROOM ---
-  socket.on("joinVideoRoom", (roomId) => {
+ socket.on("joinVideoRoom", async ({ roomId, role }) => {
     const videoRoomId = `${roomId}-video`;
     socket.join(videoRoomId);
-    console.log(`🎥 ${socket.id} joined video room: ${videoRoomId}`);
+    console.log(`🎥 ${role} (${socket.id}) joined ${videoRoomId}`);
+
+    // If astrologer joins, start timer in DB
+    if (role === "astrologer") {
+      try {
+        const consultation = await Consultation.findById(roomId);
+        if (consultation && !consultation.timer.isRunning) {
+          consultation.timer.startTime = new Date();
+          consultation.timer.isRunning = true;
+          await consultation.save();
+
+          // Notify both peers about timer start
+          io.to(videoRoomId).emit("video-timer-started", {
+            startTime: consultation.timer.startTime,
+            durationMinutes: consultation.timer.durationMinutes,
+          });
+          console.log(`⏱ Timer started for consultation ${roomId}`);
+        }
+      } catch (err) {
+        console.error("joinVideoRoom -> DB error:", err);
+      }
+    }
 
     // Get other peers already in this video room
     const peers = [...(io.sockets.adapter.rooms.get(videoRoomId) || [])]
@@ -214,20 +235,22 @@ io.on("connection", (socket) => {
 
   // --- WebRTC signaling events (scoped to videoRoom) ---
   socket.on("video-call-user", ({ roomId, to, offer }) => {
-    const videoRoomId = `${roomId}-video`;
     if (to) io.to(to).emit("video-incoming-call", { from: socket.id, offer });
   });
 
   socket.on("video-answer-call", ({ roomId, to, answer }) => {
-    const videoRoomId = `${roomId}-video`;
     if (to) io.to(to).emit("video-call-answered", { from: socket.id, answer });
   });
 
   socket.on("video-ice-candidate", ({ roomId, to, candidate }) => {
-    const videoRoomId = `${roomId}-video`;
     if (to) io.to(to).emit("video-ice-candidate", { from: socket.id, candidate });
   });
 
+
+
+
+
+  
   // --- Disconnect ---
   socket.on("disconnect", () => {
     console.log("❌ Client disconnected:", socket.id);

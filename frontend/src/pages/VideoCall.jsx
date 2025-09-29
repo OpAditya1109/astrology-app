@@ -15,6 +15,7 @@ export default function VideoCall() {
   const navigate = useNavigate();
   const location = useLocation();
   const callMode = location.state?.mode || "Video"; // "Video" or "Audio"
+  const role = location.state?.role || "user"; // Pass "astrologer" or "user"
 
   const localVideoRef = useRef(null);
   const remoteVideoRef = useRef(null);
@@ -26,8 +27,8 @@ export default function VideoCall() {
   const [isMuted, setIsMuted] = useState(false);
   const [isVideoOff, setIsVideoOff] = useState(callMode === "Audio");
 
-  // --- Timer (5 minutes = 300 seconds) ---
-  const [secondsLeft, setSecondsLeft] = useState(300);
+  // --- Timer (controlled by server) ---
+  const [secondsLeft, setSecondsLeft] = useState(null);
 
   const ICE_SERVERS = {
     iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
@@ -88,9 +89,10 @@ export default function VideoCall() {
       }
     };
 
-    // Join video room
-    socket.emit("joinVideoRoom", consultationId);
+    // ✅ Join video room with role
+    socket.emit("joinVideoRoom", { roomId: consultationId, role });
 
+    // --- Signaling ---
     socket.on("video-existing-peers", async ({ peers }) => {
       if (peers && peers.length > 0) {
         targetSocketRef.current = peers[0];
@@ -151,6 +153,13 @@ export default function VideoCall() {
       }
     });
 
+    // ✅ Timer sync from server
+    socket.on("video-timer-started", ({ startTime, durationMinutes }) => {
+      const elapsed = Math.floor((Date.now() - new Date(startTime)) / 1000);
+      const remaining = durationMinutes * 60 - elapsed;
+      setSecondsLeft(Math.max(remaining, 0));
+    });
+
     return () => {
       socket.removeAllListeners();
       socket.disconnect();
@@ -159,18 +168,17 @@ export default function VideoCall() {
       }
       pc.close();
     };
-  }, [consultationId, callMode]);
+  }, [consultationId, callMode, role]);
 
   // --- Timer Effect ---
   useEffect(() => {
     if (status === "Connected" && secondsLeft > 0) {
       const interval = setInterval(() => {
-        setSecondsLeft((prev) => prev - 1);
+        setSecondsLeft((prev) => (prev > 0 ? prev - 1 : 0));
       }, 1000);
       return () => clearInterval(interval);
     }
 
-    // When time runs out → end call
     if (secondsLeft === 0) {
       endCall();
     }
@@ -262,7 +270,7 @@ export default function VideoCall() {
         <div className="bg-black bg-opacity-50 text-white px-4 py-2 rounded-lg">
           {status}
         </div>
-        {status === "Connected" && (
+        {status === "Connected" && secondsLeft !== null && (
           <div className="bg-black bg-opacity-50 text-green-400 px-4 py-2 rounded-lg font-mono">
             {formatTime(secondsLeft)}
           </div>
