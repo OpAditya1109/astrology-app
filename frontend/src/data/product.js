@@ -59,6 +59,10 @@ import bloodstoneImg from "../assets/product/Gemstone/bloodstone.png";
 import malachiteImg from "../assets/product/Gemstone/malachite.png";
 
 
+
+import sevenChakraRing from "../assets/product/Healing-Accessories/seven-chakra-ring.jpeg"; // import your image
+
+
 const products = [
   {
     id: "money-magnet",
@@ -843,6 +847,25 @@ const products = [
     bestDay: "Thursday",
     category: "gemstone",
   },
+  {
+  id: "seven-chakra-ring",
+  name: "Seven Chakra Copper Magnetic Ring for Men & Women",
+  img: sevenChakraRing,
+  price: 899,
+  oldPrice: 1999,
+  offer: "55% OFF",
+  desc: "Balances chakras, enhances energy flow, and promotes overall well-being.",
+  description:
+    "This Seven Chakra Copper Magnetic Ring is designed to align your chakras, improve energy flow, and support physical and emotional wellness. Suitable for both men and women.",
+  benefits: [
+    "Balances all seven chakras",
+    "Enhances energy and vitality",
+    "Supports stress relief and mental clarity"
+  ],
+  howToWear: "Wear on the finger that feels most comfortable, preferably daily for optimal benefits.",
+  bestDay: "Monday and Thursday are considered most auspicious for wearing healing accessories.",
+  category: "healing-accessories",
+},
 ];
 
 
