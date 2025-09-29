@@ -370,53 +370,37 @@ socket.on("extendVideoTimer", async ({ roomId, extendMinutes }) => {
 async function finalizeVideoConsultation(roomId, endedByTimer = false) {
   try {
     const consultation = await Consultation.findById(roomId);
-    if (!consultation?.timer) return;
+    if (!consultation) return;
 
-    const timer = activeTimers[roomId];
-    if (!timer) return;
-
-    const talkedSeconds = timer.totalAllocated - timer.secondsLeft;
-    const talkedClock = formatClock(talkedSeconds);
+    let talkedSeconds = 0;
+    if (activeTimers[roomId]) {
+      talkedSeconds = activeTimers[roomId].totalAllocated - activeTimers[roomId].secondsLeft;
+      clearInterval(activeTimers[roomId].interval);
+      delete activeTimers[roomId];
+    }
 
     // --- Update consultation ---
+    consultation.timer = consultation.timer || {};
     consultation.timer.isRunning = false;
-    consultation.talkTime = talkedClock; // actual time used
+    consultation.talkTime = formatClock(talkedSeconds); // actual time used
     await consultation.save();
 
-    // --- Update astrologer stats ---
-    const astro = await Astrologer.findById(consultation.astrologerId);
-    if (astro) {
-
-      // Only video calls
-      const prevVideoSeconds = clockToSeconds(astro.totalVideoTime || "00:00");
-      astro.totalVideoTime = formatClock(prevVideoSeconds + talkedSeconds);
-
-      await astro.save();
+    // Delete consultation if call ended manually
+    if (!endedByTimer) {
+      await Consultation.findByIdAndDelete(roomId);
+      console.log(`🗑 Consultation ${roomId} deleted`);
     }
 
-    // --- Save unused time to admin ---
-    const unused = timer.secondsLeft;
-    if (unused > 0) {
-      await Admin.updateOne(
-        {},
-        {
-          $inc: { remainingSeconds: unused },
-          $set: { remainingTime: formatClock(unused) },
-        }
-      );
-    }
-
-    // --- Notify users ---
-    io.to(roomId).emit("consultationEnded", {
+    io.to(`${roomId}-video`).emit("consultationEnded", {
       consultationId: roomId,
-      talkTime: talkedClock,
+      talkTime: consultation.talkTime,
     });
 
-    delete activeTimers[roomId];
   } catch (err) {
     console.error("finalizeVideoConsultation error:", err);
   }
 }
+
 
 
 
