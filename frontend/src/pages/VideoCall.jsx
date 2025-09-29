@@ -212,24 +212,30 @@ export default function VideoCall() {
     }
   }, [secondsLeft, showExtendModal, skipExtendPrompt, userWallet, extendRate]);
 
-  const toggleMute = () => {
-    const stream = localVideoRef.current?.srcObject;
-    if (!stream) return;
-    const audioTrack = stream.getTracks().find((t) => t.kind === "audio");
-    if (!audioTrack) return;
-    audioTrack.enabled = !audioTrack.enabled;
-    setIsMuted(!audioTrack.enabled);
-  };
+const toggleMute = () => {
+  const stream = localVideoRef.current?.srcObject;
+  if (!stream) return;
 
-  const toggleVideo = () => {
-    if (callMode === "Audio") return;
-    const stream = localVideoRef.current?.srcObject;
-    if (!stream) return;
-    const videoTrack = stream.getTracks().find((t) => t.kind === "video");
-    if (!videoTrack) return;
-    videoTrack.enabled = !videoTrack.enabled;
-    setIsVideoOff(!videoTrack.enabled);
-  };
+  const audioTrack = stream.getTracks().find((t) => t.kind === "audio");
+  if (!audioTrack) return;
+
+  const newMuted = audioTrack.enabled; // save current state
+  audioTrack.enabled = !audioTrack.enabled; // toggle track
+  setIsMuted(!newMuted); // set button state correctly
+};
+
+const toggleVideo = () => {
+  if (callMode === "Audio") return;
+  const stream = localVideoRef.current?.srcObject;
+  if (!stream) return;
+
+  const videoTrack = stream.getTracks().find((t) => t.kind === "video");
+  if (!videoTrack) return;
+
+  const newVideoState = videoTrack.enabled;
+  videoTrack.enabled = !videoTrack.enabled;
+  setIsVideoOff(!newVideoState);
+};
 
   const extendConsultation = async () => {
     if (extending) return;
