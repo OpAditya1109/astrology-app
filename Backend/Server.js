@@ -223,6 +223,19 @@ socket.on("joinVideoRoom", async ({ roomId, role }) => {
       io.to(peerId).emit("video-peer-joined", { socketId: socket.id });
     });
   });
+socket.on("request-video-timer", async ({ roomId }) => {
+  try {
+    const consultation = await Consultation.findById(roomId);
+    if (consultation && consultation.timer.isRunning) {
+      const totalSeconds = consultation.timer.durationMinutes * 60;
+      const elapsed = Math.floor((Date.now() - new Date(consultation.timer.startTime)) / 1000);
+      const remaining = totalSeconds - elapsed;
+      socket.emit("video-timer-started", { remaining: Math.max(remaining, 0) });
+    }
+  } catch (err) {
+    console.error(err);
+  }
+});
 
   // --- User calls astrologer ---
   socket.on("video-call-user", ({ roomId, to, offer }) => {
