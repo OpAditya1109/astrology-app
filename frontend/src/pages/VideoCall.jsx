@@ -36,10 +36,18 @@ export default function VideoCall() {
   const [extending, setExtending] = useState(false);
   const [skipExtendPrompt, setSkipExtendPrompt] = useState(false);
 
+  // Review modal
+  const [showReviewModal, setShowReviewModal] = useState(false);
+  const [reviewRating, setReviewRating] = useState(0);
+  const [reviewFeedback, setReviewFeedback] = useState("");
+
+  // Store full consultation
+  const [consultation, setConsultation] = useState(null);
+
   const ICE_SERVERS = { iceServers: [{ urls: "stun:stun.l.google.com:19302" }] };
   const currentUser = JSON.parse(sessionStorage.getItem("user"));
 
-  const endCall = () => {
+  const endCall = async () => {
     const socket = socketRef.current;
     if (socket) {
       socket.emit("endVideoCall", { roomId: consultationId });
@@ -55,15 +63,17 @@ export default function VideoCall() {
       remoteVideoRef.current.srcObject.getTracks().forEach((t) => t.stop());
     }
 
-    navigate(-1);
+    // Show review modal after call ends
+    setShowReviewModal(true);
   };
 
-  // Fetch consultation rate and wallet
+  // Fetch consultation and wallet
   useEffect(() => {
     const fetchData = async () => {
       try {
         const res = await fetch(`https://bhavanaastro.onrender.com/api/consultations/details/${consultationId}`);
         const data = await res.json();
+        setConsultation(data);
         setExtendRate(data.ratePerMinute || 0);
 
         if (currentUser?.id) {
@@ -85,7 +95,6 @@ export default function VideoCall() {
     const pc = new RTCPeerConnection(ICE_SERVERS);
     peerConnectionRef.current = pc;
 
-    // --- Local media (video + audio only) ---
     (async () => {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
@@ -97,14 +106,10 @@ export default function VideoCall() {
       }
     })();
 
-    // --- Remote stream ---
     pc.ontrack = (event) => {
-      if (remoteVideoRef.current) {
-        remoteVideoRef.current.srcObject = event.streams[0];
-      }
+      if (remoteVideoRef.current) remoteVideoRef.current.srcObject = event.streams[0];
     };
 
-    // --- ICE candidates ---
     pc.onicecandidate = (event) => {
       if (event.candidate && targetSocketRef.current) {
         socket.emit("video-ice-candidate", {
@@ -115,10 +120,8 @@ export default function VideoCall() {
       }
     };
 
-    // --- Join Room ---
     socket.emit("joinVideoRoom", { roomId: consultationId, role });
 
-    // --- Signaling ---
     socket.on("video-existing-peers", async ({ peers }) => {
       if (role === "user" && peers.length > 0) {
         targetSocketRef.current = peers[0];
@@ -144,7 +147,6 @@ export default function VideoCall() {
       setStatus("Connected");
     });
 
-    // Timer
     socket.on("video-timer-started", ({ remaining }) => {
       setSecondsLeft(remaining);
       setStatus("Connected");
@@ -238,6 +240,31 @@ export default function VideoCall() {
     }
   };
 
+  const submitReview = async () => {
+    try {
+      if (!reviewRating) return alert("Please select a rating");
+
+      await fetch("https://bhavanaastro.onrender.com/api/reviews", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          consultationId,
+          astrologerId: consultation?.astrologerId,
+          userId: currentUser.id,
+          rating: reviewRating,
+          feedback: reviewFeedback,
+        }),
+      });
+
+      alert("Thank you for your review!");
+      setShowReviewModal(false);
+      navigate("/user/consultancy");
+    } catch (err) {
+      console.error(err);
+      alert("Failed to submit review.");
+    }
+  };
+
   const formatTime = (s) => `${Math.floor(s / 60).toString().padStart(2, "0")}:${(s % 60).toString().padStart(2, "0")}`;
 
   return (
@@ -292,6 +319,57 @@ export default function VideoCall() {
                 className="bg-gray-400 text-white px-4 py-2 rounded-lg"
               >
                 No, End
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Review Modal */}
+      {showReviewModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg shadow-lg w-96 text-center">
+            <h2 className="text-xl font-semibold mb-4">Rate Your Consultation</h2>
+            <div className="mb-4">
+              <label>Rating:</label>
+              <select
+                value={reviewRating}
+                onChange={(e) => setReviewRating(Number(e.target.value))}
+                className="border p-2 rounded w-full mt-1"
+              >
+                <option value={0}>Select Rating</option>
+                <option value={1}>1 Star</option>
+                <option value={2}>2 Stars</option>
+                <option value={3}>3 Stars</option>
+                <option value={4}>4 Stars</option>
+                <option value={5}>5 Stars</option>
+              </select>
+            </div>
+            <div className="mb-4">
+              <label>Feedback (optional):</label>
+              <textarea
+                value={reviewFeedback}
+                onChange={(e) => setReviewFeedback(e.target.value)}
+                className="border p-2 rounded w-full mt-1"
+                rows={3}
+                placeholder="Write your feedback..."
+              />
+            </div>
+            <div className="flex justify-center gap-4">
+              <button
+                onClick={submitReview}
+                className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700"
+              >
+                Submit
+              </button>
+              <button
+                onClick={() => {
+                  setShowReviewModal(false);
+                  navigate("/user/consultancy");
+                }}
+                className="bg-gray-400 text-white px-4 py-2 rounded hover:bg-gray-500"
+              >
+                Skip
               </button>
             </div>
           </div>

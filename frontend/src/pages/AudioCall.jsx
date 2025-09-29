@@ -34,6 +34,14 @@ export default function AudioCall() {
   const [extending, setExtending] = useState(false);
   const [skipExtendPrompt, setSkipExtendPrompt] = useState(false);
 
+  // Review modal
+  const [showReviewModal, setShowReviewModal] = useState(false);
+  const [reviewRating, setReviewRating] = useState(0);
+  const [reviewFeedback, setReviewFeedback] = useState("");
+
+  // Store full consultation
+  const [consultation, setConsultation] = useState(null);
+
   const ICE_SERVERS = { iceServers: [{ urls: "stun:stun.l.google.com:19302" }] };
   const currentUser = JSON.parse(sessionStorage.getItem("user"));
 
@@ -53,7 +61,8 @@ export default function AudioCall() {
       remoteAudioRef.current.srcObject = null;
     }
 
-    navigate(-1);
+    // Show review modal after call ends
+    setShowReviewModal(true);
   };
 
   // Fetch consultation rate and wallet
@@ -62,6 +71,7 @@ export default function AudioCall() {
       try {
         const res = await fetch(`https://bhavanaastro.onrender.com/api/consultations/details/${consultationId}`);
         const data = await res.json();
+        setConsultation(data);
         setExtendRate(data.ratePerMinute || 0);
 
         if (currentUser?.id) {
@@ -176,7 +186,7 @@ export default function AudioCall() {
 
     const offer = await pc.createOffer();
     await pc.setLocalDescription(offer);
-    socket.emit("audio-call-user", { roomId: consultationId, to: targetSocketRef.current, offer });
+    socket.emit("audio-call-user", { roomId: consultationId, to: targetSocketRefRef.current, offer });
   };
 
   const toggleMute = () => {
@@ -228,16 +238,30 @@ export default function AudioCall() {
     }
   }, [secondsLeft, skipExtendPrompt]);
 
-  // --- Re-attach remote audio track if lost ---
-  useEffect(() => {
-    if (remoteAudioRef.current && peerConnectionRef.current) {
-      const pc = peerConnectionRef.current;
-      const audioTracks = pc.getReceivers().map(r => r.track).filter(t => t && t.kind === "audio");
-      if (audioTracks.length > 0) {
-        remoteAudioRef.current.srcObject = new MediaStream(audioTracks);
-      }
+  const submitReview = async () => {
+    try {
+      if (!reviewRating) return alert("Please select a rating");
+
+      await fetch("https://bhavanaastro.onrender.com/api/reviews", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          consultationId,
+          astrologerId: consultation?.astrologerId,
+          userId: currentUser.id,
+          rating: reviewRating,
+          feedback: reviewFeedback,
+        }),
+      });
+
+      alert("Thank you for your review!");
+      setShowReviewModal(false);
+      navigate("/user/consultancy");
+    } catch (err) {
+      console.error(err);
+      alert("Failed to submit review.");
     }
-  }, [showExtendModal]);
+  };
 
   const formatTime = (s) => `${Math.floor(s / 60).toString().padStart(2, "0")}:${(s % 60).toString().padStart(2, "0")}`;
 
@@ -301,6 +325,57 @@ export default function AudioCall() {
                 className="bg-gray-400 text-white px-4 py-2 rounded-lg"
               >
                 No, End
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Review Modal */}
+      {showReviewModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg shadow-lg w-96 text-center">
+            <h2 className="text-xl font-semibold mb-4">Rate Your Consultation</h2>
+            <div className="mb-4">
+              <label>Rating:</label>
+              <select
+                value={reviewRating}
+                onChange={(e) => setReviewRating(Number(e.target.value))}
+                className="border p-2 rounded w-full mt-1"
+              >
+                <option value={0}>Select Rating</option>
+                <option value={1}>1 Star</option>
+                <option value={2}>2 Stars</option>
+                <option value={3}>3 Stars</option>
+                <option value={4}>4 Stars</option>
+                <option value={5}>5 Stars</option>
+              </select>
+            </div>
+            <div className="mb-4">
+              <label>Feedback (optional):</label>
+              <textarea
+                value={reviewFeedback}
+                onChange={(e) => setReviewFeedback(e.target.value)}
+                className="border p-2 rounded w-full mt-1"
+                rows={3}
+                placeholder="Write your feedback..."
+              />
+            </div>
+            <div className="flex justify-center gap-4">
+              <button
+                onClick={submitReview}
+                className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700"
+              >
+                Submit
+              </button>
+              <button
+                onClick={() => {
+                  setShowReviewModal(false);
+                  navigate("/user/consultancy");
+                }}
+                className="bg-gray-400 text-white px-4 py-2 rounded hover:bg-gray-500"
+              >
+                Skip
               </button>
             </div>
           </div>
