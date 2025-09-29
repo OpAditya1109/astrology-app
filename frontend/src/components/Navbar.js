@@ -35,24 +35,24 @@ export default function Navbar() {
     <>
       <nav className="bg-white shadow-md fixed w-full top-0 left-0 z-50">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-         {/* Logo */}
+ {/* Logo */}
 <span
   onClick={handleLogoClick}
-  className="cursor-pointer flex flex-col items-start gap-1"
+  className="cursor-pointer flex items-center gap-2"
 >
-  <div className="flex items-center gap-2">
-    <img
-      src="/Bhavanaastro-logo.jpeg"
-      alt="Logo"
-      className="h-10 w-10 rounded-full object-cover"
-    />
+  <img
+    src="/Bhavanaastro-logo.jpeg"
+    alt="Logo"
+    className="h-10 w-10 rounded-full object-cover"
+  />
+  <div className="flex flex-col">
     <span className="text-2xl font-bold text-orange-500">
       Astro Bhavana
     </span>
+    <span className="text-sm text-gray-500 font-medium">
+      मन शांत तो जीवन संतुलित
+    </span>
   </div>
-  <span className="text-sm text-gray-500 font-medium">
-    मन शांत तो जीवन संतुलित
-  </span>
 </span>
 
 
