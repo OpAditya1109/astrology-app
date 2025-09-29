@@ -191,27 +191,12 @@ socket.on("joinVideoRoom", async ({ roomId, role }) => {
 
   try {
     const consultation = await Consultation.findById(roomId);
-
     if (!consultation) {
       console.warn(`❌ Consultation not found for ${roomId}`);
       return;
     }
 
-    // --- Start timer ONLY when astrologer joins first time ---
-    if (role === "astrologer" && !consultation.timer.isRunning) {
-      consultation.timer.startTime = new Date();
-      consultation.timer.isRunning = true;
-      await consultation.save();
-
-      io.to(videoRoomId).emit("video-timer-started", {
-        startTime: consultation.timer.startTime,
-        durationMinutes: consultation.timer.durationMinutes,
-      });
-
-      console.log(`⏱ Timer started for consultation ${roomId}`);
-    }
-
-    // --- Send timer state if already running (for late joiners) ---
+    // --- Send timer state if already running ---
     if (consultation.timer.isRunning) {
       socket.emit("video-timer-started", {
         startTime: consultation.timer.startTime,
@@ -223,11 +208,11 @@ socket.on("joinVideoRoom", async ({ roomId, role }) => {
   }
 
   // --- Handle peers inside video room ---
-  const peers = [...(io.sockets.adapter.rooms.get(videoRoomId) || [])]
-    .filter((id) => id !== socket.id);
+  const peers = [...(io.sockets.adapter.rooms.get(videoRoomId) || [])].filter(
+    (id) => id !== socket.id
+  );
 
   socket.emit("video-existing-peers", { peers });
-
   peers.forEach((peerId) => {
     io.to(peerId).emit("video-peer-joined", { socketId: socket.id });
   });
@@ -235,21 +220,43 @@ socket.on("joinVideoRoom", async ({ roomId, role }) => {
 
 
 // --- WebRTC signaling (scoped to video rooms) ---
+// User initiates call → astrologer gets ringing
 socket.on("video-call-user", ({ roomId, to, offer }) => {
-  const videoRoomId = `${roomId}-video`;
-  if (to) io.to(to).emit("video-incoming-call", { from: socket.id, offer, videoRoomId });
+  if (to) {
+    io.to(to).emit("video-incoming-call", { from: socket.id, offer });
+    console.log(`📞 Incoming call from ${socket.id} to ${to}`);
+  }
 });
 
-socket.on("video-answer-call", ({ roomId, to, answer }) => {
-  const videoRoomId = `${roomId}-video`;
-  if (to) io.to(to).emit("video-call-answered", { from: socket.id, answer, videoRoomId });
+// Astrologer accepts call → connected, start timer
+socket.on("video-answer-call", async ({ roomId, to, answer }) => {
+  if (to) io.to(to).emit("video-call-answered", { from: socket.id, answer });
+
+  // --- Start timer ONLY when astrologer accepts ---
+  try {
+    const consultation = await Consultation.findById(roomId);
+    if (consultation && !consultation.timer.isRunning) {
+      consultation.timer.startTime = new Date();
+      consultation.timer.isRunning = true;
+      await consultation.save();
+
+      const videoRoomId = `${roomId}-video`;
+      io.to(videoRoomId).emit("video-timer-started", {
+        startTime: consultation.timer.startTime,
+        durationMinutes: consultation.timer.durationMinutes,
+      });
+
+      console.log(`⏱ Timer started for consultation ${roomId}`);
+    }
+  } catch (err) {
+    console.error("Starting timer error:", err);
+  }
 });
 
+// ICE candidate
 socket.on("video-ice-candidate", ({ roomId, to, candidate }) => {
-  const videoRoomId = `${roomId}-video`;
-  if (to) io.to(to).emit("video-ice-candidate", { from: socket.id, candidate, videoRoomId });
+  if (to) io.to(to).emit("video-ice-candidate", { from: socket.id, candidate });
 });
-
 
 
 
