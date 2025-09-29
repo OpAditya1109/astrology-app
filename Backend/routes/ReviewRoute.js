@@ -6,6 +6,7 @@ const Review = require("../models/Review");
 router.post("/", async (req, res) => {
   try {
     const { consultationId, astrologerId, userId, rating, feedback } = req.body;
+    
     if (!consultationId || !astrologerId || !userId || !rating) {
       return res.status(400).json({ message: "Missing required fields" });
     }
@@ -19,5 +20,6 @@ router.post("/", async (req, res) => {
     res.status(500).json({ message: "Failed to submit review" });
   }
 });
+
 
 module.exports = router;
