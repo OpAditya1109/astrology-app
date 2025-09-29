@@ -510,27 +510,33 @@ socket.on("joinAudioRoom", async ({ roomId, role }) => {
     }
   });
 
-  // --- Extend Timer ---
-  socket.on("extendAudioTimer", async ({ roomId, extendMinutes }) => {
-    const audioRoomId = `${roomId}-audio`;
-    try {
-      const consultation = await Consultation.findById(roomId);
-      if (!consultation?.timer || !activeTimers[roomId]) return;
 
-      const addSeconds = extendMinutes * 60;
-      activeTimers[roomId].secondsLeft += addSeconds;
-      activeTimers[roomId].totalAllocated += addSeconds;
+// Extend Timer
+socket.on("extendAudioTimer", async ({ roomId, extendMinutes }) => {
+  const audioRoomId = `${roomId}-audio`;
+  try {
+    const consultation = await Consultation.findById(roomId);
+    if (!consultation?.timer || !activeTimers[roomId]) return;
 
-      const talkedSeconds = activeTimers[roomId].totalAllocated - activeTimers[roomId].secondsLeft;
-      consultation.timer.durationMinutes = Math.ceil((talkedSeconds + activeTimers[roomId].secondsLeft) / 60);
-      await consultation.save();
+    const addSeconds = extendMinutes * 60;
 
-      io.to(audioRoomId).emit("audio-timer-started", { remaining: activeTimers[roomId].secondsLeft });
-      console.log(`⏱ Audio timer extended by ${extendMinutes} min for ${roomId}`);
-    } catch (err) {
-      console.error(err);
-    }
-  });
+    // Update active timer
+    activeTimers[roomId].secondsLeft += addSeconds;
+    activeTimers[roomId].totalAllocated += addSeconds;
+
+    // Update consultation timer duration in DB
+    const talkedSeconds = activeTimers[roomId].totalAllocated - activeTimers[roomId].secondsLeft;
+    consultation.timer.durationMinutes = Math.ceil((talkedSeconds + activeTimers[roomId].secondsLeft) / 60);
+    await consultation.save();
+
+    // Immediately emit updated timer to all clients
+    io.to(audioRoomId).emit("audio-timer-started", { remaining: activeTimers[roomId].secondsLeft });
+    console.log(`⏱ Audio timer extended by ${extendMinutes} min for ${roomId}`);
+  } catch (err) {
+    console.error("extendAudioTimer error:", err);
+  }
+});
+
 
   // --- Disconnect ---
   socket.on("disconnect", async () => {
