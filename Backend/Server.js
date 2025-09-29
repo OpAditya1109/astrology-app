@@ -317,20 +317,26 @@ socket.on("extendVideoTimer", async ({ roomId, extendMinutes }) => {
   const videoRoomId = `${roomId}-video`;
   try {
     const consultation = await Consultation.findById(roomId);
-    if (!consultation) return;
+    if (!consultation || !consultation.timer) return;
 
-    consultation.timer.durationMinutes += extendMinutes;
+    // Add extendMinutes to remaining
+    const addSeconds = extendMinutes * 60;
 
-    if (consultation.timer.isRunning) {
-      const totalSeconds = consultation.timer.durationMinutes * 60;
-      const elapsed = Math.floor((Date.now() - new Date(consultation.timer.startTime)) / 1000);
-      const remaining = totalSeconds - elapsed;
+    // Calculate remaining based on startTime & duration
+    const totalSeconds = consultation.timer.durationMinutes * 60;
+    const elapsed = Math.floor((Date.now() - new Date(consultation.timer.startTime)) / 1000);
+    let remaining = totalSeconds - elapsed;
 
-      io.to(videoRoomId).emit("video-timer-started", { remaining: Math.max(remaining, 0) });
-      console.log(`⏱ Video timer extended by ${extendMinutes} min for consultation ${roomId}`);
-    }
+    remaining += addSeconds; // <-- add extension
 
+    // Update durationMinutes in DB (optional)
+    consultation.timer.durationMinutes = Math.ceil((elapsed + remaining) / 60);
     await consultation.save();
+
+    // Emit updated timer
+    io.to(videoRoomId).emit("video-timer-started", { remaining });
+
+    console.log(`⏱ Video timer extended by ${extendMinutes} min for consultation ${roomId}`);
   } catch (err) {
     console.error("Error extending video consultation timer:", err);
   }
