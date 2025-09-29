@@ -851,7 +851,7 @@ const products = [
   id: "seven-chakra-ring",
   name: "Seven Chakra Copper Magnetic Ring for Men & Women",
   img: sevenChakraRing,
-  price: 899,
+  price: 499,
   oldPrice: 1999,
   offer: "55% OFF",
   desc: "Balances chakras, enhances energy flow, and promotes overall well-being.",
