@@ -126,13 +126,20 @@ export default function VideoCall() {
       }
     });
 
-    socket.on("peer-left", () => {
-      setStatus("Peer left");
-      if (remoteVideoRef.current?.srcObject) {
-        remoteVideoRef.current.srcObject.getTracks().forEach((t) => t.stop());
-        remoteVideoRef.current.srcObject = null;
-      }
-    });
+socket.on("user-left", ({ message }) => {
+  setStatus(message); // show "User left"
+
+  if (remoteVideoRef.current?.srcObject) {
+    remoteVideoRef.current.srcObject.getTracks().forEach((t) => t.stop());
+    remoteVideoRef.current.srcObject = null;
+  }
+
+  // Redirect after 5 seconds
+  setTimeout(() => {
+    navigate(-1);
+  }, 5000);
+});
+
 
     return () => {
       socket.removeAllListeners();

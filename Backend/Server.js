@@ -263,10 +263,38 @@ socket.on("video-answer-call", async ({ roomId, to, answer }) => {
   socket.on("video-ice-candidate", ({ roomId, to, candidate }) => {
     if (to) io.to(to).emit("video-ice-candidate", { from: socket.id, candidate });
   });
-socket.on("leaveVideoRoom", ({ roomId }) => {
+// --- Leave Video Room ---
+socket.on("leaveVideoRoom", async ({ roomId }) => {
   const videoRoomId = `${roomId}-video`;
-  socket.to(videoRoomId).emit("peer-left");
+
+  // Notify everyone in the video room that a user left
+  io.to(videoRoomId).emit("user-left", { message: "User left the call" });
+
+  // Leave the socket room
   socket.leave(videoRoomId);
+
+  // Cleanup timers / active call
+  if (activeTimers[roomId]) {
+    clearInterval(activeTimers[roomId].interval);
+    delete activeTimers[roomId];
+  }
+});
+
+// --- Disconnect handler ---
+socket.on("disconnect", () => {
+  const rooms = Array.from(socket.rooms).filter((r) => r !== socket.id);
+
+  rooms.forEach((room) => {
+    if (room.endsWith("-video")) {
+      const roomId = room.replace("-video", "");
+      io.to(room).emit("user-left", { message: "User left the call" });
+
+      if (activeTimers[roomId]) {
+        clearInterval(activeTimers[roomId].interval);
+        delete activeTimers[roomId];
+      }
+    }
+  });
 });
 
 
