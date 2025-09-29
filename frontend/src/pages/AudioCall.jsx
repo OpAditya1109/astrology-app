@@ -186,7 +186,7 @@ export default function AudioCall() {
 
     const offer = await pc.createOffer();
     await pc.setLocalDescription(offer);
-    socket.emit("audio-call-user", { roomId: consultationId, to: targetSocketRefRef.current, offer });
+    socket.emit("audio-call-user", { roomId: consultationId, to: targetSocketRef.current, offer });
   };
 
   const toggleMute = () => {
