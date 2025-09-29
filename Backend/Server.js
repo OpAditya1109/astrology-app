@@ -183,7 +183,8 @@ io.on("connection", (socket) => {
 
 
 
-    // --- VIDEO CALL SUB-ROOM ---
+// ================= VIDEO CALL SOCKET LOGIC =================
+// --- Join Video Room ---
 socket.on("joinVideoRoom", async ({ roomId, role }) => {
   const videoRoomId = `${roomId}-video`;
   socket.join(videoRoomId);
@@ -191,28 +192,31 @@ socket.on("joinVideoRoom", async ({ roomId, role }) => {
 
   try {
     const consultation = await Consultation.findById(roomId);
-    if (consultation && consultation.timer.isRunning) {
+
+    if (consultation?.timer?.isRunning) {
       const totalSeconds = consultation.timer.durationMinutes * 60;
       const elapsed = Math.floor((Date.now() - new Date(consultation.timer.startTime)) / 1000);
       const remaining = totalSeconds - elapsed;
 
-      // <-- send timer to the newly joined peer
+      // Send timer to newly joined peer
       socket.emit("video-timer-started", { remaining: Math.max(remaining, 0) });
     }
   } catch (err) {
     console.error("joinVideoRoom -> DB error:", err);
   }
 
-  // Handle existing peers
+  // Send existing peers
   const peers = [...(io.sockets.adapter.rooms.get(videoRoomId) || [])].filter(id => id !== socket.id);
   socket.emit("video-existing-peers", { peers });
   peers.forEach(peerId => io.to(peerId).emit("video-peer-joined", { socketId: socket.id }));
 });
 
+// --- Request Current Video Timer ---
 socket.on("request-video-timer", async ({ roomId }) => {
   try {
     const consultation = await Consultation.findById(roomId);
-    if (consultation && consultation.timer.isRunning) {
+
+    if (consultation?.timer?.isRunning) {
       const totalSeconds = consultation.timer.durationMinutes * 60;
       const elapsed = Math.floor((Date.now() - new Date(consultation.timer.startTime)) / 1000);
       const remaining = totalSeconds - elapsed;
@@ -223,33 +227,63 @@ socket.on("request-video-timer", async ({ roomId }) => {
   }
 });
 
-  // --- User calls astrologer ---
-  socket.on("video-call-user", ({ roomId, to, offer }) => {
-    if (to) {
-      io.to(to).emit("video-incoming-call", { from: socket.id, offer });
-      console.log(`📞 Incoming call from ${socket.id} to ${to}`);
-    }
-  });
+// --- User calls astrologer ---
+socket.on("video-call-user", ({ roomId, to, offer }) => {
+  if (to) {
+    io.to(to).emit("video-incoming-call", { from: socket.id, offer });
+    console.log(`📞 Incoming call from ${socket.id} to ${to}`);
+  }
+});
 
-  // --- Astrologer answers call ---
-// Astrologer accepts call → connected, start timer
+// --- Astrologer answers call & starts timer ---
 socket.on("video-answer-call", async ({ roomId, to, answer }) => {
   if (to) io.to(to).emit("video-call-answered", { from: socket.id, answer });
 
   try {
     const consultation = await Consultation.findById(roomId);
-    if (consultation && !consultation.timer.isRunning) {
+
+    if (!consultation) return;
+
+    // Initialize timer if not running
+    if (!consultation.timer?.isRunning) {
+      consultation.timer = consultation.timer || {};
       consultation.timer.startTime = new Date();
+      consultation.timer.durationMinutes = consultation.timer.durationMinutes || 5;
       consultation.timer.isRunning = true;
       await consultation.save();
 
       const videoRoomId = `${roomId}-video`;
       const totalSeconds = consultation.timer.durationMinutes * 60;
-      const elapsed = Math.floor((Date.now() - new Date(consultation.timer.startTime)) / 1000);
-      const remaining = totalSeconds - elapsed;
 
-      // <-- Broadcast timer to ALL peers in the room
-      io.to(videoRoomId).emit("video-timer-started", { remaining: Math.max(remaining, 0) });
+      // Create active timer
+      if (!activeTimers[roomId]) {
+        activeTimers[roomId] = {
+          secondsLeft: totalSeconds,
+          totalAllocated: totalSeconds,
+          startTime: Date.now(),
+          interval: setInterval(async () => {
+            if (!activeTimers[roomId]) return;
+
+            activeTimers[roomId].secondsLeft--;
+
+            // Emit remaining seconds to all peers
+            io.to(videoRoomId).emit("video-timer-started", {
+              remaining: activeTimers[roomId].secondsLeft,
+            });
+
+            if (activeTimers[roomId].secondsLeft <= 0) {
+              clearInterval(activeTimers[roomId].interval);
+              delete activeTimers[roomId];
+
+              await finalizeConsultation(roomId, true); // auto end
+              io.to(videoRoomId).emit("timerEnded");
+            }
+          }, 1000),
+        };
+      }
+
+      // Broadcast initial remaining seconds
+      io.to(videoRoomId).emit("video-timer-started", { remaining: activeTimers[roomId].secondsLeft });
 
       console.log(`⏱ Timer started for consultation ${roomId}`);
     }
@@ -258,31 +292,27 @@ socket.on("video-answer-call", async ({ roomId, to, answer }) => {
   }
 });
 
+// --- ICE candidates ---
+socket.on("video-ice-candidate", ({ roomId, to, candidate }) => {
+  if (to) io.to(to).emit("video-ice-candidate", { from: socket.id, candidate });
+});
 
-  // --- ICE candidates ---
-  socket.on("video-ice-candidate", ({ roomId, to, candidate }) => {
-    if (to) io.to(to).emit("video-ice-candidate", { from: socket.id, candidate });
-  });
 // --- Leave Video Room ---
 socket.on("leaveVideoRoom", async ({ roomId }) => {
   const videoRoomId = `${roomId}-video`;
-
-  // Notify everyone in the video room that a user left
   io.to(videoRoomId).emit("user-left", { message: "User left the call" });
-
-  // Leave the socket room
   socket.leave(videoRoomId);
 
-  // Cleanup timers / active call
+  // Clear timer
   if (activeTimers[roomId]) {
     clearInterval(activeTimers[roomId].interval);
     delete activeTimers[roomId];
   }
 
-  // Delete consultation from DB
+  // Delete consultation
   try {
     await Consultation.findByIdAndDelete(roomId);
-    console.log(`🗑 Consultation ${roomId} deleted from DB after user left`);
+    console.log(`🗑 Consultation ${roomId} deleted after user left`);
   } catch (err) {
     console.error("Error deleting consultation:", err);
   }
@@ -290,7 +320,7 @@ socket.on("leaveVideoRoom", async ({ roomId }) => {
 
 // --- Disconnect handler ---
 socket.on("disconnect", async () => {
-  const rooms = Array.from(socket.rooms).filter((r) => r !== socket.id);
+  const rooms = Array.from(socket.rooms).filter(r => r !== socket.id);
 
   for (const room of rooms) {
     if (room.endsWith("-video")) {
@@ -302,47 +332,41 @@ socket.on("disconnect", async () => {
         delete activeTimers[roomId];
       }
 
-      // Delete consultation from DB
       try {
         await Consultation.findByIdAndDelete(roomId);
-        console.log(`🗑 Consultation ${roomId} deleted from DB on disconnect`);
+        console.log(`🗑 Consultation ${roomId} deleted on disconnect`);
       } catch (err) {
         console.error("Error deleting consultation:", err);
       }
     }
   }
 });
-// --- Extend consultation timer ---
+
+// --- Extend Video Timer ---
 socket.on("extendVideoTimer", async ({ roomId, extendMinutes }) => {
   const videoRoomId = `${roomId}-video`;
+
   try {
     const consultation = await Consultation.findById(roomId);
-    if (!consultation || !consultation.timer) return;
-
-    if (!activeTimers[roomId]) return; // must be running
+    if (!consultation?.timer || !activeTimers[roomId]) return;
 
     const addSeconds = extendMinutes * 60;
-
-    // Add directly to running timer
     activeTimers[roomId].secondsLeft += addSeconds;
     activeTimers[roomId].totalAllocated += addSeconds;
 
-    // Optional: update durationMinutes in DB for record
+    // Update durationMinutes in DB
     const talkedSeconds = activeTimers[roomId].totalAllocated - activeTimers[roomId].secondsLeft;
     consultation.timer.durationMinutes = Math.ceil((talkedSeconds + activeTimers[roomId].secondsLeft) / 60);
     await consultation.save();
 
-    // Emit **current remaining** from active timer
-    io.to(videoRoomId).emit("video-timer-started", {
-      remaining: activeTimers[roomId].secondsLeft,
-    });
+    // Emit updated remaining seconds
+    io.to(videoRoomId).emit("video-timer-started", { remaining: activeTimers[roomId].secondsLeft });
 
     console.log(`⏱ Video timer extended by ${extendMinutes} min for consultation ${roomId}`);
   } catch (err) {
     console.error("Error extending video consultation timer:", err);
   }
 });
-
 
 
 
