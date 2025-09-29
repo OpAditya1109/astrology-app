@@ -185,80 +185,88 @@ io.on("connection", (socket) => {
 
     // --- VIDEO CALL SUB-ROOM ---
 socket.on("joinVideoRoom", async ({ roomId, role }) => {
-  const videoRoomId = `${roomId}-video`;
-  socket.join(videoRoomId);
-  console.log(`🎥 ${role} (${socket.id}) joined ${videoRoomId}`);
-
-  try {
-    const consultation = await Consultation.findById(roomId);
-    if (!consultation) {
-      console.warn(`❌ Consultation not found for ${roomId}`);
-      return;
-    }
-
-    // --- Send timer state if already running ---
- if (consultation.timer.isRunning) {
-  const totalSeconds = consultation.timer.durationMinutes * 60;
-  const elapsed = Math.floor((Date.now() - new Date(consultation.timer.startTime)) / 1000);
-  const remaining = totalSeconds - elapsed;
-
-  socket.emit("video-timer-started", { remaining: Math.max(remaining, 0) });
-}
-
-  } catch (err) {
-    console.error("joinVideoRoom -> DB error:", err);
-  }
-
-  // --- Handle peers inside video room ---
-  const peers = [...(io.sockets.adapter.rooms.get(videoRoomId) || [])].filter(
-    (id) => id !== socket.id
-  );
-
-  socket.emit("video-existing-peers", { peers });
-  peers.forEach((peerId) => {
-    io.to(peerId).emit("video-peer-joined", { socketId: socket.id });
-  });
-});
-
-
-socket.on("video-call-user", ({ roomId, to, offer }) => {
-  if (to) {
-    io.to(to).emit("video-incoming-call", { from: socket.id, offer });
-    console.log(`📞 Incoming call from ${socket.id} to ${to}`);
-  }
-});
-
-// Astrologer accepts call → connected, start timer
-socket.on("video-answer-call", async ({ roomId, to, answer }) => {
-  if (to) io.to(to).emit("video-call-answered", { from: socket.id, answer });
-
-  // --- Start timer ONLY when astrologer accepts ---
-  try {
-    const consultation = await Consultation.findById(roomId);
-    if (consultation && !consultation.timer.isRunning) {
-      consultation.timer.startTime = new Date();
-      consultation.timer.isRunning = true;
-      await consultation.save();
-
     const videoRoomId = `${roomId}-video`;
-const totalSeconds = consultation.timer.durationMinutes * 60;
-const elapsed = Math.floor((Date.now() - new Date(consultation.timer.startTime)) / 1000);
-const remaining = totalSeconds - elapsed;
+    socket.join(videoRoomId);
+    console.log(`🎥 ${role} (${socket.id}) joined ${videoRoomId}`);
 
-io.to(videoRoomId).emit("video-timer-started", { remaining: Math.max(remaining, 0) });
+    try {
+      const consultation = await Consultation.findById(roomId);
+      if (!consultation) {
+        console.warn(`❌ Consultation not found for ${roomId}`);
+        return;
+      }
 
+      // --- Send timer state if already running ---
+      if (consultation.timer.isRunning) {
+        const totalSeconds = consultation.timer.durationMinutes * 60;
+        const elapsed = Math.floor(
+          (Date.now() - new Date(consultation.timer.startTime)) / 1000
+        );
+        const remaining = totalSeconds - elapsed;
 
-      console.log(`⏱ Timer started for consultation ${roomId}`);
+        socket.emit("video-timer-started", {
+          remaining: Math.max(remaining, 0),
+        });
+      }
+    } catch (err) {
+      console.error("joinVideoRoom -> DB error:", err);
     }
-  } catch (err) {
-    console.error("Starting timer error:", err);
-  }
-});
 
-// ICE candidate
-socket.on("video-ice-candidate", ({ roomId, to, candidate }) => {
-  if (to) io.to(to).emit("video-ice-candidate", { from: socket.id, candidate });
-});
+    // --- Send existing peers ---
+    const peers = [...(io.sockets.adapter.rooms.get(videoRoomId) || [])].filter(
+      (id) => id !== socket.id
+    );
+
+    socket.emit("video-existing-peers", { peers });
+
+    peers.forEach((peerId) => {
+      io.to(peerId).emit("video-peer-joined", { socketId: socket.id });
+    });
+  });
+
+  // --- User calls astrologer ---
+  socket.on("video-call-user", ({ roomId, to, offer }) => {
+    if (to) {
+      io.to(to).emit("video-incoming-call", { from: socket.id, offer });
+      console.log(`📞 Incoming call from ${socket.id} to ${to}`);
+    }
+  });
+
+  // --- Astrologer answers call ---
+  socket.on("video-answer-call", async ({ roomId, to, answer }) => {
+    if (to) io.to(to).emit("video-call-answered", { from: socket.id, answer });
+
+    // --- Start timer ONLY when astrologer accepts ---
+    try {
+      const consultation = await Consultation.findById(roomId);
+      if (consultation && !consultation.timer.isRunning) {
+        consultation.timer.startTime = new Date();
+        consultation.timer.isRunning = true;
+        await consultation.save();
+
+        const videoRoomId = `${roomId}-video`;
+        const totalSeconds = consultation.timer.durationMinutes * 60;
+        const elapsed = Math.floor(
+          (Date.now() - new Date(consultation.timer.startTime)) / 1000
+        );
+        const remaining = totalSeconds - elapsed;
+
+        io.to(videoRoomId).emit("video-timer-started", {
+          remaining: Math.max(remaining, 0),
+        });
+
+        console.log(`⏱ Timer started for consultation ${roomId}`);
+      }
+    } catch (err) {
+      console.error("Starting timer error:", err);
+    }
+  });
+
+  // --- ICE candidates ---
+  socket.on("video-ice-candidate", ({ roomId, to, candidate }) => {
+    if (to) io.to(to).emit("video-ice-candidate", { from: socket.id, candidate });
+  });
+
 
 
 
