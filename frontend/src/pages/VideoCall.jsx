@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { io } from "socket.io-client";
 
 // Icons
@@ -13,6 +13,10 @@ const SOCKET_SERVER_URL = "https://bhavanaastro.onrender.com";
 export default function VideoCall() {
   const { consultationId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const callMode = location.state?.mode || "Video";
+  const role = location.state?.role || "user";
 
   const localVideoRef = useRef(null);
   const remoteVideoRef = useRef(null);
@@ -22,11 +26,10 @@ export default function VideoCall() {
 
   const [status, setStatus] = useState("Connecting...");
   const [isMuted, setIsMuted] = useState(false);
-  const [isVideoOff, setIsVideoOff] = useState(false);
+  const [isVideoOff, setIsVideoOff] = useState(callMode === "Audio");
   const [secondsLeft, setSecondsLeft] = useState(null);
-  const [callMode, setCallMode] = useState("Video");
 
-  // Extend call state
+  // Extension logic
   const [showExtendModal, setShowExtendModal] = useState(false);
   const [extendMinutes, setExtendMinutes] = useState(5);
   const [extendRate, setExtendRate] = useState(0);
@@ -35,8 +38,8 @@ export default function VideoCall() {
   const [skipExtendPrompt, setSkipExtendPrompt] = useState(false);
 
   const ICE_SERVERS = { iceServers: [{ urls: "stun:stun.l.google.com:19302" }] };
-  const currentUser = JSON.parse(sessionStorage.getItem("user"));
 
+  const currentUser = JSON.parse(sessionStorage.getItem("user"));
   const endCall = () => {
     const socket = socketRef.current;
     if (socket) {
@@ -44,6 +47,7 @@ export default function VideoCall() {
       socket.emit("leaveVideoRoom", { roomId: consultationId });
       socket.disconnect();
     }
+
     if (peerConnectionRef.current) peerConnectionRef.current.close();
     if (localVideoRef.current?.srcObject) {
       localVideoRef.current.srcObject.getTracks().forEach((t) => t.stop());
@@ -51,18 +55,16 @@ export default function VideoCall() {
     if (remoteVideoRef.current?.srcObject) {
       remoteVideoRef.current.srcObject.getTracks().forEach((t) => t.stop());
     }
+
     navigate(-1);
   };
-
-  // Fetch consultation and user wallet
+  // Fetch consultation rate and wallet
   useEffect(() => {
     const fetchData = async () => {
       try {
         const res = await fetch(`https://bhavanaastro.onrender.com/api/consultations/details/${consultationId}`);
         const data = await res.json();
         setExtendRate(data.ratePerMinute || 0);
-        setCallMode(data.mode || "Video");
-        setIsVideoOff(data.mode === "Audio");
 
         if (currentUser?.id) {
           const walletRes = await fetch(`https://bhavanaastro.onrender.com/api/users/${currentUser.id}/details`);
@@ -76,117 +78,118 @@ export default function VideoCall() {
     fetchData();
   }, [consultationId]);
 
-  useEffect(() => {
-    const socket = io(SOCKET_SERVER_URL, { transports: ["websocket"] });
-    socketRef.current = socket;
+useEffect(() => {
+  const socket = io(SOCKET_SERVER_URL, { transports: ["websocket"] });
+  socketRef.current = socket;
 
-    const pc = new RTCPeerConnection(ICE_SERVERS);
-    peerConnectionRef.current = pc;
+  const pc = new RTCPeerConnection(ICE_SERVERS);
+  peerConnectionRef.current = pc;
 
-    const setupLocalMedia = async (mode) => {
-      try {
-        let stream;
-        if (mode === "Video") {
-          stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-          if (localVideoRef.current) localVideoRef.current.srcObject = stream;
-        } else {
-          stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        }
-        stream.getTracks().forEach((track) => pc.addTrack(track, stream));
-      } catch (err) {
-        console.error("getUserMedia error:", err);
-        setStatus("Camera/Mic permission denied");
-      }
-    };
-
-    setupLocalMedia(callMode);
-
-    // Remote stream
-    pc.ontrack = (event) => {
-      if (remoteVideoRef.current) remoteVideoRef.current.srcObject = event.streams[0];
-    };
-
-    // ICE candidates
-    pc.onicecandidate = (event) => {
-      if (event.candidate && targetSocketRef.current) {
-        socket.emit("video-ice-candidate", {
-          roomId: consultationId,
-          to: targetSocketRef.current,
-          candidate: event.candidate,
-        });
-      }
-    };
-
-    // Join Room
-    socket.emit("joinVideoRoom", { roomId: consultationId, role: currentUser?.role || "user" });
-
-    // Existing peers
-    socket.on("video-existing-peers", async ({ peers }) => {
-      if (peers.length > 0) {
-        targetSocketRef.current = peers[0];
-        setStatus("Ringing...");
-        const offer = await pc.createOffer();
-        await pc.setLocalDescription(offer);
-        socket.emit("video-call-user", { roomId: consultationId, to: peers[0], offer });
+  // --- Local media ---
+  (async () => {
+    try {
+      let stream;
+      if (callMode === "Video") {
+        // Video call: get video + audio
+        stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+        if (localVideoRef.current) localVideoRef.current.srcObject = stream;
       } else {
-        setStatus("Waiting for other participant...");
+        // Audio-only call: get only audio
+        stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       }
-    });
 
-    // Incoming call
-    socket.on("video-incoming-call", async ({ from, offer }) => {
-      targetSocketRef.current = from;
+      // Add tracks to peer connection
+      stream.getTracks().forEach((track) => pc.addTrack(track, stream));
+
+    } catch (e) {
+      console.error("getUserMedia error:", e);
+      setStatus("Camera/Mic permission denied");
+    }
+  })();
+
+  // --- Remote stream ---
+  pc.ontrack = (event) => {
+    if (remoteVideoRef.current) {
+      remoteVideoRef.current.srcObject = event.streams[0];
+    }
+  };
+
+  // --- ICE candidates ---
+  pc.onicecandidate = (event) => {
+    if (event.candidate && targetSocketRef.current) {
+      socket.emit("video-ice-candidate", {
+        roomId: consultationId,
+        to: targetSocketRef.current,
+        candidate: event.candidate,
+      });
+    }
+  };
+
+  // --- Join Room ---
+  socket.emit("joinVideoRoom", { roomId: consultationId, role });
+
+  // --- Signaling ---
+  socket.on("video-existing-peers", async ({ peers }) => {
+    if (role === "user" && peers.length > 0) {
+      targetSocketRef.current = peers[0];
       setStatus("Ringing...");
-      await pc.setRemoteDescription(offer);
-      const answer = await pc.createAnswer();
-      await pc.setLocalDescription(answer);
-      socket.emit("video-answer-call", { roomId: consultationId, to: from, answer });
-    });
+      await startCall();
+    } else if (role === "user") {
+      setStatus("Waiting for astrologer...");
+    }
+  });
 
-    // Call answered
-    socket.on("video-call-answered", async ({ answer }) => {
+  socket.on("video-incoming-call", async ({ from, offer }) => {
+    targetSocketRef.current = from;
+    setStatus("Ringing...");
+    await pc.setRemoteDescription(offer);
+    const answer = await pc.createAnswer();
+    await pc.setLocalDescription(answer);
+    socket.emit("video-answer-call", { roomId: consultationId, to: from, answer });
+  });
+
+  socket.on("video-call-answered", async ({ answer }) => {
+    if (!pc) return;
+    await pc.setRemoteDescription(answer);
+    setStatus("Connected");
+  });
+
+  // Timer
+  socket.on("video-timer-started", ({ remaining }) => {
+    setSecondsLeft(remaining);
+    setStatus("Connected");
+  });
+
+  socket.on("video-ice-candidate", async ({ candidate }) => {
+    try {
       if (!pc) return;
-      await pc.setRemoteDescription(answer);
-      setStatus("Connected");
-    });
+      await pc.addIceCandidate(candidate?.candidate ? candidate : new RTCIceCandidate(candidate));
+    } catch (err) {
+      console.error("Error adding ICE candidate:", err);
+    }
+  });
 
-    // Timer for both video/audio
-    socket.on("video-timer-started", ({ remaining }) => {
-      setSecondsLeft(remaining);
-      setStatus("Connected");
-    });
+  socket.on("user-left", ({ message }) => {
+    setStatus(message);
+    if (remoteVideoRef.current?.srcObject) {
+      remoteVideoRef.current.srcObject.getTracks().forEach((t) => t.stop());
+      remoteVideoRef.current.srcObject = null;
+    }
+    setTimeout(() => navigate(-1), 5000);
+  });
 
-    // ICE candidate from remote
-    socket.on("video-ice-candidate", async ({ candidate }) => {
-      try {
-        if (!pc) return;
-        await pc.addIceCandidate(candidate?.candidate ? candidate : new RTCIceCandidate(candidate));
-      } catch (err) {
-        console.error("Error adding ICE candidate:", err);
-      }
-    });
+  return () => {
+    socket.removeAllListeners();
+    socket.disconnect();
+    if (localVideoRef.current?.srcObject) {
+      localVideoRef.current.srcObject.getTracks().forEach((t) => t.stop());
+    }
+    pc.close();
+  };
+}, [consultationId, callMode, role]);
 
-    // User left
-    socket.on("user-left", ({ message }) => {
-      setStatus(message);
-      if (remoteVideoRef.current?.srcObject) {
-        remoteVideoRef.current.srcObject.getTracks().forEach((t) => t.stop());
-        remoteVideoRef.current.srcObject = null;
-      }
-      setTimeout(() => navigate(-1), 5000);
-    });
 
-    return () => {
-      socket.removeAllListeners();
-      socket.disconnect();
-      if (localVideoRef.current?.srcObject) {
-        localVideoRef.current.srcObject.getTracks().forEach((t) => t.stop());
-      }
-      pc.close();
-    };
-  }, [consultationId, callMode]);
-
-  // Timer countdown
+  // --- Timer countdown ---
   useEffect(() => {
     if (status === "Connected" && secondsLeft > 0) {
       const interval = setInterval(() => setSecondsLeft((prev) => (prev > 0 ? prev - 1 : 0)), 1000);
@@ -195,7 +198,7 @@ export default function VideoCall() {
     if (secondsLeft === 0) endCall();
   }, [status, secondsLeft]);
 
-  // Extend call modal
+  // --- Show extend modal ---
   useEffect(() => {
     if (
       secondsLeft !== null &&
@@ -212,48 +215,45 @@ export default function VideoCall() {
     }
   }, [secondsLeft, showExtendModal, skipExtendPrompt, userWallet, extendRate]);
 
-const toggleMute = () => {
-  const stream = localVideoRef.current?.srcObject;
-  if (!stream) return;
+  const startCall = async () => {
+    const pc = peerConnectionRef.current;
+    const socket = socketRef.current;
+    if (!pc || !socket || !targetSocketRef.current) return;
+    const offer = await pc.createOffer();
+    await pc.setLocalDescription(offer);
+    socket.emit("video-call-user", { roomId: consultationId, to: targetSocketRef.current, offer });
+  };
 
-  // Find audio track
-  const audioTrack = stream.getAudioTracks()[0];
-  if (!audioTrack) {
-    console.warn("No audio track found");
-    return;
-  }
+  const toggleMute = () => {
+    const stream = localVideoRef.current?.srcObject;
+    if (!stream) return;
+    const audioTrack = stream.getTracks().find((t) => t.kind === "audio");
+    if (!audioTrack) return;
+    audioTrack.enabled = !audioTrack.enabled;
+    setIsMuted(!audioTrack.enabled);
+  };
 
-  // Toggle track
-  audioTrack.enabled = !audioTrack.enabled;
-  setIsMuted(!audioTrack.enabled); // true = muted
-};
-
-
-const toggleVideo = () => {
-  if (callMode === "Audio") return;
-  const stream = localVideoRef.current?.srcObject;
-  if (!stream) return;
-
-  const videoTrack = stream.getVideoTracks()[0];
-  if (!videoTrack) {
-    console.warn("No video track found");
-    return;
-  }
-
-  videoTrack.enabled = !videoTrack.enabled;
-  setIsVideoOff(!videoTrack.enabled); // true = video off
-};
-
+  const toggleVideo = () => {
+    if (callMode === "Audio") return;
+    const stream = localVideoRef.current?.srcObject;
+    if (!stream) return;
+    const videoTrack = stream.getTracks().find((t) => t.kind === "video");
+    if (!videoTrack) return;
+    videoTrack.enabled = !videoTrack.enabled;
+    setIsVideoOff(!videoTrack.enabled);
+  };
 
   const extendConsultation = async () => {
     if (extending) return;
     setExtending(true);
+
     try {
       const extendCost = extendMinutes * extendRate;
       if (userWallet < extendCost) {
         alert(`Insufficient balance. You have ₹${userWallet}`);
         return;
       }
+
       const res = await fetch("https://bhavanaastro.onrender.com/api/users/deduct", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -264,8 +264,10 @@ const toggleVideo = () => {
           extendMinutes,
         }),
       });
+
       if (!res.ok) throw new Error("Deduction failed");
       const data = await res.json();
+
       setUserWallet(data.balance);
       socketRef.current.emit("extendVideoTimer", { roomId: consultationId, extendMinutes });
     } catch (err) {
@@ -275,6 +277,7 @@ const toggleVideo = () => {
       setExtending(false);
     }
   };
+
 
   const formatTime = (s) => `${Math.floor(s / 60).toString().padStart(2, "0")}:${(s % 60).toString().padStart(2, "0")}`;
 
