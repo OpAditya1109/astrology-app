@@ -40,7 +40,24 @@ export default function VideoCall() {
   const ICE_SERVERS = { iceServers: [{ urls: "stun:stun.l.google.com:19302" }] };
 
   const currentUser = JSON.parse(sessionStorage.getItem("user"));
+  const endCall = () => {
+    const socket = socketRef.current;
+    if (socket) {
+      socket.emit("endVideoCall", { roomId: consultationId });
+      socket.emit("leaveVideoRoom", { roomId: consultationId });
+      socket.disconnect();
+    }
 
+    if (peerConnectionRef.current) peerConnectionRef.current.close();
+    if (localVideoRef.current?.srcObject) {
+      localVideoRef.current.srcObject.getTracks().forEach((t) => t.stop());
+    }
+    if (remoteVideoRef.current?.srcObject) {
+      remoteVideoRef.current.srcObject.getTracks().forEach((t) => t.stop());
+    }
+
+    navigate(-1);
+  };
   // Fetch consultation rate and wallet
   useEffect(() => {
     const fetchData = async () => {
@@ -152,28 +169,7 @@ export default function VideoCall() {
       setTimeout(() => navigate(-1), 5000);
     });
 
-const endCall = () => {
-  const socket = socketRef.current;
-  if (socket) {
-    // Emit to backend to finalize & delete consultation
-    socket.emit("endVideoCall", { roomId: consultationId });
 
-    // Leave the room
-    socket.emit("leaveVideoRoom", { roomId: consultationId });
-    socket.disconnect();
-  }
-
-  // Stop local media & peer connection
-  if (peerConnectionRef.current) peerConnectionRef.current.close();
-  if (localVideoRef.current?.srcObject) {
-    localVideoRef.current.srcObject.getTracks().forEach((t) => t.stop());
-  }
-  if (remoteVideoRef.current?.srcObject) {
-    remoteVideoRef.current.srcObject.getTracks().forEach((t) => t.stop());
-  }
-
-  navigate(-1);
-};
 
 
     return () => {
