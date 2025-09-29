@@ -192,6 +192,42 @@ io.on("connection", (socket) => {
     if (to) io.to(to).emit("ice-candidate", { from: socket.id, candidate });
   });
 
+
+    // --- VIDEO CALL SUB-ROOM ---
+  socket.on("joinVideoRoom", (roomId) => {
+    const videoRoomId = `${roomId}-video`;
+    socket.join(videoRoomId);
+    console.log(`🎥 ${socket.id} joined video room: ${videoRoomId}`);
+
+    // Get other peers already in this video room
+    const peers = [...(io.sockets.adapter.rooms.get(videoRoomId) || [])]
+      .filter((id) => id !== socket.id);
+
+    // Tell this socket who’s already here
+    socket.emit("video-existing-peers", { peers });
+
+    // Notify existing peers about the new joiner
+    peers.forEach((peerId) => {
+      io.to(peerId).emit("video-peer-joined", { socketId: socket.id });
+    });
+  });
+
+  // --- WebRTC signaling events (scoped to videoRoom) ---
+  socket.on("video-call-user", ({ roomId, to, offer }) => {
+    const videoRoomId = `${roomId}-video`;
+    if (to) io.to(to).emit("video-incoming-call", { from: socket.id, offer });
+  });
+
+  socket.on("video-answer-call", ({ roomId, to, answer }) => {
+    const videoRoomId = `${roomId}-video`;
+    if (to) io.to(to).emit("video-call-answered", { from: socket.id, answer });
+  });
+
+  socket.on("video-ice-candidate", ({ roomId, to, candidate }) => {
+    const videoRoomId = `${roomId}-video`;
+    if (to) io.to(to).emit("video-ice-candidate", { from: socket.id, candidate });
+  });
+
   // --- Disconnect ---
   socket.on("disconnect", () => {
     console.log("❌ Client disconnected:", socket.id);

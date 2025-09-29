@@ -24,7 +24,10 @@ export default function VideoCall() {
 
   const [status, setStatus] = useState("Connecting...");
   const [isMuted, setIsMuted] = useState(false);
-  const [isVideoOff, setIsVideoOff] = useState(callMode === "Audio"); // Audio call starts with video off
+  const [isVideoOff, setIsVideoOff] = useState(callMode === "Audio");
+
+  // --- Timer (5 minutes = 300 seconds) ---
+  const [secondsLeft, setSecondsLeft] = useState(300);
 
   const ICE_SERVERS = {
     iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
@@ -37,6 +40,7 @@ export default function VideoCall() {
     const pc = new RTCPeerConnection(ICE_SERVERS);
     peerConnectionRef.current = pc;
 
+    // Get user media
     (async () => {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({
@@ -46,12 +50,9 @@ export default function VideoCall() {
 
         if (localVideoRef.current) localVideoRef.current.srcObject = stream;
 
-        // Automatically disable video track for audio-only calls
         if (callMode === "Audio") {
           const videoTrack = stream.getTracks().find((t) => t.kind === "video");
-          if (videoTrack) {
-            videoTrack.enabled = false;
-          }
+          if (videoTrack) videoTrack.enabled = false;
         }
 
         stream.getTracks().forEach((track) => pc.addTrack(track, stream));
@@ -61,12 +62,14 @@ export default function VideoCall() {
       }
     })();
 
+    // Remote stream
     pc.ontrack = (event) => {
       if (remoteVideoRef.current) {
         remoteVideoRef.current.srcObject = event.streams[0];
       }
     };
 
+    // Connection state
     pc.onconnectionstatechange = () => {
       const s = pc.connectionState;
       if (s === "connected") setStatus("Connected");
@@ -74,18 +77,21 @@ export default function VideoCall() {
       else if (s === "disconnected") setStatus("Disconnected");
     };
 
+    // ICE candidate
     pc.onicecandidate = (event) => {
       if (event.candidate && targetSocketRef.current) {
-        socket.emit("ice-candidate", {
+        socket.emit("video-ice-candidate", {
+          roomId: consultationId,
           to: targetSocketRef.current,
           candidate: event.candidate,
         });
       }
     };
 
-    socket.emit("joinRoom", consultationId);
+    // Join video room
+    socket.emit("joinVideoRoom", consultationId);
 
-    socket.on("existing-peers", async ({ peers }) => {
+    socket.on("video-existing-peers", async ({ peers }) => {
       if (peers && peers.length > 0) {
         targetSocketRef.current = peers[0];
         setStatus("Calling...");
@@ -95,26 +101,30 @@ export default function VideoCall() {
       }
     });
 
-    socket.on("peer-joined", ({ socketId }) => {
+    socket.on("video-peer-joined", ({ socketId }) => {
       if (!targetSocketRef.current) {
         targetSocketRef.current = socketId;
       }
     });
 
-    socket.on("incoming-call", async ({ from, offer }) => {
+    socket.on("video-incoming-call", async ({ from, offer }) => {
       try {
         targetSocketRef.current = from;
         await pc.setRemoteDescription(offer);
         const answer = await pc.createAnswer();
         await pc.setLocalDescription(answer);
-        socket.emit("answer-call", { to: from, answer });
+        socket.emit("video-answer-call", {
+          roomId: consultationId,
+          to: from,
+          answer,
+        });
         setStatus("Ringing...");
       } catch (e) {
         console.error("incoming-call error:", e);
       }
     });
 
-    socket.on("call-answered", async ({ answer }) => {
+    socket.on("video-call-answered", async ({ answer }) => {
       try {
         await pc.setRemoteDescription(answer);
         setStatus("Connected");
@@ -123,7 +133,7 @@ export default function VideoCall() {
       }
     });
 
-    socket.on("ice-candidate", async ({ candidate }) => {
+    socket.on("video-ice-candidate", async ({ candidate }) => {
       try {
         await pc.addIceCandidate(
           candidate?.candidate ? candidate : new RTCIceCandidate(candidate)
@@ -151,6 +161,22 @@ export default function VideoCall() {
     };
   }, [consultationId, callMode]);
 
+  // --- Timer Effect ---
+  useEffect(() => {
+    if (status === "Connected" && secondsLeft > 0) {
+      const interval = setInterval(() => {
+        setSecondsLeft((prev) => prev - 1);
+      }, 1000);
+      return () => clearInterval(interval);
+    }
+
+    // When time runs out → end call
+    if (secondsLeft === 0) {
+      endCall();
+    }
+  }, [status, secondsLeft]);
+
+  // Start call
   const startCall = async () => {
     const pc = peerConnectionRef.current;
     const socket = socketRef.current;
@@ -159,13 +185,17 @@ export default function VideoCall() {
     try {
       const offer = await pc.createOffer();
       await pc.setLocalDescription(offer);
-      socket.emit("call-user", { to: targetSocketRef.current, offer });
+      socket.emit("video-call-user", {
+        roomId: consultationId,
+        to: targetSocketRef.current,
+        offer,
+      });
     } catch (e) {
       console.error("startCall error:", e);
     }
   };
 
-  // --- Controls ---
+  // Controls
   const toggleMute = () => {
     const stream = localVideoRef.current?.srcObject;
     if (stream) {
@@ -178,7 +208,7 @@ export default function VideoCall() {
   };
 
   const toggleVideo = () => {
-    if (callMode === "Audio") return; // Disable video toggle for audio-only
+    if (callMode === "Audio") return;
     const stream = localVideoRef.current?.srcObject;
     if (stream) {
       const videoTrack = stream.getTracks().find((t) => t.kind === "video");
@@ -195,6 +225,15 @@ export default function VideoCall() {
     navigate(-1);
   };
 
+  // Format timer mm:ss
+  const formatTime = (s) => {
+    const m = Math.floor(s / 60)
+      .toString()
+      .padStart(2, "0");
+    const sec = (s % 60).toString().padStart(2, "0");
+    return `${m}:${sec}`;
+  };
+
   return (
     <div className="relative w-screen h-screen bg-black overflow-hidden">
       {/* Remote video */}
@@ -202,7 +241,9 @@ export default function VideoCall() {
         ref={remoteVideoRef}
         autoPlay
         playsInline
-        className={`absolute inset-0 w-full h-full object-cover ${callMode === "Audio" ? "bg-gray-900" : ""}`}
+        className={`absolute inset-0 w-full h-full object-cover ${
+          callMode === "Audio" ? "bg-gray-900" : ""
+        }`}
       />
 
       {/* Local video */}
@@ -216,12 +257,19 @@ export default function VideoCall() {
         />
       )}
 
-      {/* Status overlay */}
-      <div className="absolute top-4 left-4 bg-black bg-opacity-50 text-white px-4 py-2 rounded-lg">
-        {status}
+      {/* Status + Timer */}
+      <div className="absolute top-4 left-4 flex gap-4 items-center">
+        <div className="bg-black bg-opacity-50 text-white px-4 py-2 rounded-lg">
+          {status}
+        </div>
+        {status === "Connected" && (
+          <div className="bg-black bg-opacity-50 text-green-400 px-4 py-2 rounded-lg font-mono">
+            {formatTime(secondsLeft)}
+          </div>
+        )}
       </div>
 
-      {/* End Call button */}
+      {/* End Call */}
       <button
         onClick={endCall}
         className="absolute top-4 right-4 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-full shadow-lg transition"
@@ -229,9 +277,9 @@ export default function VideoCall() {
         End
       </button>
 
-      {/* Control Bar */}
+      {/* Controls */}
       <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex gap-6 bg-black bg-opacity-60 px-6 py-3 rounded-full">
-        {/* Mic button */}
+        {/* Mic */}
         <button
           onClick={toggleMute}
           className="p-3 rounded-full bg-white shadow-md hover:bg-gray-200 transition"
@@ -243,7 +291,7 @@ export default function VideoCall() {
           />
         </button>
 
-        {/* Video button (only for video calls) */}
+        {/* Video */}
         {callMode === "Video" && (
           <button
             onClick={toggleVideo}
