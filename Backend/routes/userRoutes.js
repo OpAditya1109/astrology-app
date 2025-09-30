@@ -112,7 +112,8 @@ router.post("/refund/:consultationId", async (req, res) => {
     }
 
     // 3. Calculate refund amount
-    const refundAmount = consultation.rate * (consultation.duration || 30); // e.g., rate per minute * booked minutes
+// 3. Calculate refund amount
+const refundAmount = consultation.rate * (consultation.timer.durationMinutes || 5);
 
     // 4. Add refund back to user wallet
     user.wallet.balance = (user.wallet.balance || 0) + refundAmount;
