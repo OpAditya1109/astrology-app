@@ -22,7 +22,20 @@ export default function ChatPage() {
   const [reviewFeedback, setReviewFeedback] = useState("");
   const messagesEndRef = useRef(null);
   const [consultation, setConsultation] = useState(null);
+const [astrologerResponded, setAstrologerResponded] = useState(false);
 
+const handleNewMessage = (message) => {
+  setMessages((prev) => [...prev, message]);
+
+  // If astrologer sends any message, mark responded
+if (
+  message.sender === consultation?.astrologerId ||
+  message.senderModel === "Astrologer"
+) {
+  setAstrologerResponded(true);
+}
+
+};
 
   const currentUser = JSON.parse(sessionStorage.getItem("user"));
   const userId = currentUser?.id || "guest";
@@ -150,30 +163,50 @@ export default function ChatPage() {
     }
   }, [secondsLeft, userWallet, showExtendModal, consultationEnded, extendRate, skipExtendPrompt]);
 
-  const endConsultation = async (alertMessage) => {
-    setIsEnding(true);
-    alert(alertMessage);
-    setSecondsLeft(0);
-    setConsultationEnded(true);
+const endConsultation = async (alertMessage) => {
+  setIsEnding(true);
+  alert(alertMessage);
+  setSecondsLeft(0);
+  setConsultationEnded(true);
 
-    try {
-      const token = sessionStorage.getItem("token");
-      await fetch(`https://bhavanaastro.onrender.com/api/consultations/${roomId}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
+  try {
+    const token = sessionStorage.getItem("token");
+
+    // If astrologer never responded → refund full
+    if (!astrologerResponded) {
+      await fetch("https://bhavanaastro.onrender.com/api/users/refund/${roomId}", {
+        method: "POST",
+        headers: { 
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          userId: currentUser.id,
+          consultationId: roomId,
+          amount: consultation?.initialDeduction || consultation?.amount || 0,
+        }),
       });
-      socket.emit("consultationEnded", { consultationId: roomId });
-    } catch (err) {
-      console.error("Failed to delete consultation:", err);
+      alert("Astrologer did not respond. Full refund has been processed ✅");
     }
 
-    socket.emit("stopConsultationTimer", { roomId });
-    socket.emit("leaveRoom", roomId);
-    socket.disconnect();
+    // Delete consultation entry
+    await fetch(`https://bhavanaastro.onrender.com/api/consultations/${roomId}`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${token}` },
+    });
 
-    // Show review popup
-    setShowReviewModal(true);
-  };
+    socket.emit("consultationEnded", { consultationId: roomId });
+  } catch (err) {
+    console.error("Failed to end/refund consultation:", err);
+  }
+
+  socket.emit("stopConsultationTimer", { roomId });
+  socket.emit("leaveRoom", roomId);
+  socket.disconnect();
+
+  setShowReviewModal(true);
+};
+
 
   const extendConsultation = async () => {
     if (extending) return;

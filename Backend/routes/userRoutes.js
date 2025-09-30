@@ -83,6 +83,48 @@ router.post("/deduct", async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+// POST /api/users/refund/:consultationId
+router.post("/refund/:consultationId", async (req, res) => {
+  try {
+    const { consultationId } = req.params;
+
+    // 1. Fetch consultation
+    const consultation = await Consultation.findById(consultationId).populate("userId");
+    if (!consultation) return res.status(404).json({ error: "Consultation not found" });
+
+    // 2. Check if astrologer ever responded
+    const astrologerMessage = consultation.messages.find(
+      (msg) => msg.senderModel === "Astrologer"
+    );
+    if (astrologerMessage) {
+      return res.status(400).json({ error: "Astrologer already responded, no full refund" });
+    }
+
+    // 3. Calculate refund based on your deduction logic
+    const refundAmount = consultation.rate * 5; // since you deduct 5 min upfront
+
+    // 4. Add refund back to user wallet
+    const user = consultation.userId;
+    user.wallet.balance += refundAmount;
+    await user.save();
+
+    // 5. Update consultation status
+    consultation.status = "cancelled";
+    await consultation.save();
+
+    // 6. Log refund (optional)
+    await RefundLog.create({
+      userId: user._id,
+      consultationId,
+      amount: refundAmount,
+      date: new Date(),
+    });
+
+    res.json({ success: true, refunded: refundAmount, balance: user.wallet.balance });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
 
 module.exports = router;
