@@ -9,21 +9,12 @@ export default function AstrologerConsultations() {
   const navigate = useNavigate();
   const location = useLocation();
   const astrologer = JSON.parse(sessionStorage.getItem("user"));
-  const alertAudioRef = useRef(null); // 🎵 for alert sound
+  const ringtoneRef = useRef(null); // 🎵 for ringtone
   const socketRef = useRef(null);
 
   // Read mode from query param
   const query = new URLSearchParams(location.search);
   const modeFromQuery = query.get("mode"); // Could be "Chat", "Video", or "Audio"
-
-  // -------------------------------
-  // Request Notification Permission
-  // -------------------------------
-  const requestNotificationPermission = async () => {
-    if ("Notification" in window && Notification.permission !== "granted") {
-      await Notification.requestPermission();
-    }
-  };
 
   useEffect(() => {
     if (!astrologer?.id) {
@@ -32,8 +23,9 @@ export default function AstrologerConsultations() {
       return;
     }
 
-    // Load alert audio (short beep)
-    alertAudioRef.current = new Audio("/ringtone.wav"); // ✅ place ringtone.wav in /public
+    // Load ringtone
+    ringtoneRef.current = new Audio("/ringtone.wav"); // ✅ put ringtone.mp3 in /public
+    ringtoneRef.current.loop = true;
 
     // Connect socket
     socketRef.current = io("https://bhavanaastro.onrender.com", {
@@ -42,7 +34,6 @@ export default function AstrologerConsultations() {
 
     socketRef.current.emit("joinAstrologerRoom", astrologer.id);
 
-    // Fetch consultations
     const fetchConsultations = async () => {
       try {
         const token = sessionStorage.getItem("token");
@@ -60,43 +51,46 @@ export default function AstrologerConsultations() {
         console.error("Error fetching consultations", err);
       }
     };
+
     fetchConsultations();
 
-    // Handle new consultation
+    // 🔔 When new consultation arrives
     const handleNewConsultation = (data) => {
       setConsultations((prev) => [data, ...prev]);
 
-      // Play short alert audio if tab is active
-      if (alertAudioRef.current) {
-        alertAudioRef.current.play().catch((err) => {
-          console.warn("Audio play blocked:", err);
-        });
+      // Play ringtone only for Audio/Video
+      if (data.mode === "Audio" || data.mode === "Video") {
+        if (ringtoneRef.current) {
+          ringtoneRef.current
+            .play()
+            .catch((err) => console.warn("Ringtone blocked:", err));
+        }
       }
 
-      // Push notification
-      if (Notification.permission === "granted" && navigator.serviceWorker) {
-        navigator.serviceWorker.ready.then((registration) => {
-          registration.showNotification("New Consultation", {
-            body: `New ${data.mode} consultation by ${data.userName || "User"}`,
-            icon: "/icon.png", // optional
-            data: `/astrologer/consultations?mode=${data.mode}`, // click URL
-          });
+      // Browser notification
+      if (Notification.permission === "granted") {
+        new Notification("New Consultation", {
+          body: `New ${data.mode || "consultation"} booked by ${
+            data.userName || "User"
+          }`,
         });
       }
     };
 
     socketRef.current.on("newConsultation", handleNewConsultation);
 
-    // Stop alert when consultation ends (optional)
+    // Stop ringtone when consultation ends
     socketRef.current.on("consultationEnded", () => {
-      if (alertAudioRef.current) {
-        alertAudioRef.current.pause();
-        alertAudioRef.current.currentTime = 0;
+      if (ringtoneRef.current) {
+        ringtoneRef.current.pause();
+        ringtoneRef.current.currentTime = 0;
       }
     });
 
-    // Request notifications
-    requestNotificationPermission();
+    // Request permission for notifications
+    if ("Notification" in window && Notification.permission !== "granted") {
+      Notification.requestPermission();
+    }
 
     return () => {
       if (socketRef.current) {
@@ -107,17 +101,17 @@ export default function AstrologerConsultations() {
   }, [astrologer?.id, navigate]);
 
   const handleStartChat = (consultationId) => {
-    stopAlert();
+    stopRingtone();
     navigate(`/astrologer/chat/${consultationId}?mode=Chat`);
   };
 
   const handleStartVideoCall = (consultationId) => {
-    stopAlert();
+    stopRingtone();
     navigate(`/video-call/${consultationId}?mode=Video`);
   };
 
   const handleStartAudioCall = (consultationId) => {
-    stopAlert();
+    stopRingtone();
     navigate(`/audio-call/${consultationId}?mode=Audio`);
   };
 
@@ -134,17 +128,17 @@ export default function AstrologerConsultations() {
       );
 
       setConsultations((prev) => prev.filter((c) => c._id !== consultationId));
-      stopAlert();
+      stopRingtone();
     } catch (err) {
       console.error("Error ending consultation", err);
       alert("Failed to end consultation. Please try again.");
     }
   };
 
-  const stopAlert = () => {
-    if (alertAudioRef.current) {
-      alertAudioRef.current.pause();
-      alertAudioRef.current.currentTime = 0;
+  const stopRingtone = () => {
+    if (ringtoneRef.current) {
+      ringtoneRef.current.pause();
+      ringtoneRef.current.currentTime = 0;
     }
   };
 
