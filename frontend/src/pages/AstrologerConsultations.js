@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { FaUserCircle } from "react-icons/fa";
 import { useNavigate, useLocation } from "react-router-dom";
 import axios from "axios";
@@ -9,6 +9,8 @@ export default function AstrologerConsultations() {
   const navigate = useNavigate();
   const location = useLocation();
   const astrologer = JSON.parse(sessionStorage.getItem("user"));
+  const ringtoneRef = useRef(null); // 🎵 for ringtone
+  const socketRef = useRef(null);
 
   // Read mode from query param
   const query = new URLSearchParams(location.search);
@@ -21,9 +23,16 @@ export default function AstrologerConsultations() {
       return;
     }
 
-    const socket = io("https://bhavanaastro.onrender.com");
+    // Load ringtone
+    ringtoneRef.current = new Audio("/ringtone.wav"); // ✅ put ringtone.mp3 in /public
+    ringtoneRef.current.loop = true;
 
-    socket.emit("joinAstrologerRoom", astrologer.id);
+    // Connect socket
+    socketRef.current = io("https://bhavanaastro.onrender.com", {
+      transports: ["websocket"],
+    });
+
+    socketRef.current.emit("joinAstrologerRoom", astrologer.id);
 
     const fetchConsultations = async () => {
       try {
@@ -45,37 +54,64 @@ export default function AstrologerConsultations() {
 
     fetchConsultations();
 
+    // 🔔 When new consultation arrives
     const handleNewConsultation = (data) => {
       setConsultations((prev) => [data, ...prev]);
 
+      // Play ringtone only for Audio/Video
+      if (data.mode === "Audio" || data.mode === "Video") {
+        if (ringtoneRef.current) {
+          ringtoneRef.current
+            .play()
+            .catch((err) => console.warn("Ringtone blocked:", err));
+        }
+      }
+
+      // Browser notification
       if (Notification.permission === "granted") {
         new Notification("New Consultation", {
-          body: `New ${data.mode || "consultation"} booked by ${data.userName || "User"}`,
+          body: `New ${data.mode || "consultation"} booked by ${
+            data.userName || "User"
+          }`,
         });
       }
     };
 
-    socket.on("newConsultation", handleNewConsultation);
+    socketRef.current.on("newConsultation", handleNewConsultation);
 
+    // Stop ringtone when consultation ends
+    socketRef.current.on("consultationEnded", () => {
+      if (ringtoneRef.current) {
+        ringtoneRef.current.pause();
+        ringtoneRef.current.currentTime = 0;
+      }
+    });
+
+    // Request permission for notifications
     if ("Notification" in window && Notification.permission !== "granted") {
       Notification.requestPermission();
     }
 
     return () => {
-      socket.off("newConsultation", handleNewConsultation);
-      socket.disconnect();
+      if (socketRef.current) {
+        socketRef.current.off("newConsultation", handleNewConsultation);
+        socketRef.current.disconnect();
+      }
     };
   }, [astrologer?.id, navigate]);
 
   const handleStartChat = (consultationId) => {
+    stopRingtone();
     navigate(`/astrologer/chat/${consultationId}?mode=Chat`);
   };
 
   const handleStartVideoCall = (consultationId) => {
+    stopRingtone();
     navigate(`/video-call/${consultationId}?mode=Video`);
   };
 
   const handleStartAudioCall = (consultationId) => {
+    stopRingtone();
     navigate(`/audio-call/${consultationId}?mode=Audio`);
   };
 
@@ -92,9 +128,17 @@ export default function AstrologerConsultations() {
       );
 
       setConsultations((prev) => prev.filter((c) => c._id !== consultationId));
+      stopRingtone();
     } catch (err) {
       console.error("Error ending consultation", err);
       alert("Failed to end consultation. Please try again.");
+    }
+  };
+
+  const stopRingtone = () => {
+    if (ringtoneRef.current) {
+      ringtoneRef.current.pause();
+      ringtoneRef.current.currentTime = 0;
     }
   };
 
@@ -124,15 +168,21 @@ export default function AstrologerConsultations() {
                 <div className="flex items-center gap-4">
                   <FaUserCircle className="text-purple-600 text-4xl" />
                   <div>
-                    <h2 className="font-semibold text-lg">{c.userName || "User"}</h2>
+                    <h2 className="font-semibold text-lg">
+                      {c.userName || "User"}
+                    </h2>
                     <p className="text-gray-600 text-sm">
-                      Topic: <span className="font-medium">{c.topic || "-"}</span>
+                      Topic:{" "}
+                      <span className="font-medium">{c.topic || "-"}</span>
                     </p>
                     <p className="text-gray-600 text-sm">
                       Mode: <span className="font-medium">{modeToUse}</span>
                     </p>
                     <p className="text-gray-500 text-xs">
-                      Booked At: {c.bookedAt ? new Date(c.bookedAt).toLocaleString() : "-"}
+                      Booked At:{" "}
+                      {c.bookedAt
+                        ? new Date(c.bookedAt).toLocaleString()
+                        : "-"}
                     </p>
                   </div>
                 </div>
