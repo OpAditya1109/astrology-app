@@ -172,9 +172,9 @@ const endConsultation = async (alertMessage) => {
   try {
     const token = sessionStorage.getItem("token");
 
-    // If astrologer never responded → refund full
+ 
     if (!astrologerResponded) {
-      await fetch("https://bhavanaastro.onrender.com/api/users/refund/${roomId}", {
+      await fetch(`https://bhavanaastro.onrender.com/api/users/refund/${roomId}`, {
         method: "POST",
         headers: { 
           "Content-Type": "application/json",
