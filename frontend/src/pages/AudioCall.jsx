@@ -51,7 +51,7 @@ export default function AudioCall() {
 const endCall = async () => {
   const socket = socketRef.current;
 
-  // Stop all streams and peer connection
+  // Stop streams and peer connection
   if (socket) {
     socket.emit("endAudioCall", { roomId: consultationId });
     socket.emit("leaveAudioRoom", { roomId: consultationId });
@@ -65,8 +65,8 @@ const endCall = async () => {
     remoteAudioRef.current.srcObject = null;
   }
 
-  // ✅ Refund logic for Audio/Video if timer never started
-  if (role === "user" && consultation?.timer?.startTime === null) {
+  // Refund only if call never started
+  if (role === "user" && consultation?.timer?.startTime == null) {  // ✅ double equals to catch null or undefined
     try {
       const token = sessionStorage.getItem("token");
       const res = await fetch(`https://bhavanaastro.onrender.com/api/users/refund/${consultationId}`, {
@@ -78,21 +78,18 @@ const endCall = async () => {
         body: JSON.stringify({
           userId: currentUser.id,
           consultationId,
-          amount: consultation?.initialDeduction || consultation?.rate * 5, // adjust according to your deduction logic
+          amount: consultation?.initialDeduction || consultation?.rate * 5,
         }),
       });
 
       if (res.ok) {
         const data = await res.json();
         alert(`Call ended. Refund of ₹${data.refunded} has been processed ✅`);
-      } else {
-        const err = await res.json();
-        console.error("Refund failed:", err);
-        alert("Refund failed. Please contact support.");
       }
     } catch (err) {
       console.error("Refund error:", err);
-      alert("Refund error. Please contact support.");
+      // Only show alert if something went wrong with refund
+      alert("Refund failed. Please contact support.");
     }
   }
 
@@ -100,7 +97,7 @@ const endCall = async () => {
   if (role === "user") {
     setShowReviewModal(true);
   } else {
-    navigate("/astrologer/dashboard"); // astrologer goes to dashboard
+    navigate("/astrologer/dashboard");
   }
 };
 
