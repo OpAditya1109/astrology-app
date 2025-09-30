@@ -140,14 +140,42 @@ export default function AstrologerProfile() {
   return (
     <div className="min-h-screen bg-gray-50 p-6 flex justify-center">
       <div className="bg-white shadow-lg rounded-2xl p-8 max-w-3xl w-full relative">
-        {/* Share Icon */}
-        <div
-          className="absolute top-4 right-4 cursor-pointer"
-          onClick={shareProfile}
-          title={copied ? "Link Copied!" : "Share Profile"}
-        >
-          {/* SVG icon here */}
-        </div>
+     {/* Share Icon */}
+<div
+  className="absolute top-4 right-4 cursor-pointer"
+  onClick={shareProfile}
+  title={copied ? "Link Copied!" : "Share Profile"}
+>
+  <svg
+    fill="#669c35"
+    version="1.1"
+    xmlns="http://www.w3.org/2000/svg"
+    width="36px"
+    height="36px"
+    viewBox="-183.54 -183.54 850.08 850.08"
+    stroke="#669c35"
+    strokeWidth="0.00483"
+    className="hover:scale-110 transition-transform"
+  >
+    <g>
+      <rect
+        x="-183.54"
+        y="-183.54"
+        width="850.08"
+        height="850.08"
+        rx="221.0208"
+        fill="#96d35f"
+      ></rect>
+      <path d="M395.72,0c-48.204,0-87.281,39.078-87.281,87.281c0,2.036,0.164,4.03,0.309,6.029l-161.233,75.674
+        c-15.668-14.971-36.852-24.215-60.231-24.215c-48.204,0.001-87.282,39.079-87.282,87.282c0,48.204,39.078,87.281,87.281,87.281
+        c15.206,0,29.501-3.907,41.948-10.741l69.789,58.806c-3.056,8.896-4.789,18.396-4.789,28.322c0,48.204,39.078,87.281,87.281,87.281
+        c48.205,0,87.281-39.078,87.281-87.281s-39.077-87.281-87.281-87.281c-15.205,0-29.5,3.908-41.949,10.74l-69.788-58.805
+        c3.057-8.891,4.789-18.396,4.789-28.322c0-2.035-0.164-4.024-0.308-6.029l161.232-75.674c15.668,14.971,36.852,24.215,60.23,24.215
+        c48.203,0,87.281-39.078,87.281-87.281C482.999,39.079,443.923,0,395.72,0z"></path>
+    </g>
+  </svg>
+</div>
+
 
         {/* Profile Header */}
         <div className="flex flex-col items-center">
