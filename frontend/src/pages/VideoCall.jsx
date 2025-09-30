@@ -50,12 +50,14 @@ export default function VideoCall() {
 const endCall = async () => {
   const socket = socketRef.current;
 
+  // Stop socket
   if (socket) {
     socket.emit("endVideoCall", { roomId: consultationId });
     socket.emit("leaveVideoRoom", { roomId: consultationId });
     socket.disconnect();
   }
 
+  // Stop streams and peer connection
   if (peerConnectionRef.current) peerConnectionRef.current.close();
   if (localVideoRef.current?.srcObject) {
     localVideoRef.current.srcObject.getTracks().forEach((t) => t.stop());
@@ -64,8 +66,8 @@ const endCall = async () => {
     remoteVideoRef.current.srcObject.getTracks().forEach((t) => t.stop());
   }
 
-  // ✅ Refund logic for Video if timer never started
-  if (role === "user" && consultation?.timer?.startTime === null) {
+  // ✅ Refund logic (only for users, only if timer not started)
+  if (role === "user" && consultation?.timer?.startTime == null) { // null or undefined
     try {
       const token = sessionStorage.getItem("token");
       const res = await fetch(`https://bhavanaastro.onrender.com/api/users/refund/${consultationId}`, {
@@ -77,7 +79,7 @@ const endCall = async () => {
         body: JSON.stringify({
           userId: currentUser.id,
           consultationId,
-          amount: consultation?.initialDeduction || consultation?.rate * 5, // adjust logic if needed
+          amount: consultation?.initialDeduction || consultation?.rate * 5,
         }),
       });
 
@@ -102,6 +104,7 @@ const endCall = async () => {
     navigate("/astrologer/dashboard"); // astrologer goes to dashboard
   }
 };
+
 
 
 
