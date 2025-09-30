@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import axios from "axios";
-
+import OnboardingPopup from "../components/OnboardingPopup";
 export default function AstrologerDashboard() {
+    const [showPopup, setShowPopup] = useState(true); 
   const [astrologer, setAstrologer] = useState({
     rates: { chat: 0, video: 0, audio: 0 },
     online: { chat: false, video: false, audio: false },
@@ -88,6 +89,7 @@ export default function AstrologerDashboard() {
 
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
+       {showPopup && <OnboardingPopup onClose={() => setShowPopup(false)} />}
       <h1 className="text-2xl font-bold text-purple-700 mb-6">
         Astrologer Dashboard
       </h1>
