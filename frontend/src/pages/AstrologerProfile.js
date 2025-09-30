@@ -106,8 +106,6 @@ export default function AstrologerProfile() {
           url: profileUrl,
           files: [file],
         });
-
-        console.log("Profile shared successfully with image!");
       } catch (err) {
         console.error("Error sharing profile with image:", err);
       }
@@ -134,27 +132,33 @@ export default function AstrologerProfile() {
     }
   };
 
-  // 🔹 Helper function: format minutes → "Xh Ym"
-  const formatTime = (minutes) => {
-    if (!minutes || minutes <= 0) return "0 min";
-    const h = Math.floor(minutes / 60);
-    const m = minutes % 60;
-    return h > 0 ? `${h}h ${m}m` : `${m}m`;
-  };
-
   if (loading) return <p className="text-gray-500">Loading profile...</p>;
   if (!astrologer) return <p className="text-red-500">Astrologer not found</p>;
 
   return (
     <div className="min-h-screen bg-gray-50 p-6 flex justify-center">
       <div className="bg-white shadow-lg rounded-2xl p-8 max-w-3xl w-full relative">
-        {/* Share Icon */}
+        {/* Share Button */}
         <div
-          className="absolute top-4 right-4 cursor-pointer"
+          className="absolute top-4 right-4 cursor-pointer text-gray-600 hover:text-purple-600"
           onClick={shareProfile}
           title={copied ? "Link Copied!" : "Share Profile"}
         >
-          {/* SVG icon here */}
+          {/* Share Icon */}
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-6 w-6"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M15 8a3 3 0 100-6 3 3 0 000 6zM15 20a3 3 0 100-6 3 3 0 000 6zM3 12a3 3 0 116 0 3 3 0 01-6 0zM8.59 13.51L13.5 17m0-10l-4.91 3.49"
+            />
+          </svg>
         </div>
 
         {/* Profile Header */}
@@ -168,6 +172,18 @@ export default function AstrologerProfile() {
           <p className="text-gray-500 italic mb-4">
             {astrologer.city}, {astrologer.country}
           </p>
+        </div>
+
+        {/* Total Consultation Time */}
+        <div className="mb-6 text-center">
+          <h3 className="text-xl font-semibold text-gray-800 mb-2">
+            Total Consultation Time
+          </h3>
+          <ul className="text-gray-600 space-y-1">
+            <li>💬 Chat: {astrologer?.totalChatTime ?? 0} mins</li>
+            <li>📹 Video: {astrologer?.totalVideoTime ?? 0} mins</li>
+            <li>🎙 Audio: {astrologer?.totalAudioTime ?? 0} mins</li>
+          </ul>
         </div>
 
         {/* About */}
@@ -186,22 +202,41 @@ export default function AstrologerProfile() {
           </div>
           <div>
             <p className="text-gray-700 font-semibold">Languages</p>
-            <p className="text-gray-600">{astrologer.languagesKnown?.join(", ") || "N/A"}</p>
+            <p className="text-gray-600">
+              {astrologer.languagesKnown?.join(", ") || "N/A"}
+            </p>
           </div>
           <div>
             <p className="text-gray-700 font-semibold">Categories</p>
-            <p className="text-gray-600">{astrologer.categories?.join(", ") || "N/A"}</p>
+            <p className="text-gray-600">
+              {astrologer.categories?.join(", ") || "N/A"}
+            </p>
           </div>
           <div>
             <p className="text-gray-700 font-semibold">Systems Known</p>
-            <p className="text-gray-600">{astrologer.systemsKnown?.join(", ") || "N/A"}</p>
+            <p className="text-gray-600">
+              {astrologer.systemsKnown?.join(", ") || "N/A"}
+            </p>
           </div>
           <div>
             <p className="text-gray-700 font-semibold">Rates</p>
             <ul className="text-gray-600">
-              <li>💬 Chat: {astrologer.rates?.chat ? `₹${astrologer.rates.chat}/min` : "Free"}</li>
-              <li>📹 Video: {astrologer.rates?.video ? `₹${astrologer.rates.video}/min` : "Free"}</li>
-              <li>🎙 Audio: {astrologer.rates?.audio ? `₹${astrologer.rates.audio}/min` : "Free"}</li>
+              <li>
+                💬 Chat:{" "}
+                {astrologer.rates?.chat ? `₹${astrologer.rates.chat}/min` : "Free"}
+              </li>
+              <li>
+                📹 Video:{" "}
+                {astrologer.rates?.video
+                  ? `₹${astrologer.rates.video}/min`
+                  : "Free"}
+              </li>
+              <li>
+                🎙 Audio:{" "}
+                {astrologer.rates?.audio
+                  ? `₹${astrologer.rates.audio}/min`
+                  : "Free"}
+              </li>
             </ul>
           </div>
           <div>
@@ -243,16 +278,6 @@ export default function AstrologerProfile() {
                   {astrologer.online?.audio ? "Online" : "Offline"}
                 </span>
               </li>
-            </ul>
-          </div>
-
-          {/* Total Consultation Time */}
-          <div className="sm:col-span-2">
-            <p className="text-gray-700 font-semibold">Total Consultation Time</p>
-            <ul className="text-gray-600">
-              <li>💬 Chat: {formatTime(astrologer.totalChatTime)}</li>
-              <li>📹 Video: {formatTime(astrologer.totalVideoTime)}</li>
-              <li>🎙 Audio: {formatTime(astrologer.totalAudioTime)}</li>
             </ul>
           </div>
         </div>
