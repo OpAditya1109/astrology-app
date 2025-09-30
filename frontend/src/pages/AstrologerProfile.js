@@ -134,6 +134,14 @@ export default function AstrologerProfile() {
     }
   };
 
+  // 🔹 Helper function: format minutes → "Xh Ym"
+  const formatTime = (minutes) => {
+    if (!minutes || minutes <= 0) return "0 min";
+    const h = Math.floor(minutes / 60);
+    const m = minutes % 60;
+    return h > 0 ? `${h}h ${m}m` : `${m}m`;
+  };
+
   if (loading) return <p className="text-gray-500">Loading profile...</p>;
   if (!astrologer) return <p className="text-red-500">Astrologer not found</p>;
 
@@ -157,7 +165,9 @@ export default function AstrologerProfile() {
             className="w-32 h-32 rounded-full object-cover mb-4 border-4 border-purple-200 shadow-md"
           />
           <h2 className="text-3xl font-bold text-purple-700 mb-1">{astrologer.name}</h2>
-          <p className="text-gray-500 italic mb-4">{astrologer.city}, {astrologer.country}</p>
+          <p className="text-gray-500 italic mb-4">
+            {astrologer.city}, {astrologer.country}
+          </p>
         </div>
 
         {/* About */}
@@ -197,9 +207,52 @@ export default function AstrologerProfile() {
           <div>
             <p className="text-gray-700 font-semibold">Availability</p>
             <ul className="text-gray-600">
-              <li>💬 Chat: <span className={astrologer.online?.chat ? "text-green-600 font-medium" : "text-red-600"}>{astrologer.online?.chat ? "Online" : "Offline"}</span></li>
-              <li>📹 Video: <span className={astrologer.online?.video ? "text-green-600 font-medium" : "text-red-600"}>{astrologer.online?.video ? "Online" : "Offline"}</span></li>
-              <li>🎙 Audio: <span className={astrologer.online?.audio ? "text-green-600 font-medium" : "text-red-600"}>{astrologer.online?.audio ? "Online" : "Offline"}</span></li>
+              <li>
+                💬 Chat:{" "}
+                <span
+                  className={
+                    astrologer.online?.chat
+                      ? "text-green-600 font-medium"
+                      : "text-red-600"
+                  }
+                >
+                  {astrologer.online?.chat ? "Online" : "Offline"}
+                </span>
+              </li>
+              <li>
+                📹 Video:{" "}
+                <span
+                  className={
+                    astrologer.online?.video
+                      ? "text-green-600 font-medium"
+                      : "text-red-600"
+                  }
+                >
+                  {astrologer.online?.video ? "Online" : "Offline"}
+                </span>
+              </li>
+              <li>
+                🎙 Audio:{" "}
+                <span
+                  className={
+                    astrologer.online?.audio
+                      ? "text-green-600 font-medium"
+                      : "text-red-600"
+                  }
+                >
+                  {astrologer.online?.audio ? "Online" : "Offline"}
+                </span>
+              </li>
+            </ul>
+          </div>
+
+          {/* Total Consultation Time */}
+          <div className="sm:col-span-2">
+            <p className="text-gray-700 font-semibold">Total Consultation Time</p>
+            <ul className="text-gray-600">
+              <li>💬 Chat: {formatTime(astrologer.totalChatTime)}</li>
+              <li>📹 Video: {formatTime(astrologer.totalVideoTime)}</li>
+              <li>🎙 Audio: {formatTime(astrologer.totalAudioTime)}</li>
             </ul>
           </div>
         </div>
@@ -215,10 +268,13 @@ export default function AstrologerProfile() {
                 onClick={() => startConsultation(mode, rate)}
                 disabled={!online || startingConsultation}
                 className={`px-4 py-2 rounded-lg text-white ${
-                  !online ? "bg-gray-400 cursor-not-allowed" :
-                  mode === "Chat" ? "bg-purple-600 hover:bg-purple-700" :
-                  mode === "Video" ? "bg-green-600 hover:bg-green-700" :
-                  "bg-blue-600 hover:bg-blue-700"
+                  !online
+                    ? "bg-gray-400 cursor-not-allowed"
+                    : mode === "Chat"
+                    ? "bg-purple-600 hover:bg-purple-700"
+                    : mode === "Video"
+                    ? "bg-green-600 hover:bg-green-700"
+                    : "bg-blue-600 hover:bg-blue-700"
                 }`}
               >
                 {mode} {rate ? `₹${rate}/min` : "Free"}
