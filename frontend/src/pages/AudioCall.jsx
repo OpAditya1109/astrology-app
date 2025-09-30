@@ -61,15 +61,8 @@ const endCall = async () => {
     remoteAudioRef.current.srcObject = null;
   }
 
-  // 2️⃣ Notify server to end and delete consultation
-  if (socket) {
-    socket.emit("user-ended-audio-call", { roomId: consultationId });
-    // Give server a tiny delay to process before disconnecting
-    setTimeout(() => socket.disconnect(), 200);
-  }
 
-  // 3️⃣ Refund if call never started
-  if (role === "user" && consultation?.timer?.startTime == null) {
+   if (role === "user" && consultation?.timer?.startTime == null) {
     try {
       const token = sessionStorage.getItem("token");
       const res = await fetch(
@@ -97,6 +90,15 @@ const endCall = async () => {
       alert("Refund failed. Please contact support.");
     }
   }
+  // 2️⃣ Notify server to end and delete consultation
+  if (socket) {
+    socket.emit("user-ended-audio-call", { roomId: consultationId });
+    // Give server a tiny delay to process before disconnecting
+    setTimeout(() => socket.disconnect(), 200);
+  }
+
+  // 3️⃣ Refund if call never started
+ 
 
   // 4️⃣ Show review modal or navigate
   if (role === "user") setShowReviewModal(true);
