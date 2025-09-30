@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import { FaUserCircle } from "react-icons/fa";
 import { useNavigate, useLocation } from "react-router-dom";
 import axios from "axios";
@@ -9,12 +9,10 @@ export default function AstrologerConsultations() {
   const navigate = useNavigate();
   const location = useLocation();
   const astrologer = JSON.parse(sessionStorage.getItem("user"));
-  const ringtoneRef = useRef(null); // 🎵 for ringtone
-  const socketRef = useRef(null);
 
   // Read mode from query param
   const query = new URLSearchParams(location.search);
-  const modeFromQuery = query.get("mode"); // Could be "Chat", "Video", or "Audio"
+  const modeFromQuery = query.get("mode"); // "Chat", "Video", "Audio"
 
   useEffect(() => {
     if (!astrologer?.id) {
@@ -23,17 +21,14 @@ export default function AstrologerConsultations() {
       return;
     }
 
-    // Load ringtone
-    ringtoneRef.current = new Audio("/ringtone.wav"); // ✅ put ringtone.mp3 in /public
-    ringtoneRef.current.loop = true;
-
-    // Connect socket
-    socketRef.current = io("https://bhavanaastro.onrender.com", {
+    // Connect to socket
+    const socket = io("https://bhavanaastro.onrender.com", {
       transports: ["websocket"],
     });
 
-    socketRef.current.emit("joinAstrologerRoom", astrologer.id);
+    socket.emit("joinAstrologerRoom", astrologer.id);
 
+    // Fetch consultations
     const fetchConsultations = async () => {
       try {
         const token = sessionStorage.getItem("token");
@@ -41,33 +36,32 @@ export default function AstrologerConsultations() {
           `https://bhavanaastro.onrender.com/api/consultations/${astrologer.id}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
-
         const uniqueConsultations = Array.from(
           new Map(res.data.map((c) => [c._id, c])).values()
         );
-
         setConsultations(uniqueConsultations || []);
       } catch (err) {
-        console.error("Error fetching consultations", err);
+        console.error(err);
       }
     };
-
     fetchConsultations();
 
-    // 🔔 When new consultation arrives
+    // Handle new consultation
     const handleNewConsultation = (data) => {
       setConsultations((prev) => [data, ...prev]);
 
-      // Play ringtone only for Audio/Video
-      if (data.mode === "Audio" || data.mode === "Video") {
-        if (ringtoneRef.current) {
-          ringtoneRef.current
-            .play()
-            .catch((err) => console.warn("Ringtone blocked:", err));
-        }
+      // 1️⃣ Send message to native app via WebView
+      if (window.ReactNativeWebView && window.ReactNativeWebView.postMessage) {
+        window.ReactNativeWebView.postMessage(
+          JSON.stringify({
+            type: "NEW_CONSULTATION",
+            mode: data.mode,
+            userName: data.userName || "User",
+          })
+        );
       }
 
-      // Browser notification
+      // 2️⃣ Also show browser notification if permission granted
       if (Notification.permission === "granted") {
         new Notification("New Consultation", {
           body: `New ${data.mode || "consultation"} booked by ${
@@ -77,44 +71,28 @@ export default function AstrologerConsultations() {
       }
     };
 
-    socketRef.current.on("newConsultation", handleNewConsultation);
+    socket.on("newConsultation", handleNewConsultation);
 
-    // Stop ringtone when consultation ends
-    socketRef.current.on("consultationEnded", () => {
-      if (ringtoneRef.current) {
-        ringtoneRef.current.pause();
-        ringtoneRef.current.currentTime = 0;
-      }
-    });
-
-    // Request permission for notifications
+    // Request notification permission
     if ("Notification" in window && Notification.permission !== "granted") {
       Notification.requestPermission();
     }
 
     return () => {
-      if (socketRef.current) {
-        socketRef.current.off("newConsultation", handleNewConsultation);
-        socketRef.current.disconnect();
-      }
+      socket.off("newConsultation", handleNewConsultation);
+      socket.disconnect();
     };
   }, [astrologer?.id, navigate]);
 
   const handleStartChat = (consultationId) => {
-    stopRingtone();
     navigate(`/astrologer/chat/${consultationId}?mode=Chat`);
   };
-
   const handleStartVideoCall = (consultationId) => {
-    stopRingtone();
     navigate(`/video-call/${consultationId}?mode=Video`);
   };
-
   const handleStartAudioCall = (consultationId) => {
-    stopRingtone();
     navigate(`/audio-call/${consultationId}?mode=Audio`);
   };
-
   const handleEndChat = async (consultationId) => {
     const confirmEnd = window.confirm(
       "Are you sure you want to end this consultation? This will delete it."
@@ -126,23 +104,14 @@ export default function AstrologerConsultations() {
         `https://bhavanaastro.onrender.com/api/consultations/${consultationId}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
-
       setConsultations((prev) => prev.filter((c) => c._id !== consultationId));
-      stopRingtone();
     } catch (err) {
-      console.error("Error ending consultation", err);
+      console.error(err);
       alert("Failed to end consultation. Please try again.");
     }
   };
 
-  const stopRingtone = () => {
-    if (ringtoneRef.current) {
-      ringtoneRef.current.pause();
-      ringtoneRef.current.currentTime = 0;
-    }
-  };
-
-  // Filter consultations by selected mode (if modeFromQuery is provided)
+  // Filter consultations by mode
   const filteredConsultations = modeFromQuery
     ? consultations.filter((c) => c.mode === modeFromQuery)
     : consultations;
@@ -157,7 +126,6 @@ export default function AstrologerConsultations() {
         <div className="grid gap-6">
           {filteredConsultations.map((c) => {
             const modeToUse = c.mode;
-
             return (
               <div
                 key={c._id}
@@ -168,21 +136,15 @@ export default function AstrologerConsultations() {
                 <div className="flex items-center gap-4">
                   <FaUserCircle className="text-purple-600 text-4xl" />
                   <div>
-                    <h2 className="font-semibold text-lg">
-                      {c.userName || "User"}
-                    </h2>
+                    <h2 className="font-semibold text-lg">{c.userName || "User"}</h2>
                     <p className="text-gray-600 text-sm">
-                      Topic:{" "}
-                      <span className="font-medium">{c.topic || "-"}</span>
+                      Topic: <span className="font-medium">{c.topic || "-"}</span>
                     </p>
                     <p className="text-gray-600 text-sm">
                       Mode: <span className="font-medium">{modeToUse}</span>
                     </p>
                     <p className="text-gray-500 text-xs">
-                      Booked At:{" "}
-                      {c.bookedAt
-                        ? new Date(c.bookedAt).toLocaleString()
-                        : "-"}
+                      Booked At: {c.bookedAt ? new Date(c.bookedAt).toLocaleString() : "-"}
                     </p>
                   </div>
                 </div>
@@ -196,7 +158,6 @@ export default function AstrologerConsultations() {
                       Start Chat
                     </button>
                   )}
-
                   {modeToUse === "Video" && (
                     <button
                       className="px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
@@ -205,7 +166,6 @@ export default function AstrologerConsultations() {
                       Start Video Call
                     </button>
                   )}
-
                   {modeToUse === "Audio" && (
                     <button
                       className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
@@ -214,7 +174,6 @@ export default function AstrologerConsultations() {
                       Start Audio Call
                     </button>
                   )}
-
                   <button
                     className="px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
                     onClick={() => handleEndChat(c._id)}
