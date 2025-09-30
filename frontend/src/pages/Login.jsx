@@ -26,51 +26,76 @@ export default function Login() {
   };
 
   const handleLogin = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    try {
-      const { data } = await axios.post(
-        "https://bhavanaastro.onrender.com/api/auth/login",
-        { email, password }
-      );
+  e.preventDefault();
+  setLoading(true);
+  try {
+    const { data } = await axios.post(
+      "https://bhavanaastro.onrender.com/api/auth/login",
+      { email, password }
+    );
 
-      const userData = {
-        token: data.token,
-        id: data.user._id || data.user.id,
-        name: data.user.name,
-        email: data.user.email,
-        mobile: data.user.mobile,
-        role: data.user.role,
-        birthTime: data.user.birthTime,
-        birthPlace: data.user.birthPlace,
-        dob: data.user.dob,
-        kundaliUrl: data.user.kundaliUrl,
-      };
+    const userData = {
+      token: data.token,
+      id: data.user._id || data.user.id,
+      name: data.user.name,
+      email: data.user.email,
+      mobile: data.user.mobile,
+      role: data.user.role,
+      birthTime: data.user.birthTime,
+      birthPlace: data.user.birthPlace,
+      dob: data.user.dob,
+      kundaliUrl: data.user.kundaliUrl,
+    };
 
-      sessionStorage.setItem("user", JSON.stringify(userData));
-      localStorage.setItem("user", JSON.stringify(userData));
+    // Save in sessionStorage (existing behavior)
+    sessionStorage.setItem("user", JSON.stringify(userData));
 
-      // ✅ Success Popup
-      Swal.fire({
-        title: "Login Successful 🎉",
-        text: `Welcome back, ${userData.name}!`,
-        icon: "success",
-        confirmButtonColor: "#2563eb",
-      }).then(() => {
-        redirectByRole(userData.role);
-      });
-    } catch (err) {
-      // ❌ Error Popup
-      Swal.fire({
-        title: "Login Failed",
-        text: err.response?.data?.message || "Invalid credentials",
-        icon: "error",
-        confirmButtonColor: "#ef4444",
-      });
-    } finally {
-      setLoading(false);
+    // Save in localStorage with 1-day expiry
+    const oneDay = 24 * 60 * 60 * 1000; // 1 day in ms
+    const expiryTime = Date.now() + oneDay;
+    localStorage.setItem(
+      "user",
+      JSON.stringify({ ...userData, expiry: expiryTime })
+    );
+
+    // Success popup
+    Swal.fire({
+      title: "Login Successful 🎉",
+      text: `Welcome back, ${userData.name}!`,
+      icon: "success",
+      confirmButtonColor: "#2563eb",
+    }).then(() => {
+      redirectByRole(userData.role);
+    });
+  } catch (err) {
+    Swal.fire({
+      title: "Login Failed",
+      text: err.response?.data?.message || "Invalid credentials",
+      icon: "error",
+      confirmButtonColor: "#ef4444",
+    });
+  } finally {
+    setLoading(false);
+  }
+};
+useEffect(() => {
+  const storedUser =
+    JSON.parse(sessionStorage.getItem("user")) ||
+    JSON.parse(localStorage.getItem("user"));
+
+  if (storedUser?.expiry) {
+    if (Date.now() > storedUser.expiry) {
+      // Expired -> clear localStorage
+      localStorage.removeItem("user");
+      sessionStorage.removeItem("user");
+      return;
     }
-  };
+  }
+
+  if (storedUser?.role) {
+    redirectByRole(storedUser.role);
+  }
+}, [navigate]);
 
   return (
     <div className="flex justify-center items-center h-screen bg-gray-100">
