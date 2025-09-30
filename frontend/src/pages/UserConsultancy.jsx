@@ -50,12 +50,19 @@ export default function UserConsultancy() {
                   className="w-28 h-28 rounded-full object-cover border-4 border-purple-300 shadow-md"
                 />
                 {/* Online Badge */}
-                <span
-                  className={`absolute bottom-0 right-0 w-5 h-5 rounded-full border-2 border-white ${
-                    astrologer.online?.chat ? "bg-green-500" : "bg-red-500"
-                  }`}
-                  title={astrologer.online?.chat ? "Online" : "Offline"}
-                />
+<span
+  className={`absolute bottom-0 right-0 w-5 h-5 rounded-full border-2 border-white ${
+    astrologer.online?.chat || astrologer.online?.video || astrologer.online?.audio
+      ? "bg-green-500"
+      : "bg-red-500"
+  }`}
+  title={
+    astrologer.online?.chat || astrologer.online?.video || astrologer.online?.audio
+      ? "Online"
+      : "Offline"
+  }
+/>
+
               </div>
 
               {/* Name & Experience */}
