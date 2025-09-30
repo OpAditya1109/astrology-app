@@ -344,6 +344,37 @@ export default function AstrologerProfile() {
             Back
           </button>
         </div>
+        {/* Reviews Section */}
+<div className="mt-8">
+  <h3 className="text-xl font-semibold text-gray-800 mb-4">Reviews</h3>
+  {astrologer.reviews && astrologer.reviews.length > 0 ? (
+    <div className="space-y-4">
+      {astrologer.reviews.map((review) => (
+        <div
+          key={review._id}
+          className="border p-4 rounded-lg shadow-sm bg-gray-50"
+        >
+          <p className="font-semibold text-purple-700">
+            {review.userId?.name || "Anonymous"}
+          </p>
+          <p className="text-yellow-500">
+            {"⭐".repeat(review.rating)}{" "}
+            <span className="text-gray-600">({review.rating}/5)</span>
+          </p>
+          {review.feedback && (
+            <p className="text-gray-600 mt-2">{review.feedback}</p>
+          )}
+          <p className="text-xs text-gray-400 mt-1">
+            {new Date(review.createdAt).toLocaleDateString()}
+          </p>
+        </div>
+      ))}
+    </div>
+  ) : (
+    <p className="text-gray-500">No reviews yet.</p>
+  )}
+</div>
+  
       </div>
     </div>
   );
