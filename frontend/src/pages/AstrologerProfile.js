@@ -106,6 +106,8 @@ export default function AstrologerProfile() {
           url: profileUrl,
           files: [file],
         });
+
+        console.log("Profile shared successfully with image!");
       } catch (err) {
         console.error("Error sharing profile with image:", err);
       }
@@ -138,27 +140,13 @@ export default function AstrologerProfile() {
   return (
     <div className="min-h-screen bg-gray-50 p-6 flex justify-center">
       <div className="bg-white shadow-lg rounded-2xl p-8 max-w-3xl w-full relative">
-        {/* Share Button */}
+        {/* Share Icon */}
         <div
-          className="absolute top-4 right-4 cursor-pointer text-gray-600 hover:text-purple-600"
+          className="absolute top-4 right-4 cursor-pointer"
           onClick={shareProfile}
           title={copied ? "Link Copied!" : "Share Profile"}
         >
-          {/* Share Icon */}
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-6 w-6"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M15 8a3 3 0 100-6 3 3 0 000 6zM15 20a3 3 0 100-6 3 3 0 000 6zM3 12a3 3 0 116 0 3 3 0 01-6 0zM8.59 13.51L13.5 17m0-10l-4.91 3.49"
-            />
-          </svg>
+          {/* SVG icon here */}
         </div>
 
         {/* Profile Header */}
@@ -174,16 +162,26 @@ export default function AstrologerProfile() {
           </p>
         </div>
 
-        {/* Total Consultation Time */}
-        <div className="mb-6 text-center">
-          <h3 className="text-xl font-semibold text-gray-800 mb-2">
-            Total Consultation Time
-          </h3>
-          <ul className="text-gray-600 space-y-1">
-            <li>💬 Chat: {astrologer?.totalChatTime ?? 0} mins</li>
-            <li>📹 Video: {astrologer?.totalVideoTime ?? 0} mins</li>
-            <li>🎙 Audio: {astrologer?.totalAudioTime ?? 0} mins</li>
-          </ul>
+        {/* ✅ Total Consultation Time (Moved Up + Styled as cards) */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8 text-center">
+          <div className="bg-purple-50 p-4 rounded-xl shadow">
+            <p className="text-gray-700 font-semibold">💬 Chat</p>
+            <p className="text-xl font-bold text-purple-700">
+              {astrologer?.totalChatTime ?? 0} mins
+            </p>
+          </div>
+          <div className="bg-green-50 p-4 rounded-xl shadow">
+            <p className="text-gray-700 font-semibold">📹 Video</p>
+            <p className="text-xl font-bold text-green-700">
+              {astrologer?.totalVideoTime ?? 0} mins
+            </p>
+          </div>
+          <div className="bg-blue-50 p-4 rounded-xl shadow">
+            <p className="text-gray-700 font-semibold">🎙 Audio</p>
+            <p className="text-xl font-bold text-blue-700">
+              {astrologer?.totalAudioTime ?? 0} mins
+            </p>
+          </div>
         </div>
 
         {/* About */}
@@ -227,15 +225,11 @@ export default function AstrologerProfile() {
               </li>
               <li>
                 📹 Video:{" "}
-                {astrologer.rates?.video
-                  ? `₹${astrologer.rates.video}/min`
-                  : "Free"}
+                {astrologer.rates?.video ? `₹${astrologer.rates.video}/min` : "Free"}
               </li>
               <li>
                 🎙 Audio:{" "}
-                {astrologer.rates?.audio
-                  ? `₹${astrologer.rates.audio}/min`
-                  : "Free"}
+                {astrologer.rates?.audio ? `₹${astrologer.rates.audio}/min` : "Free"}
               </li>
             </ul>
           </div>
