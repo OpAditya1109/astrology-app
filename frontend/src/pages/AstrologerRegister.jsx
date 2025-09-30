@@ -5,20 +5,36 @@ import { useNavigate } from "react-router-dom";
 import cities from "../cities_minified.json";
 // Options
 const systemsOptions = [
+  { value: "AgriculturalAstrology", label: "Agricultural Astrology" },
   { value: "Angel", label: "Angel Reading" },
+  { value: "BhriguSamhita", label: "Bhrigu Samhita" },
+  { value: "CrystalEnergyHealing", label: "Crystal & Energy Healing" },
+  { value: "CrystalHealing", label: "Crystal Healing" },
   { value: "FaceReading", label: "Face Reading" },
+  { value: "FengShui", label: "Feng Shui" },
+  { value: "GemstoneTherapy", label: "Gemstone Therapy" },
+  { value: "Healing", label: "Healing" },
   { value: "Horary", label: "Horary Astrology" },
   { value: "KP", label: "KP System" },
+  { value: "Kundalini", label: "Kundalini" },
   { value: "LalKitab", label: "Lal Kitab" },
+  { value: "MantraShastra", label: "Mantra Shastra" },
+  { value: "MedicalAstrology", label: "Medical Astrology" },
   { value: "Nadi", label: "Nadi Astrology" },
+  { value: "NadiShastra", label: "Nadi Shastra" },
   { value: "Numerology", label: "Numerology" },
   { value: "Palmistry", label: "Palmistry" },
+  { value: "ParasaraHoraShastra", label: "Parasara Hora Shastra" },
+  { value: "PoliticalAstrology", label: "Political Astrology" },
   { value: "Prashna", label: "Prashna Kundali" },
   { value: "Psychic", label: "Psychic Reading" },
+  { value: "Reiki", label: "Reiki" },
+  { value: "RudrakshaTherapy", label: "Rudraksha Therapy" },
   { value: "Tarot", label: "Tarot Reading" },
   { value: "Vastu", label: "Vastu Shastra" },
   { value: "Vedic", label: "Vedic Astrology" },
   { value: "Western", label: "Western Astrology" },
+  { value: "YantraShastra", label: "Yantra Shastra" },
 ];
 
 const languageOptions = [
