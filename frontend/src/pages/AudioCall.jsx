@@ -21,6 +21,7 @@ export default function AudioCall() {
   const remoteAudioRef = useRef(null);
 
   const localStreamRef = useRef(null);
+  const ringtoneRef = useRef(null); // 🔔 ringtone
 
   const [status, setStatus] = useState("Connecting...");
   const [isMuted, setIsMuted] = useState(false);
@@ -45,7 +46,13 @@ export default function AudioCall() {
   const ICE_SERVERS = { iceServers: [{ urls: "stun:stun.l.google.com:19302" }] };
   const currentUser = JSON.parse(sessionStorage.getItem("user"));
 
-  // End call
+  // Load ringtone once
+  useEffect(() => {
+    ringtoneRef.current = new Audio("/ringtone.wav");
+    ringtoneRef.current.loop = true;
+  }, []);
+
+  // --- End call ---
   const endCall = () => {
     const socket = socketRef.current;
     if (socket) {
@@ -59,6 +66,12 @@ export default function AudioCall() {
     if (remoteAudioRef.current?.srcObject) {
       remoteAudioRef.current.srcObject.getTracks().forEach((t) => t.stop());
       remoteAudioRef.current.srcObject = null;
+    }
+
+    // Stop ringtone if still playing
+    if (ringtoneRef.current) {
+      ringtoneRef.current.pause();
+      ringtoneRef.current.currentTime = 0;
     }
 
     // Show review modal after call ends
@@ -86,7 +99,7 @@ export default function AudioCall() {
     fetchData();
   }, [consultationId]);
 
-  // WebRTC & Socket.IO
+  // --- WebRTC & Socket.IO setup ---
   useEffect(() => {
     const socket = io(SOCKET_SERVER_URL, { transports: ["websocket"] });
     socketRef.current = socket;
@@ -135,17 +148,38 @@ export default function AudioCall() {
 
     socket.on("audio-incoming-call", async ({ from, offer }) => {
       targetSocketRef.current = from;
-      setStatus("Ringing...");
+      setStatus("Incoming Call...");
+
+      // 🔔 Play ringtone only for astrologer
+      if (role === "astrologer" && ringtoneRef.current) {
+        ringtoneRef.current.play().catch((err) =>
+          console.warn("Autoplay blocked, will start on interaction", err)
+        );
+      }
+
+      // Setup peer connection
       await pc.setRemoteDescription(offer);
       const answer = await pc.createAnswer();
       await pc.setLocalDescription(answer);
       socket.emit("audio-answer-call", { roomId: consultationId, to: from, answer });
+
+      // Stop ringtone once astrologer answers
+      if (role === "astrologer" && ringtoneRef.current) {
+        ringtoneRef.current.pause();
+        ringtoneRef.current.currentTime = 0;
+      }
     });
 
     socket.on("audio-call-answered", async ({ answer }) => {
       if (!pc) return;
       await pc.setRemoteDescription(answer);
       setStatus("Connected");
+
+      // Stop ringtone if still playing
+      if (ringtoneRef.current) {
+        ringtoneRef.current.pause();
+        ringtoneRef.current.currentTime = 0;
+      }
     });
 
     socket.on("audio-timer-started", ({ remaining }) => {
@@ -164,10 +198,18 @@ export default function AudioCall() {
 
     socket.on("user-left", ({ message }) => {
       setStatus(message);
+
       if (remoteAudioRef.current?.srcObject) {
         remoteAudioRef.current.srcObject.getTracks().forEach((t) => t.stop());
         remoteAudioRef.current.srcObject = null;
       }
+
+      // Stop ringtone if still playing
+      if (ringtoneRef.current) {
+        ringtoneRef.current.pause();
+        ringtoneRef.current.currentTime = 0;
+      }
+
       setTimeout(() => navigate(-1), 5000);
     });
 
@@ -176,6 +218,10 @@ export default function AudioCall() {
       socket.disconnect();
       if (localStreamRef.current) localStreamRef.current.getTracks().forEach((t) => t.stop());
       pc.close();
+      if (ringtoneRef.current) {
+        ringtoneRef.current.pause();
+        ringtoneRef.current.currentTime = 0;
+      }
     };
   }, [consultationId, role]);
 
@@ -263,7 +309,8 @@ export default function AudioCall() {
     }
   };
 
-  const formatTime = (s) => `${Math.floor(s / 60).toString().padStart(2, "0")}:${(s % 60).toString().padStart(2, "0")}`;
+  const formatTime = (s) =>
+    `${Math.floor(s / 60).toString().padStart(2, "0")}:${(s % 60).toString().padStart(2, "0")}`;
 
   return (
     <div className="relative w-screen h-screen bg-black overflow-hidden flex flex-col items-center justify-center">
@@ -275,7 +322,9 @@ export default function AudioCall() {
       <div className="absolute top-4 left-4 flex gap-4 items-center">
         <div className="bg-black bg-opacity-50 text-white px-4 py-2 rounded-lg">{status}</div>
         {status === "Connected" && secondsLeft !== null && (
-          <div className="bg-black bg-opacity-50 text-green-400 px-4 py-2 rounded-lg font-mono">{formatTime(secondsLeft)}</div>
+          <div className="bg-black bg-opacity-50 text-green-400 px-4 py-2 rounded-lg font-mono">
+            {formatTime(secondsLeft)}
+          </div>
         )}
       </div>
 
@@ -302,7 +351,8 @@ export default function AudioCall() {
           <div className="bg-white p-6 rounded-lg shadow-lg text-center">
             <p className="mb-4">
               ⏰ Call is about to end.<br />
-              Wallet: ₹{userWallet}<br />
+              Wallet: ₹{userWallet}
+              <br />
               Extend {extendMinutes} min at ₹{extendRate}/min = ₹{extendMinutes * extendRate}?
             </p>
             <div className="flex justify-center gap-4">
