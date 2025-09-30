@@ -434,13 +434,14 @@ socket.on("joinAudioRoom", async ({ roomId, role }) => {
     peers.forEach(peerId => io.to(peerId).emit("audio-peer-joined", { socketId: socket.id }));
   });
 
-  // --- User calls astrologer ---
-  socket.on("audio-call-user", ({ roomId, to, offer }) => {
-    if (to) {
-      io.to(to).emit("audio-incoming-call", { from: socket.id, offer });
-      console.log(`📞 Audio call from ${socket.id} to ${to}`);
-    }
-  });
+
+  // Backend: broadcast to room instead of requiring "to"
+socket.on("audio-call-user", ({ roomId, offer }) => {
+  const audioRoomId = `${roomId}-audio`;
+  socket.to(audioRoomId).emit("audio-incoming-call", { from: socket.id, offer });
+  console.log(`📞 Audio call from ${socket.id} in ${audioRoomId}`);
+});
+
 
   // --- Astrologer answers call & starts timer ---
   socket.on("audio-answer-call", async ({ roomId, to, answer }) => {
@@ -487,9 +488,10 @@ socket.on("joinAudioRoom", async ({ roomId, role }) => {
   });
 
   // --- ICE candidates ---
-  socket.on("audio-ice-candidate", ({ roomId, to, candidate }) => {
-    if (to) io.to(to).emit("audio-ice-candidate", { from: socket.id, candidate });
-  });
+socket.on("audio-ice-candidate", ({ roomId, candidate }) => {
+  const audioRoomId = `${roomId}-audio`;
+  socket.to(audioRoomId).emit("audio-ice-candidate", { from: socket.id, candidate });
+});
 
   // --- Leave Room ---
   socket.on("leaveAudioRoom", async ({ roomId }) => {

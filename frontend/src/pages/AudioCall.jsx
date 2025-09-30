@@ -228,11 +228,13 @@ export default function AudioCall() {
   const startCall = async () => {
     const pc = peerConnectionRef.current;
     const socket = socketRef.current;
-    if (!pc || !socket || !targetSocketRef.current) return;
+  if (!pc || !socket) return;
+
 
     const offer = await pc.createOffer();
     await pc.setLocalDescription(offer);
-    socket.emit("audio-call-user", { roomId: consultationId, to: targetSocketRef.current, offer });
+socket.emit("audio-call-user", { roomId: consultationId, offer });
+
   };
 
   const toggleMute = () => {
