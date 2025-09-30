@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const Astrologer = require("../models/Astrologer");
+const Review = require("../models/Review");
 
 // GET /api/astrologers
 router.get("/", async (req, res) => {
