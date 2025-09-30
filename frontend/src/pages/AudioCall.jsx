@@ -51,36 +51,42 @@ export default function AudioCall() {
 const endCall = async () => {
   const socket = socketRef.current;
 
-  // Stop streams and peer connection
-  if (socket) {
-    socket.emit("endAudioCall", { roomId: consultationId });
-    socket.emit("leaveAudioRoom", { roomId: consultationId });
-    socket.disconnect();
-  }
-
+  // 1️⃣ Stop local streams and peer connection
   if (peerConnectionRef.current) peerConnectionRef.current.close();
-  if (localStreamRef.current) localStreamRef.current.getTracks().forEach((t) => t.stop());
+  if (localStreamRef.current) {
+    localStreamRef.current.getTracks().forEach((t) => t.stop());
+  }
   if (remoteAudioRef.current?.srcObject) {
     remoteAudioRef.current.srcObject.getTracks().forEach((t) => t.stop());
     remoteAudioRef.current.srcObject = null;
   }
 
-  // Refund only if call never started
-  if (role === "user" && consultation?.timer?.startTime == null) {  // ✅ double equals to catch null or undefined
+  // 2️⃣ Notify server to end and delete consultation
+  if (socket) {
+    socket.emit("user-ended-audio-call", { roomId: consultationId });
+    // Give server a tiny delay to process before disconnecting
+    setTimeout(() => socket.disconnect(), 200);
+  }
+
+  // 3️⃣ Refund if call never started
+  if (role === "user" && consultation?.timer?.startTime == null) {
     try {
       const token = sessionStorage.getItem("token");
-      const res = await fetch(`https://bhavanaastro.onrender.com/api/users/refund/${consultationId}`, {
-        method: "POST",
-        headers: { 
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          userId: currentUser.id,
-          consultationId,
-          amount: consultation?.initialDeduction || consultation?.rate * 5,
-        }),
-      });
+      const res = await fetch(
+        `https://bhavanaastro.onrender.com/api/users/refund/${consultationId}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            userId: currentUser.id,
+            consultationId,
+            amount: consultation?.initialDeduction || consultation?.rate * 5,
+          }),
+        }
+      );
 
       if (res.ok) {
         const data = await res.json();
@@ -88,18 +94,15 @@ const endCall = async () => {
       }
     } catch (err) {
       console.error("Refund error:", err);
-      // Only show alert if something went wrong with refund
       alert("Refund failed. Please contact support.");
     }
   }
 
-  // Show review modal for users
-  if (role === "user") {
-    setShowReviewModal(true);
-  } else {
-    navigate("/astrologer/dashboard");
-  }
+  // 4️⃣ Show review modal or navigate
+  if (role === "user") setShowReviewModal(true);
+  else navigate("/astrologer/dashboard");
 };
+
 
 
   // Fetch consultation rate and wallet

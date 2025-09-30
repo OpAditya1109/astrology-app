@@ -601,6 +601,22 @@ async function finalizeAudioConsultation(roomId, endedByTimer = false) {
   }
 }
 
+socket.on("user-ended-audio-call", async ({ roomId }) => {
+  const audioRoomId = `${roomId}-audio`;
+  io.to(audioRoomId).emit("user-left", { message: "User ended the call" });
+
+  if (activeTimers[roomId]) {
+    clearInterval(activeTimers[roomId].interval);
+    delete activeTimers[roomId];
+  }
+
+  try {
+    await Consultation.findByIdAndDelete(roomId);
+    console.log(`🗑 Consultation ${roomId} deleted (user ended)`);
+  } catch (err) {
+    console.error("Error deleting consultation on user end:", err);
+  }
+});
 
 
   // --- Disconnect ---
