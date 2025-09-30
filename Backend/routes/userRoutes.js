@@ -2,6 +2,7 @@ const express = require("express");
 const { registerUser } = require("../controllers/userController");
 const User = require("../models/User");
 const Consultation = require("../models/Consultation");
+const RefundLog = require("../models/RefundLog"); // adjust path if needed
 
 const router = express.Router();
 
