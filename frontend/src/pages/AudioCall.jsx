@@ -47,10 +47,24 @@ export default function AudioCall() {
   const currentUser = JSON.parse(sessionStorage.getItem("user"));
 
   // Load ringtone once
-  useEffect(() => {
-    ringtoneRef.current = new Audio("/ringtone.wav");
-    ringtoneRef.current.loop = true;
-  }, []);
+useEffect(() => {
+  ringtoneRef.current = new Audio("/ringtone.wav");
+  ringtoneRef.current.loop = true;
+
+  // Unlock audio on first click/tap
+  const unlockAudio = () => {
+    ringtoneRef.current.play().then(() => {
+      ringtoneRef.current.pause();
+      ringtoneRef.current.currentTime = 0;
+      window.removeEventListener("click", unlockAudio);
+      window.removeEventListener("touchstart", unlockAudio);
+    }).catch(err => console.log("Unlock failed:", err));
+  };
+
+  window.addEventListener("click", unlockAudio);
+  window.addEventListener("touchstart", unlockAudio);
+}, []);
+
 
   // --- End call ---
   const endCall = () => {
