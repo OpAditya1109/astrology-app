@@ -46,24 +46,29 @@ export default function AudioCall() {
   const currentUser = JSON.parse(sessionStorage.getItem("user"));
 
   // End call
-  const endCall = () => {
-    const socket = socketRef.current;
-    if (socket) {
-      socket.emit("endAudioCall", { roomId: consultationId });
-      socket.emit("leaveAudioRoom", { roomId: consultationId });
-      socket.disconnect();
-    }
+// End call
+const endCall = () => {
+  const socket = socketRef.current;
+  if (socket) {
+    socket.emit("endAudioCall", { roomId: consultationId });
+    socket.emit("leaveAudioRoom", { roomId: consultationId });
+    socket.disconnect();
+  }
 
-    if (peerConnectionRef.current) peerConnectionRef.current.close();
-    if (localStreamRef.current) localStreamRef.current.getTracks().forEach((t) => t.stop());
-    if (remoteAudioRef.current?.srcObject) {
-      remoteAudioRef.current.srcObject.getTracks().forEach((t) => t.stop());
-      remoteAudioRef.current.srcObject = null;
-    }
+  if (peerConnectionRef.current) peerConnectionRef.current.close();
+  if (localStreamRef.current) localStreamRef.current.getTracks().forEach((t) => t.stop());
+  if (remoteAudioRef.current?.srcObject) {
+    remoteAudioRef.current.srcObject.getTracks().forEach((t) => t.stop());
+    remoteAudioRef.current.srcObject = null;
+  }
 
-    // Show review modal after call ends
+  // ✅ Show review modal only if role is "user"
+  if (role === "user") {
     setShowReviewModal(true);
-  };
+  } else {
+    navigate("/astrologer/dashboard"); // or wherever astrologers should go
+  }
+};
 
   // Fetch consultation rate and wallet
   useEffect(() => {

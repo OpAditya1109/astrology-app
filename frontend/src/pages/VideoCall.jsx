@@ -47,25 +47,31 @@ export default function VideoCall() {
   const ICE_SERVERS = { iceServers: [{ urls: "stun:stun.l.google.com:19302" }] };
   const currentUser = JSON.parse(sessionStorage.getItem("user"));
 
-  const endCall = async () => {
-    const socket = socketRef.current;
-    if (socket) {
-      socket.emit("endVideoCall", { roomId: consultationId });
-      socket.emit("leaveVideoRoom", { roomId: consultationId });
-      socket.disconnect();
-    }
+ const endCall = async () => {
+  const socket = socketRef.current;
+  if (socket) {
+    socket.emit("endVideoCall", { roomId: consultationId });
+    socket.emit("leaveVideoRoom", { roomId: consultationId });
+    socket.disconnect();
+  }
 
-    if (peerConnectionRef.current) peerConnectionRef.current.close();
-    if (localVideoRef.current?.srcObject) {
-      localVideoRef.current.srcObject.getTracks().forEach((t) => t.stop());
-    }
-    if (remoteVideoRef.current?.srcObject) {
-      remoteVideoRef.current.srcObject.getTracks().forEach((t) => t.stop());
-    }
+  if (peerConnectionRef.current) peerConnectionRef.current.close();
+  if (localVideoRef.current?.srcObject) {
+    localVideoRef.current.srcObject.getTracks().forEach((t) => t.stop());
+  }
+  if (remoteVideoRef.current?.srcObject) {
+    remoteVideoRef.current.srcObject.getTracks().forEach((t) => t.stop());
+  }
 
-    // Show review modal after call ends
+  // ✅ Only users should see the review modal
+  if (role === "user") {
     setShowReviewModal(true);
-  };
+  } else {
+    // astrologer: redirect them somewhere else
+    navigate("/astrologer/dashboard"); 
+  }
+};
+
 
   // Fetch consultation and wallet
   useEffect(() => {
