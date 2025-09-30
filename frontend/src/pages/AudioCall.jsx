@@ -47,8 +47,11 @@ export default function AudioCall() {
 
   // End call
 // End call
-const endCall = () => {
+// End call
+const endCall = async () => {
   const socket = socketRef.current;
+
+  // Stop all streams and peer connection
   if (socket) {
     socket.emit("endAudioCall", { roomId: consultationId });
     socket.emit("leaveAudioRoom", { roomId: consultationId });
@@ -62,13 +65,45 @@ const endCall = () => {
     remoteAudioRef.current.srcObject = null;
   }
 
-  // ✅ Show review modal only if role is "user"
+  // ✅ Refund logic for Audio/Video if timer never started
+  if (role === "user" && consultation?.timer?.startTime === null) {
+    try {
+      const token = sessionStorage.getItem("token");
+      const res = await fetch(`https://bhavanaastro.onrender.com/api/users/refund/${consultationId}`, {
+        method: "POST",
+        headers: { 
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          userId: currentUser.id,
+          consultationId,
+          amount: consultation?.initialDeduction || consultation?.rate * 5, // adjust according to your deduction logic
+        }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        alert(`Call ended. Refund of ₹${data.refunded} has been processed ✅`);
+      } else {
+        const err = await res.json();
+        console.error("Refund failed:", err);
+        alert("Refund failed. Please contact support.");
+      }
+    } catch (err) {
+      console.error("Refund error:", err);
+      alert("Refund error. Please contact support.");
+    }
+  }
+
+  // Show review modal for users
   if (role === "user") {
     setShowReviewModal(true);
   } else {
-    navigate("/astrologer/dashboard"); // or wherever astrologers should go
+    navigate("/astrologer/dashboard"); // astrologer goes to dashboard
   }
 };
+
 
   // Fetch consultation rate and wallet
   useEffect(() => {

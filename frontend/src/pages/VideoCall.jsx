@@ -47,8 +47,9 @@ export default function VideoCall() {
   const ICE_SERVERS = { iceServers: [{ urls: "stun:stun.l.google.com:19302" }] };
   const currentUser = JSON.parse(sessionStorage.getItem("user"));
 
- const endCall = async () => {
+const endCall = async () => {
   const socket = socketRef.current;
+
   if (socket) {
     socket.emit("endVideoCall", { roomId: consultationId });
     socket.emit("leaveVideoRoom", { roomId: consultationId });
@@ -63,14 +64,45 @@ export default function VideoCall() {
     remoteVideoRef.current.srcObject.getTracks().forEach((t) => t.stop());
   }
 
-  // ✅ Only users should see the review modal
+  // ✅ Refund logic for Video if timer never started
+  if (role === "user" && consultation?.timer?.startTime === null) {
+    try {
+      const token = sessionStorage.getItem("token");
+      const res = await fetch(`https://bhavanaastro.onrender.com/api/users/refund/${consultationId}`, {
+        method: "POST",
+        headers: { 
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          userId: currentUser.id,
+          consultationId,
+          amount: consultation?.initialDeduction || consultation?.rate * 5, // adjust logic if needed
+        }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        alert(`Call ended. Refund of ₹${data.refunded} processed ✅`);
+      } else {
+        const err = await res.json();
+        console.error("Refund failed:", err);
+        alert("Refund failed. Please contact support.");
+      }
+    } catch (err) {
+      console.error("Refund error:", err);
+      alert("Refund error. Please contact support.");
+    }
+  }
+
+  // Show review modal for users
   if (role === "user") {
     setShowReviewModal(true);
   } else {
-    // astrologer: redirect them somewhere else
-    navigate("/astrologer/dashboard"); 
+    navigate("/astrologer/dashboard"); // astrologer goes to dashboard
   }
 };
+
 
 
   // Fetch consultation and wallet

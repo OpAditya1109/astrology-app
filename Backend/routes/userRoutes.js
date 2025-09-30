@@ -88,31 +88,40 @@ router.post("/refund/:consultationId", async (req, res) => {
   try {
     const { consultationId } = req.params;
 
-    // 1. Fetch consultation
+    // 1. Fetch consultation and populate user
     const consultation = await Consultation.findById(consultationId).populate("userId");
     if (!consultation) return res.status(404).json({ error: "Consultation not found" });
 
-    // 2. Check if astrologer ever responded
-    const astrologerMessage = consultation.messages.find(
-      (msg) => msg.senderModel === "Astrologer"
-    );
-    if (astrologerMessage) {
-      return res.status(400).json({ error: "Astrologer already responded, no full refund" });
+    const user = consultation.userId;
+
+    // 2. Check if refund is needed
+    let refundNeeded = false;
+
+    if (consultation.mode === "Chat") {
+      // Chat mode: refund if astrologer never responded
+      const astrologerMessage = consultation.messages.find(msg => msg.senderModel === "Astrologer");
+      refundNeeded = !astrologerMessage;
+    } else {
+      // Audio/Video: refund if timer never started
+      refundNeeded = !consultation.timer.startTime;
     }
 
-    // 3. Calculate refund based on your deduction logic
-    const refundAmount = consultation.rate * 5; // since you deduct 5 min upfront
+    if (!refundNeeded) {
+      return res.status(400).json({ error: "No refund applicable; consultation was started or astrologer responded" });
+    }
+
+    // 3. Calculate refund amount
+    const refundAmount = consultation.rate * (consultation.duration || 30); // e.g., rate per minute * booked minutes
 
     // 4. Add refund back to user wallet
-    const user = consultation.userId;
-    user.wallet.balance += refundAmount;
+    user.wallet.balance = (user.wallet.balance || 0) + refundAmount;
     await user.save();
 
     // 5. Update consultation status
     consultation.status = "cancelled";
     await consultation.save();
 
-    // 6. Log refund (optional)
+    // 6. Optional: log refund
     await RefundLog.create({
       userId: user._id,
       consultationId,
@@ -122,6 +131,7 @@ router.post("/refund/:consultationId", async (req, res) => {
 
     res.json({ success: true, refunded: refundAmount, balance: user.wallet.balance });
   } catch (err) {
+    console.error(err);
     res.status(500).json({ error: err.message });
   }
 });
