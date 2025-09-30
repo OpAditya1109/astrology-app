@@ -63,13 +63,25 @@ router.put("/update-rates-online/:id", async (req, res) => {
 // GET single astrologer
 router.get("/:id", async (req, res) => {
   try {
+    // ✅ Find astrologer (already what you are doing)
     const astrologer = await Astrologer.findOne({
       _id: req.params.id,
-      isVerified: true, // ✅ only verified astrologer
-    }).select("name email experience languagesKnown categories systemsKnown city country photo rates online description totalChatTime totalVideoTime totalAudioTime");
+      isVerified: true,
+    }).select(
+      "name email experience languagesKnown categories systemsKnown city country photo rates online description totalChatTime totalVideoTime totalAudioTime"
+    );
 
-    if (!astrologer) return res.status(404).json({ error: "Astrologer not found or not verified" });
-    res.json(astrologer);
+    if (!astrologer)
+      return res
+        .status(404)
+        .json({ error: "Astrologer not found or not verified" });
+
+    // ✅ Fetch reviews for this astrologer + populate user name
+    const reviews = await Review.find({ astrologerId: astrologer._id })
+      .populate("userId", "name") // only fetch name field from User
+      .sort({ createdAt: -1 });
+
+    res.json({ ...astrologer.toObject(), reviews });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Server error" });

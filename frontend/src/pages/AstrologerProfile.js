@@ -77,7 +77,6 @@ export default function AstrologerProfile() {
 
       setUserBalance((prev) => prev - first5MinCost);
 
-      // Navigate dynamically based on mode
       let route = "/chat";
       if (mode === "Video") route = "/video-call";
       else if (mode === "Audio") route = "/audio-call";
@@ -106,8 +105,6 @@ export default function AstrologerProfile() {
           url: profileUrl,
           files: [file],
         });
-
-        console.log("Profile shared successfully with image!");
       } catch (err) {
         console.error("Error sharing profile with image:", err);
       }
@@ -140,42 +137,38 @@ export default function AstrologerProfile() {
   return (
     <div className="min-h-screen bg-gray-50 p-6 flex justify-center">
       <div className="bg-white shadow-lg rounded-2xl p-8 max-w-3xl w-full relative">
-     {/* Share Icon */}
-<div
-  className="absolute top-4 right-4 cursor-pointer"
-  onClick={shareProfile}
-  title={copied ? "Link Copied!" : "Share Profile"}
->
-  <svg
-    fill="#669c35"
-    version="1.1"
-    xmlns="http://www.w3.org/2000/svg"
-    width="36px"
-    height="36px"
-    viewBox="-183.54 -183.54 850.08 850.08"
-    stroke="#669c35"
-    strokeWidth="0.00483"
-    className="hover:scale-110 transition-transform"
-  >
-    <g>
-      <rect
-        x="-183.54"
-        y="-183.54"
-        width="850.08"
-        height="850.08"
-        rx="221.0208"
-        fill="#96d35f"
-      ></rect>
-      <path d="M395.72,0c-48.204,0-87.281,39.078-87.281,87.281c0,2.036,0.164,4.03,0.309,6.029l-161.233,75.674
-        c-15.668-14.971-36.852-24.215-60.231-24.215c-48.204,0.001-87.282,39.079-87.282,87.282c0,48.204,39.078,87.281,87.281,87.281
-        c15.206,0,29.501-3.907,41.948-10.741l69.789,58.806c-3.056,8.896-4.789,18.396-4.789,28.322c0,48.204,39.078,87.281,87.281,87.281
-        c48.205,0,87.281-39.078,87.281-87.281s-39.077-87.281-87.281-87.281c-15.205,0-29.5,3.908-41.949,10.74l-69.788-58.805
-        c3.057-8.891,4.789-18.396,4.789-28.322c0-2.035-0.164-4.024-0.308-6.029l161.232-75.674c15.668,14.971,36.852,24.215,60.23,24.215
-        c48.203,0,87.281-39.078,87.281-87.281C482.999,39.079,443.923,0,395.72,0z"></path>
-    </g>
-  </svg>
-</div>
-
+        {/* Share Icon */}
+        <div
+          className="absolute top-4 right-4 cursor-pointer"
+          onClick={shareProfile}
+          title={copied ? "Link Copied!" : "Share Profile"}
+        >
+          <svg
+            fill="#669c35"
+            xmlns="http://www.w3.org/2000/svg"
+            width="36px"
+            height="36px"
+            viewBox="-183.54 -183.54 850.08 850.08"
+            className="hover:scale-110 transition-transform"
+          >
+            <g>
+              <rect
+                x="-183.54"
+                y="-183.54"
+                width="850.08"
+                height="850.08"
+                rx="221.0208"
+                fill="#96d35f"
+              ></rect>
+              <path d="M395.72,0c-48.204,0-87.281,39.078-87.281,87.281c0,2.036,0.164,4.03,0.309,6.029l-161.233,75.674
+              c-15.668-14.971-36.852-24.215-60.231-24.215c-48.204,0.001-87.282,39.079-87.282,87.282c0,48.204,39.078,87.281,87.281,87.281
+              c15.206,0,29.501-3.907,41.948-10.741l69.789,58.806c-3.056,8.896-4.789,18.396-4.789,28.322c0,48.204,39.078,87.281,87.281,87.281
+              c48.205,0,87.281-39.078,87.281-87.281s-39.077-87.281-87.281-87.281c-15.205,0-29.5,3.908-41.949,10.74l-69.788-58.805
+              c3.057-8.891,4.789-18.396,4.789-28.322c0-2.035-0.164-4.024-0.308-6.029l161.232-75.674c15.668,14.971,36.852,24.215,60.23,24.215
+              c48.203,0,87.281-39.078,87.281-87.281C482.999,39.079,443.923,0,395.72,0z"></path>
+            </g>
+          </svg>
+        </div>
 
         {/* Profile Header */}
         <div className="flex flex-col items-center">
@@ -184,30 +177,32 @@ export default function AstrologerProfile() {
             alt={astrologer.name}
             className="w-32 h-32 rounded-full object-cover mb-4 border-4 border-purple-200 shadow-md"
           />
-          <h2 className="text-3xl font-bold text-purple-700 mb-1">{astrologer.name}</h2>
+          <h2 className="text-3xl font-bold text-purple-700 mb-1">
+            {astrologer.name}
+          </h2>
           <p className="text-gray-500 italic mb-4">
             {astrologer.city}, {astrologer.country}
           </p>
         </div>
 
-        {/* ✅ Total Consultation Time (Moved Up + Styled as cards) */}
+        {/* Total Consultation Time */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8 text-center">
           <div className="bg-purple-50 p-4 rounded-xl shadow">
             <p className="text-gray-700 font-semibold">💬 Chat</p>
             <p className="text-xl font-bold text-purple-700">
-              {astrologer?.totalChatTime ?? 0} mins
+              {astrologer?.totalChatTime || 0} mins
             </p>
           </div>
           <div className="bg-green-50 p-4 rounded-xl shadow">
             <p className="text-gray-700 font-semibold">📹 Video</p>
             <p className="text-xl font-bold text-green-700">
-              {astrologer?.totalVideoTime ?? 0} mins
+              {astrologer?.totalVideoTime || 0} mins
             </p>
           </div>
           <div className="bg-blue-50 p-4 rounded-xl shadow">
             <p className="text-gray-700 font-semibold">🎙 Audio</p>
             <p className="text-xl font-bold text-blue-700">
-              {astrologer?.totalAudioTime ?? 0} mins
+              {astrologer?.totalAudioTime || 0} mins
             </p>
           </div>
         </div>
@@ -215,8 +210,12 @@ export default function AstrologerProfile() {
         {/* About */}
         {astrologer.description && (
           <div className="mb-6">
-            <h3 className="text-xl font-semibold text-gray-800 mb-2">About Me</h3>
-            <p className="text-gray-600 leading-relaxed">{astrologer.description}</p>
+            <h3 className="text-xl font-semibold text-gray-800 mb-2">
+              About Me
+            </h3>
+            <p className="text-gray-600 leading-relaxed">
+              {astrologer.description}
+            </p>
           </div>
         )}
 
@@ -249,15 +248,21 @@ export default function AstrologerProfile() {
             <ul className="text-gray-600">
               <li>
                 💬 Chat:{" "}
-                {astrologer.rates?.chat ? `₹${astrologer.rates.chat}/min` : "Free"}
+                {astrologer.rates?.chat
+                  ? `₹${astrologer.rates.chat}/min`
+                  : "Free"}
               </li>
               <li>
                 📹 Video:{" "}
-                {astrologer.rates?.video ? `₹${astrologer.rates.video}/min` : "Free"}
+                {astrologer.rates?.video
+                  ? `₹${astrologer.rates.video}/min`
+                  : "Free"}
               </li>
               <li>
                 🎙 Audio:{" "}
-                {astrologer.rates?.audio ? `₹${astrologer.rates.audio}/min` : "Free"}
+                {astrologer.rates?.audio
+                  ? `₹${astrologer.rates.audio}/min`
+                  : "Free"}
               </li>
             </ul>
           </div>
