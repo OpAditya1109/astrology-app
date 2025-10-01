@@ -5,7 +5,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import axios from "axios";
 import { io } from "socket.io-client";
 import { messaging } from "../firebase"; // make sure your firebase.js exports messaging
-import { getToken } from "firebase/messaging";
+import { getToken, onMessage } from "firebase/messaging";
 
 export default function AstrologerConsultations() {
   const [consultations, setConsultations] = useState([]);
@@ -13,17 +13,21 @@ export default function AstrologerConsultations() {
   const location = useLocation();
   const astrologer = JSON.parse(sessionStorage.getItem("user"));
 
-  // Read mode from query param
   const query = new URLSearchParams(location.search);
   const modeFromQuery = query.get("mode"); // "Chat", "Video", "Audio"
 
-  // Function to register FCM token
+  // ➤ Register FCM token
   const registerFcmToken = async () => {
     try {
       if (!astrologer?.id) return;
 
+      // Request notification permission
+      if ("Notification" in window && Notification.permission !== "granted") {
+        await Notification.requestPermission();
+      }
+
       const token = await getToken(messaging, {
-        vapidKey: process.env.REACT_APP_FIREBASE_PUBLIC_VAPID_KEY,
+        vapidKey: process.env.REACT_APP_FIREBASE_VAPID_KEY,
       });
 
       if (token) {
@@ -31,7 +35,7 @@ export default function AstrologerConsultations() {
           "https://bhavanaastro.onrender.com/api/save-fcm-token",
           { astrologerId: astrologer.id, token }
         );
-        console.log("FCM token registered successfully");
+        console.log("FCM token registered successfully:", token);
       }
     } catch (err) {
       console.error("FCM registration failed:", err);
@@ -47,6 +51,17 @@ export default function AstrologerConsultations() {
 
     // Register FCM token
     registerFcmToken();
+
+    // Listen to incoming foreground messages
+    onMessage(messaging, (payload) => {
+      console.log("Foreground FCM message:", payload);
+      const title = payload.notification?.title || "New Notification";
+      const body = payload.notification?.body || "You have a new message";
+
+      if (Notification.permission === "granted") {
+        new Notification(title, { body });
+      }
+    });
 
     // Connect to socket
     const socket = io("https://bhavanaastro.onrender.com", {
@@ -73,11 +88,11 @@ export default function AstrologerConsultations() {
     };
     fetchConsultations();
 
-    // Handle new consultation
+    // Handle new consultation via socket
     const handleNewConsultation = (data) => {
       setConsultations((prev) => [data, ...prev]);
 
-      // Send message to native app via WebView (if available)
+      // Send message to native app via WebView
       if (window.AndroidApp?.postMessage) {
         window.AndroidApp.postMessage(
           JSON.stringify({
@@ -99,11 +114,6 @@ export default function AstrologerConsultations() {
     };
 
     socket.on("newConsultation", handleNewConsultation);
-
-    // Request notification permission
-    if ("Notification" in window && Notification.permission !== "granted") {
-      Notification.requestPermission();
-    }
 
     return () => {
       socket.off("newConsultation", handleNewConsultation);
