@@ -109,12 +109,13 @@ const [astrologers, setAstrologers] = useState([]);
                   {astro.languagesKnown?.join(", ")}
                 </p>
                 <p className="text-xs text-gray-500">{astro.city}, {astro.country}</p>
-                <Link
-                  to="/login"
-                  className="mt-3 inline-block px-4 py-2 bg-purple-600 text-white text-sm rounded-lg hover:bg-purple-700"
-                >
-                  Chat Now
-                </Link>
+            <Link
+  to={`/astrologer/${astro._id}`}
+  className="mt-3 inline-block px-4 py-2 bg-purple-600 text-white text-sm rounded-lg hover:bg-purple-700"
+>
+  Chat Now
+</Link>
+
               </div>
             ))
           ) : (
