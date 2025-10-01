@@ -20,10 +20,11 @@ const fcmRoutes = require("./routes/fcm");
 require("./cron/panchangCorn");
 dotenv.config();
 connectDB();
-app.use(cors());
+
 const app = express();
 app.use(express.json());
-app.use("/api", fcmRoutes);
+app.use(cors());
+
 app.use("/api/wallet/webhook", express.text({ type: "*/*" }));
 app.use("/api/wallet/webhook", express.urlencoded({ extended: true }));
 app.use("/api/wallet/webhook", express.json());
@@ -43,6 +44,7 @@ app.use("/api/orders", orderRoute);
 app.use("/api/enquiries", enquiryRoutes);
 app.use("/api/admin", require("./routes/admin"));
 app.use("/api/reviews", reviewRoutes);
+app.use("/api", fcmRoutes);
 async function sendSystemMessage(roomId, text, kundaliUrl = null) {
   const consultation = await Consultation.findById(roomId);
   if (!consultation) return;
