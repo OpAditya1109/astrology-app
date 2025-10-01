@@ -22,4 +22,6 @@ messaging.onBackgroundMessage((payload) => {
     icon: "/favicon.ico",
   };
   self.registration.showNotification(notificationTitle, notificationOptions);
+    const audio = new Audio('/ringtone.wav');
+  audio.play().catch(err => console.error(err));
 });
