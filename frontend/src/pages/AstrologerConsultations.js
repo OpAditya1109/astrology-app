@@ -51,15 +51,14 @@ export default function AstrologerConsultations() {
       setConsultations((prev) => [data, ...prev]);
 
       // 1️⃣ Send message to native app via WebView
-      if (window.ReactNativeWebView && window.ReactNativeWebView.postMessage) {
-        window.ReactNativeWebView.postMessage(
-          JSON.stringify({
-            type: "NEW_CONSULTATION",
-            mode: data.mode,
-            userName: data.userName || "User",
-          })
-        );
-      }
+ if (window.AndroidApp && window.AndroidApp.postMessage) {
+  window.AndroidApp.postMessage(JSON.stringify({
+    type: "NEW_CONSULTATION",
+    mode: data.mode,
+    userName: data.userName || "User",
+  }));
+}
+
 
       // 2️⃣ Also show browser notification if permission granted
       if (Notification.permission === "granted") {
