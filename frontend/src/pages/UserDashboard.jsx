@@ -5,12 +5,13 @@ import horoscopeImg from "../assets/horoscope.png";
 import walletImg from "../assets/wallet.png";
 import shopImg from "../assets/shop.png";
 import coursesImg from "../assets/course.png";
-
+import { useEffect, useState } from "react";
+import axios from "axios";
 export default function UserDashboard() {
   // ✅ Get logged-in user from sessionStorage
   const storedUser = sessionStorage.getItem("user");
   const user = storedUser ? JSON.parse(storedUser) : null;
-
+const [astrologers, setAstrologers] = useState([]);
   // ✅ Use name if available, else fallback
   const userName = user?.name || "User";
 
