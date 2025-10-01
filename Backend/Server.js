@@ -20,14 +20,14 @@ const fcmRoutes = require("./routes/fcm");
 require("./cron/panchangCorn");
 dotenv.config();
 connectDB();
-
+app.use(cors());
 const app = express();
 app.use(express.json());
 app.use("/api", fcmRoutes);
 app.use("/api/wallet/webhook", express.text({ type: "*/*" }));
 app.use("/api/wallet/webhook", express.urlencoded({ extended: true }));
 app.use("/api/wallet/webhook", express.json());
-app.use(cors());
+
 app.use("/api/free-kundali", freeKundaliRoute);
 // --- REST API routes ---
 app.use("/api/users", require("./routes/userRoutes"));
