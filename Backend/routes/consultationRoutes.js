@@ -5,6 +5,7 @@ const User = require("../models/User");
 const Astrologer = require("../models/Astrologer");
 const { creditAdminWallet } = require("../controllers/adminController");
 const sendEmail = require("../utils/email");
+const admin = require("../firebaseAdmin"); // 🔹 import Firebase Admin
 
 // ➤ Create a new consultation
 router.post("/", async (req, res) => {
@@ -49,7 +50,7 @@ router.post("/", async (req, res) => {
         messages: [],
         status: "ongoing",
         kundaliUrl: kundaliUrl || null,
-        rate: rate || 0, // <--- added rate field
+        rate: rate || 0,
       });
       await consultation.save();
     }
@@ -68,7 +69,28 @@ router.post("/", async (req, res) => {
       rate: consultation.rate,
     });
 
-    // 7️⃣ Optional: send email to astrologer (commented)
+    // 7️⃣ 🔹 Send FCM notification to astrologer
+    const astrologer = await Astrologer.findById(astrologerId);
+    if (astrologer?.fcmToken) {
+      const message = {
+        token: astrologer.fcmToken,
+        notification: {
+          title: "New Consultation Booked",
+          body: `A new ${mode} consultation has been booked by ${userName || "User"}`,
+        },
+        data: {
+          consultationId: consultation._id.toString(),
+          mode,
+          userName: userName || "User",
+        },
+      };
+
+      admin.messaging().send(message)
+        .then((response) => console.log("FCM message sent:", response))
+        .catch((err) => console.error("FCM error:", err));
+    }
+
+    // 8️⃣ Optional: send email to astrologer (commented)
     // try { ... } catch (emailErr) { console.error(emailErr); }
 
     res.status(201).json(consultation);
@@ -94,7 +116,7 @@ router.get("/:astrologerId", async (req, res) => {
       bookedAt: c.bookedAt,
       mode: c.mode,
       status: c.status || "ongoing",
-      rate: c.rate || 0, // include rate here
+      rate: c.rate || 0,
     }));
 
     res.json(mapped);
@@ -114,7 +136,7 @@ router.get("/details/:consultationId", async (req, res) => {
 
     res.json({
       ...consultation.toObject(),
-      ratePerMinute: consultation.rate, // for frontend extend modal
+      ratePerMinute: consultation.rate,
     });
   } catch (err) {
     res.status(500).json({ error: "Failed to fetch consultation" });

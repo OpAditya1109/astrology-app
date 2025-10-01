@@ -16,13 +16,14 @@ const { Server } = require("socket.io"); // make sure your io is initialized
 const horoscopeRoutes = require("./routes/horoscope");
 const freeKundaliRoute = require("./routes/freeKundali");
 const reviewRoutes = require("./routes/ReviewRoute");
+const fcmRoutes = require("./routes/fcm");
 require("./cron/panchangCorn");
 dotenv.config();
 connectDB();
 
 const app = express();
 app.use(express.json());
-
+app.use("/api", fcmRoutes);
 app.use("/api/wallet/webhook", express.text({ type: "*/*" }));
 app.use("/api/wallet/webhook", express.urlencoded({ extended: true }));
 app.use("/api/wallet/webhook", express.json());
