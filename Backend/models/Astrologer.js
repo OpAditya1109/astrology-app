@@ -36,12 +36,13 @@ const astrologerSchema = new mongoose.Schema(
       video: { type: Boolean, default: false },
       audio: { type: Boolean, default: false },
     },
-
+    fcmToken: { type: String },
     // Total talk times
     totalChatTime: { type: String, default: "00:00" },       // all calls
     totalVideoTime: { type: String, default: "00:00" },    // only video calls
     totalAudioTime: { type: String, default: "00:00" },  
   },
+   
   { timestamps: true }
 );
 
