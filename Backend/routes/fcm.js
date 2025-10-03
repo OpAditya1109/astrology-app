@@ -4,6 +4,7 @@ const router = express.Router();
 const Astrologer = require("../models/Astrologer"); // your astrologer model
 const User = require("../models/User"); // your user model
 const admin = require("../firebaseAdmin"); // your firebase admin instance
+const { getMessaging } = require("firebase-admin/messaging"); 
 /**
  * Save FCM token for astrologer or user
  * Pass either astrologerId or userId in the request body
@@ -36,8 +37,6 @@ router.post("/save-fcm-token", async (req, res) => {
 router.post("/send-notification", async (req, res) => {
   try {
     const { title, body } = req.body;
-
-    // Fetch users with FCM tokens
     const users = await User.find({ fcmToken: { $ne: null } });
     const tokens = users.map(u => u.fcmToken);
 
@@ -52,14 +51,13 @@ router.post("/send-notification", async (req, res) => {
     for (let i = 0; i < tokens.length; i += BATCH_SIZE) {
       const batch = tokens.slice(i, i + BATCH_SIZE);
 
-      // Create individual message objects for sendEachForMulticast
+      // create array of MulticastMessage objects
       const messages = batch.map(token => ({
         token,
-        notification: { title, body }
+        notification: { title, body },
       }));
 
-      // Send messages
-      const response = await admin.messaging().sendEachForMulticast(messages);
+      const response = await getMessaging().sendEachForMulticast(messages);
 
       successCount += response.successCount;
       failureCount += response.failureCount;
@@ -68,10 +66,9 @@ router.post("/send-notification", async (req, res) => {
     res.json({ message: "Notifications sent to users", successCount, failureCount });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ message: "Server error" });
+    res.status(500).json({ message: "Server error", error: err.message });
   }
 });
-
 
 
 
