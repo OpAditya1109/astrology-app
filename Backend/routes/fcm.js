@@ -51,13 +51,11 @@ router.post("/send-notification", async (req, res) => {
     for (let i = 0; i < tokens.length; i += BATCH_SIZE) {
       const batch = tokens.slice(i, i + BATCH_SIZE);
 
-      // create array of MulticastMessage objects
-      const messages = batch.map(token => ({
-        token,
+      // ✅ Pass one object with tokens (not array of messages)
+      const response = await getMessaging().sendEachForMulticast({
         notification: { title, body },
-      }));
-
-      const response = await getMessaging().sendEachForMulticast(messages);
+        tokens: batch
+      });
 
       successCount += response.successCount;
       failureCount += response.failureCount;
@@ -69,6 +67,7 @@ router.post("/send-notification", async (req, res) => {
     res.status(500).json({ message: "Server error", error: err.message });
   }
 });
+
 
 
 
