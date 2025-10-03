@@ -14,7 +14,7 @@ import courseImg from "../assets/course.png";
 // ✅ Import multiple hero images for slider
 import astrologer1 from "../assets/astrologer1.png";
 import astrologer2 from "../assets/astrologer2.png";
-import astrologer3 from "../assets/astrologer3.png";
+import astrologer3 from "../assets/astrologer3.jpg";
 
 export default function Home() {
   const [astrologers, setAstrologers] = useState([]);
