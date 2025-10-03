@@ -65,25 +65,36 @@ export default function Login() {
         JSON.stringify({ ...userData, expiry: expiryTime })
       );
 
-      // ✅ Generate FCM token for this device
-      try {
-        const messaging = getMessaging();
-        const fcmToken = await getToken(messaging, {
-              vapidKey: process.env.REACT_APP_FIREBASE_VAPID_KEY, // Replace with your VAPID key
-        });
+      
+  // ✅ Generate FCM token for this device
+try {
+  const messaging = getMessaging();
 
-        if (fcmToken) {
-          await axios.post(
-            "https://bhavanaastro.onrender.com/api/save-fcm-token",
-            userData.role === "astrologer"
-              ? { astrologerId: userData.id, token: fcmToken }
-              : { userId: userData.id, token: fcmToken }
-          );
-          console.log("FCM token saved:", fcmToken);
-        }
-      } catch (fcErr) {
-        console.error("FCM token generation failed:", fcErr);
-      }
+  // Explicitly register service worker
+  const registration = await navigator.serviceWorker.register(
+    "/firebase-messaging-sw.js"
+  );
+
+  const fcmToken = await getToken(messaging, {
+    vapidKey: process.env.REACT_APP_FIREBASE_VAPID_KEY,
+    serviceWorkerRegistration: registration, // ✅ required for mobile
+  });
+
+  if (fcmToken) {
+    await axios.post(
+      "https://bhavanaastro.onrender.com/api/save-fcm-token",
+      userData.role === "astrologer"
+        ? { astrologerId: userData.id, token: fcmToken }
+        : { userId: userData.id, token: fcmToken }
+    );
+    console.log("✅ FCM token saved:", fcmToken);
+  } else {
+    console.warn("⚠️ FCM token not generated (permission denied or unsupported)");
+  }
+} catch (fcErr) {
+  console.error("❌ FCM token generation failed:", fcErr);
+}
+
 
       // Success popup
       Swal.fire({
