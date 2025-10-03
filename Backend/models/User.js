@@ -22,6 +22,7 @@ const userSchema = new mongoose.Schema({
     enum: ["user"],
     default: "user",
   },
+    fcmToken: { type: String, default: null },
   wallet: {
     balance: { type: Number, default: 0 },
     transactions: [
