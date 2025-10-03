@@ -34,10 +34,10 @@ router.post("/save-fcm-token", async (req, res) => {
 
 
 router.post("/send-notification", async (req, res) => {
-  console.log("Messaging function:", typeof admin.messaging);
-
   try {
     const { title, body } = req.body;
+
+    // Fetch users with FCM tokens
     const users = await User.find({ fcmToken: { $ne: null } });
     const tokens = users.map(u => u.fcmToken);
 
@@ -51,10 +51,16 @@ router.post("/send-notification", async (req, res) => {
 
     for (let i = 0; i < tokens.length; i += BATCH_SIZE) {
       const batch = tokens.slice(i, i + BATCH_SIZE);
-      const response = await admin.messaging().sendMulticast({
-        notification: { title, body },
-        tokens: batch
-      });
+
+      // Create individual message objects for sendEachForMulticast
+      const messages = batch.map(token => ({
+        token,
+        notification: { title, body }
+      }));
+
+      // Send messages
+      const response = await admin.messaging().sendEachForMulticast(messages);
+
       successCount += response.successCount;
       failureCount += response.failureCount;
     }
