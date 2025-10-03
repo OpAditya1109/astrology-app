@@ -36,34 +36,34 @@ router.post("/save-fcm-token", async (req, res) => {
 router.post("/send-notification", async (req, res) => {
   try {
     const { title, body } = req.body;
-
-    // ✅ Get only users with FCM token
     const users = await User.find({ fcmToken: { $ne: null } });
-
-    // Collect all tokens
-    const tokens = users.map((u) => u.fcmToken);
+    const tokens = users.map(u => u.fcmToken);
 
     if (tokens.length === 0) {
       return res.status(400).json({ message: "No FCM tokens found" });
     }
 
-    const message = {
-      notification: { title, body },
-      tokens, // send to all user tokens
-    };
+    const BATCH_SIZE = 500;
+    let successCount = 0;
+    let failureCount = 0;
 
-    const response = await admin.messaging().sendMulticast(message);
+    for (let i = 0; i < tokens.length; i += BATCH_SIZE) {
+      const batch = tokens.slice(i, i + BATCH_SIZE);
+      const response = await admin.messaging().sendMulticast({
+        notification: { title, body },
+        tokens: batch
+      });
+      successCount += response.successCount;
+      failureCount += response.failureCount;
+    }
 
-    res.json({
-      message: "Notifications sent to users",
-      successCount: response.successCount,
-      failureCount: response.failureCount,
-    });
+    res.json({ message: "Notifications sent to users", successCount, failureCount });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Server error" });
   }
 });
+
 
 
 
