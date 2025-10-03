@@ -3,7 +3,7 @@ const express = require("express");
 const router = express.Router();
 const Astrologer = require("../models/Astrologer"); // your astrologer model
 const User = require("../models/User"); // your user model
-
+const admin = require("../firebaseAdmin"); // your firebase admin instance
 /**
  * Save FCM token for astrologer or user
  * Pass either astrologerId or userId in the request body
@@ -28,5 +28,47 @@ router.post("/save-fcm-token", async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 });
+
+
+
+
+
+router.post("/send-notification", async (req, res) => {
+  try {
+    const { title, body } = req.body;
+
+    // Get all users with an FCM token
+    const users = await User.find({ fcmToken: { $ne: null } });
+    const astrologers = await Astrologer.find({ fcmToken: { $ne: null } });
+
+    // Collect all tokens
+    const tokens = [
+      ...users.map((u) => u.fcmToken),
+      ...astrologers.map((a) => a.fcmToken),
+    ];
+
+    if (tokens.length === 0) {
+      return res.status(400).json({ message: "No FCM tokens found" });
+    }
+
+    const message = {
+      notification: { title, body },
+      tokens, // send to all tokens
+    };
+
+    const response = await admin.messaging().sendMulticast(message);
+
+    res.json({
+      message: "Notifications sent",
+      successCount: response.successCount,
+      failureCount: response.failureCount,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+module.exports = router;
 
 module.exports = router;
