@@ -37,15 +37,11 @@ router.post("/send-notification", async (req, res) => {
   try {
     const { title, body } = req.body;
 
-    // Get all users with an FCM token
+    // ✅ Get only users with FCM token
     const users = await User.find({ fcmToken: { $ne: null } });
-    const astrologers = await Astrologer.find({ fcmToken: { $ne: null } });
 
     // Collect all tokens
-    const tokens = [
-      ...users.map((u) => u.fcmToken),
-      ...astrologers.map((a) => a.fcmToken),
-    ];
+    const tokens = users.map((u) => u.fcmToken);
 
     if (tokens.length === 0) {
       return res.status(400).json({ message: "No FCM tokens found" });
@@ -53,13 +49,13 @@ router.post("/send-notification", async (req, res) => {
 
     const message = {
       notification: { title, body },
-      tokens, // send to all tokens
+      tokens, // send to all user tokens
     };
 
     const response = await admin.messaging().sendMulticast(message);
 
     res.json({
-      message: "Notifications sent",
+      message: "Notifications sent to users",
       successCount: response.successCount,
       failureCount: response.failureCount,
     });
@@ -69,6 +65,6 @@ router.post("/send-notification", async (req, res) => {
   }
 });
 
-module.exports = router;
+
 
 module.exports = router;
