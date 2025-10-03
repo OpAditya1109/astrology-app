@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { useNavigate, Link } from "react-router-dom";
-import Swal from "sweetalert2"; // ✅ Import
+import Swal from "sweetalert2";
+import { getMessaging, getToken } from "firebase/messaging"; // ✅ FCM
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -9,15 +10,20 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
+  // Redirect if already logged in
   useEffect(() => {
     const storedUser =
       JSON.parse(sessionStorage.getItem("user")) ||
       JSON.parse(localStorage.getItem("user"));
 
-    if (storedUser?.role) {
-      redirectByRole(storedUser.role);
+    if (storedUser?.expiry && Date.now() > storedUser.expiry) {
+      localStorage.removeItem("user");
+      sessionStorage.removeItem("user");
+      return;
     }
-  }, [navigate]);
+
+    if (storedUser?.role) redirectByRole(storedUser.role);
+  }, []);
 
   const redirectByRole = (role) => {
     if (role === "user") navigate("/user/dashboard");
@@ -26,76 +32,79 @@ export default function Login() {
   };
 
   const handleLogin = async (e) => {
-  e.preventDefault();
-  setLoading(true);
-  try {
-    const { data } = await axios.post(
-      "https://bhavanaastro.onrender.com/api/auth/login",
-      { email, password }
-    );
+    e.preventDefault();
+    setLoading(true);
 
-    const userData = {
-      token: data.token,
-      id: data.user._id || data.user.id,
-      name: data.user.name,
-      email: data.user.email,
-      mobile: data.user.mobile,
-      role: data.user.role,
-      birthTime: data.user.birthTime,
-      birthPlace: data.user.birthPlace,
-      dob: data.user.dob,
-      kundaliUrl: data.user.kundaliUrl,
-    };
+    try {
+      const { data } = await axios.post(
+        "https://bhavanaastro.onrender.com/api/auth/login",
+        { email, password }
+      );
 
-    // Save in sessionStorage (existing behavior)
-    sessionStorage.setItem("user", JSON.stringify(userData));
+      const userData = {
+        token: data.token,
+        id: data.user._id || data.user.id,
+        name: data.user.name,
+        email: data.user.email,
+        mobile: data.user.mobile,
+        role: data.user.role,
+        birthTime: data.user.birthTime,
+        birthPlace: data.user.birthPlace,
+        dob: data.user.dob,
+        kundaliUrl: data.user.kundaliUrl,
+      };
 
-    // Save in localStorage with 1-day expiry
-    const oneDay = 24 * 60 * 60 * 1000; // 1 day in ms
-    const expiryTime = Date.now() + oneDay;
-    localStorage.setItem(
-      "user",
-      JSON.stringify({ ...userData, expiry: expiryTime })
-    );
+      // Save in sessionStorage
+      sessionStorage.setItem("user", JSON.stringify(userData));
 
-    // Success popup
-    Swal.fire({
-      title: "Login Successful 🎉",
-      text: `Welcome back, ${userData.name}!`,
-      icon: "success",
-      confirmButtonColor: "#2563eb",
-    }).then(() => {
-      redirectByRole(userData.role);
-    });
-  } catch (err) {
-    Swal.fire({
-      title: "Login Failed",
-      text: err.response?.data?.message || "Invalid credentials",
-      icon: "error",
-      confirmButtonColor: "#ef4444",
-    });
-  } finally {
-    setLoading(false);
-  }
-};
-useEffect(() => {
-  const storedUser =
-    JSON.parse(sessionStorage.getItem("user")) ||
-    JSON.parse(localStorage.getItem("user"));
+      // Save in localStorage with 1-day expiry
+      const oneDay = 24 * 60 * 60 * 1000;
+      const expiryTime = Date.now() + oneDay;
+      localStorage.setItem(
+        "user",
+        JSON.stringify({ ...userData, expiry: expiryTime })
+      );
 
-  if (storedUser?.expiry) {
-    if (Date.now() > storedUser.expiry) {
-      // Expired -> clear localStorage
-      localStorage.removeItem("user");
-      sessionStorage.removeItem("user");
-      return;
+      // ✅ Generate FCM token for this device
+      try {
+        const messaging = getMessaging();
+        const fcmToken = await getToken(messaging, {
+              vapidKey: process.env.REACT_APP_FIREBASE_VAPID_KEY, // Replace with your VAPID key
+        });
+
+        if (fcmToken) {
+          await axios.post(
+            "https://bhavanaastro.onrender.com/api/fcm/save-fcm-token",
+            userData.role === "astrologer"
+              ? { astrologerId: userData.id, token: fcmToken }
+              : { userId: userData.id, token: fcmToken }
+          );
+          console.log("FCM token saved:", fcmToken);
+        }
+      } catch (fcErr) {
+        console.error("FCM token generation failed:", fcErr);
+      }
+
+      // Success popup
+      Swal.fire({
+        title: "Login Successful 🎉",
+        text: `Welcome back, ${userData.name}!`,
+        icon: "success",
+        confirmButtonColor: "#2563eb",
+      }).then(() => {
+        redirectByRole(userData.role);
+      });
+    } catch (err) {
+      Swal.fire({
+        title: "Login Failed",
+        text: err.response?.data?.message || "Invalid credentials",
+        icon: "error",
+        confirmButtonColor: "#ef4444",
+      });
+    } finally {
+      setLoading(false);
     }
-  }
-
-  if (storedUser?.role) {
-    redirectByRole(storedUser.role);
-  }
-}, [navigate]);
+  };
 
   return (
     <div className="flex justify-center items-center h-screen bg-gray-100">
