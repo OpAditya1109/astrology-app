@@ -1,6 +1,5 @@
 import { Link } from "react-router-dom";
 import PanchangCard from "../components/Panchang";
-import astrologerImg from "../assets/astrologerm.png";
 import { useEffect, useState } from "react";
 import axios from "axios";
 
@@ -12,8 +11,24 @@ import matchmakingImg from "../assets/matchmaking.png";
 import shopImg from "../assets/shop.png";
 import courseImg from "../assets/course.png";
 
+// ✅ Import multiple hero images for slider
+import astrologer1 from "../assets/astrologer1.png";
+import astrologer2 from "../assets/astrologer2.png";
+import astrologer3 from "../assets/astrologer3.png";
+
 export default function Home() {
   const [astrologers, setAstrologers] = useState([]);
+  const [currentIndex, setCurrentIndex] = useState(0);
+
+  const heroImages = [astrologer1, astrologer2, astrologer3];
+
+  // ✅ Auto slide every 3s
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentIndex((prev) => (prev + 1) % heroImages.length);
+    }, 3000);
+    return () => clearInterval(interval);
+  }, [heroImages.length]);
 
   const services = [
     {
@@ -70,45 +85,65 @@ export default function Home() {
   // ✅ Prevent back button exit
   useEffect(() => {
     window.history.pushState(null, "", window.location.href);
-
     const handlePopState = () => {
       window.history.pushState(null, "", window.location.href);
     };
-
     window.addEventListener("popstate", handlePopState);
     return () => window.removeEventListener("popstate", handlePopState);
   }, []);
 
   return (
     <div className="min-h-screen bg-gray-50 text-gray-800">
-      {/* Hero Section */}
+      {/* 
+      ✅ Hero Section (COMMENTED OUT FOR NOW)
       <section className="bg-gradient-to-r from-yellow-300 via-yellow-100 to-yellow-300 rounded-md shadow-md flex flex-col md:flex-row items-center justify-center text-center p-4 md:p-8">
-        <div className="flex-shrink-0 mb-4 md:mb-0 md:mr-6">
-          <img
-            src={astrologerImg}
-            alt="Astrologer"
-            className="w-48 md:w-64 lg:w-72 rounded-full"
-          />
-        </div>
-
-        <div className="max-w-2xl">
-          <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-gray-900">
-            <span className="text-orange-600">Astro Bhavana</span> – Trusted by{" "}
-            <span className="text-black">25,000+ Families</span>
-          </h2>
-          <p className="text-base md:text-lg lg:text-xl text-gray-700 mt-2 mb-4">
-            Chat with our top astrologers for guidance and solutions.
-          </p>
-          <Link
-            to="/login"
-            className="px-6 py-2 md:px-8 md:py-3 bg-black text-white rounded-full hover:bg-gray-800 transition shadow-md text-base md:text-lg"
-          >
-            Chat Now
-          </Link>
-        </div>
+        ... (all hero content here)
       </section>
+      */}
 
-     <section className="max-w-7xl mx-auto px-6 py-12">
+<section className="w-full mt-0 pt-4">  {/* Added pt-4 for top padding */}
+  <div
+    className="relative w-full overflow-hidden"
+    style={{
+      paddingBottom: "40%",   // shorter height
+      maxHeight: "800px"      // optional max height
+    }}
+  >
+    {/* Background Image */}
+    <div
+      className="absolute inset-0 bg-center bg-cover transition-all duration-700"
+      style={{ backgroundImage: `url(${heroImages[currentIndex]})` }}
+    />
+
+    {/* Left Arrow */}
+    <button
+      onClick={() =>
+        setCurrentIndex(
+          (prevIndex) => (prevIndex - 1 + heroImages.length) % heroImages.length
+        )
+      }
+      className="absolute left-4 top-1/2 -translate-y-1/2 bg-black/40 hover:bg-black/60 text-white p-3 rounded-full"
+    >
+      ◀
+    </button>
+
+    {/* Right Arrow */}
+    <button
+      onClick={() =>
+        setCurrentIndex((prevIndex) => (prevIndex + 1) % heroImages.length)
+      }
+      className="absolute right-4 top-1/2 -translate-y-1/2 bg-black/40 hover:bg-black/60 text-white p-3 rounded-full"
+    >
+      ▶
+    </button>
+  </div>
+</section>
+
+
+
+
+      {/* ✅ Astrologers Section */}
+      <section className="max-w-7xl mx-auto px-6 py-12">
         <h2 className="text-3xl font-semibold mb-6 text-gray-900">
           Our Astrologers
         </h2>
@@ -148,10 +183,7 @@ export default function Home() {
 
       <PanchangCard />
 
-      {/* ✅ Astrologers Section */}
- 
-
-      {/* Services Section */}
+      {/* ✅ Services Section */}
       <section className="max-w-7xl mx-auto px-6 py-12">
         <h2 className="text-3xl font-semibold text-center mb-12 text-gray-900">
           Our Services
@@ -167,12 +199,10 @@ export default function Home() {
                 alt={s.title}
                 className="h-66 w-66 object-cover mb-4"
               />
-
               <h3 className="text-xl font-semibold text-gray-800 mb-2">
                 {s.title}
               </h3>
               <p className="text-gray-600 text-sm mb-4">{s.desc}</p>
-
               {s.link && (
                 <Link
                   to={s.link}
