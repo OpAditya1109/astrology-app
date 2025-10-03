@@ -34,6 +34,8 @@ router.post("/save-fcm-token", async (req, res) => {
 
 
 router.post("/send-notification", async (req, res) => {
+  console.log("Messaging function:", typeof admin.messaging);
+
   try {
     const { title, body } = req.body;
     const users = await User.find({ fcmToken: { $ne: null } });
