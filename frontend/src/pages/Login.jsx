@@ -74,7 +74,7 @@ export default function Login() {
 
         if (fcmToken) {
           await axios.post(
-            "https://bhavanaastro.onrender.com/api/fcm/save-fcm-token",
+            "https://bhavanaastro.onrender.com/api/save-fcm-token",
             userData.role === "astrologer"
               ? { astrologerId: userData.id, token: fcmToken }
               : { userId: userData.id, token: fcmToken }
