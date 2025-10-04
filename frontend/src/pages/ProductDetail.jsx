@@ -2,15 +2,21 @@ import React, { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Shield, Truck, RotateCcw, X } from "lucide-react";
 import products from "../data/product";
+import useCurrency from "../hooks/useCurrency";
 
 export default function ProductDetail() {
   const { id } = useParams();
   const product = products.find((p) => p.id === id);
   const [mainImg, setMainImg] = useState(product?.img);
   const [activeTab, setActiveTab] = useState("description");
-  const [showModal, setShowModal] = useState(false); // modal state
+  const [showModal, setShowModal] = useState(false);
   const [selectedImg, setSelectedImg] = useState(null);
   const navigate = useNavigate();
+
+  const { currency, rate } = useCurrency();
+  const symbol = currency === "AED" ? "د.إ" : "₹";
+  const convertedPrice = (product?.price * rate).toFixed(2);
+  const convertedOldPrice = (product?.oldPrice * rate).toFixed(2);
 
   if (!product) {
     return <div className="p-6">Product not found</div>;
@@ -109,10 +115,10 @@ export default function ProductDetail() {
           {/* Price */}
           <div className="flex items-center gap-3 sm:gap-4 mt-4 sm:mt-6 flex-wrap">
             <span className="text-2xl sm:text-4xl font-bold text-black">
-              {product.price}
+              {symbol} {convertedPrice}
             </span>
             <span className="text-gray-400 line-through text-lg sm:text-2xl">
-              {product.oldPrice}
+              {symbol} {convertedOldPrice}
             </span>
             <span className="text-green-600 font-semibold text-base sm:text-xl">
               {product.offer}
@@ -204,14 +210,13 @@ export default function ProductDetail() {
         </div>
       </div>
 
-      {/* 🔹 Fullscreen Image Modal */}
+      {/* Fullscreen Image Modal */}
       {showModal && (
         <div
           className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50"
-          onClick={() => setShowModal(false)} // close when clicking background
+          onClick={() => setShowModal(false)}
         >
           <div className="relative max-w-5xl w-full p-4">
-            {/* Close Button */}
             <button
               className="absolute top-4 right-4 bg-white rounded-full p-2 shadow"
               onClick={() => setShowModal(false)}
@@ -219,12 +224,11 @@ export default function ProductDetail() {
               <X size={24} />
             </button>
 
-            {/* Image */}
             <img
               src={selectedImg}
               alt="Enlarged"
               className="mx-auto rounded-xl max-h-[90vh] object-contain"
-              onClick={(e) => e.stopPropagation()} // prevent closing when clicking image
+              onClick={(e) => e.stopPropagation()}
             />
           </div>
         </div>
