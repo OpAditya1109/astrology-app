@@ -1,22 +1,28 @@
-// useCurrency.js
 import { useEffect, useState } from "react";
+import axios from "axios";
 
-export default function useCurrency(inrPrice) {
+export default function useCurrency() {
   const [currency, setCurrency] = useState("INR");
-  const [convertedPrice, setConvertedPrice] = useState(inrPrice);
+  const [rate, setRate] = useState(1);
 
   useEffect(() => {
-    // 🚨 Force test for UAE (remove after testing)
-    const forcedCountry = "UAE"; // <--- manually set for testing
+    const fetchLocation = async () => {
+      try {
+        const { data } = await axios.get("https://ipapi.co/json/");
+        if (data.country_code === "AE") {
+          setCurrency("AED");
+          setRate(0.044); // ₹1 = ~0.044 AED
+        } else {
+          setCurrency("INR");
+          setRate(1);
+        }
+      } catch (error) {
+        console.log("Currency detection failed:", error);
+      }
+    };
 
-    if (forcedCountry === "UAE") {
-      setCurrency("AED");
-      setConvertedPrice((inrPrice / 22).toFixed(2)); // approx conversion
-    } else {
-      setCurrency("INR");
-      setConvertedPrice(inrPrice);
-    }
-  }, [inrPrice]);
+    fetchLocation();
+  }, []);
 
-  return { currency, convertedPrice };
+  return { currency, rate };
 }
