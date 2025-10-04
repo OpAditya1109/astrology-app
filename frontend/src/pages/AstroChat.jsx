@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 
@@ -7,61 +7,39 @@ export default function AstroChat() {
   const [input, setInput] = useState("");
   const [userProfile, setUserProfile] = useState(null);
   const navigate = useNavigate();
+  const chatEndRef = useRef(null);
+
+  // Scroll to bottom whenever messages update
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
 
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        // ✅ Get user session from sessionStorage
         const storedUser = sessionStorage.getItem("user");
-        const token = sessionStorage.getItem("token");
-
-        if (!storedUser || !token) {
+        if (!storedUser) {
           alert("Please login first.");
           navigate("/login");
           return;
         }
 
         const parsedUser = JSON.parse(storedUser);
-
-        // If we already have user details in session, no need to call backend
-        if (parsedUser?.id) {
-          setUserProfile(parsedUser);
-
-          setMessages([
-            {
-              sender: "bot",
-              text: `👋 Hello! How can I help you as an astrologer? 
-I already have your birth details:
-- DOB: ${parsedUser.dob?.split("T")[0]}
-- Birth Time: ${parsedUser.birthTime}
-- Birth Place: ${parsedUser.birthPlace}`,
-            },
-          ]);
-        } else {
-          // fallback → fetch from backend if only userId stored
-          const res = await axios.get(
-            `http://localhost:5000/api/users/${parsedUser.id}/details`,
-            { headers: { Authorization: `Bearer ${token}` } }
-          );
-
-          if (!res.data) {
-            alert("Please login first.");
-            navigate("/login");
-            return;
-          }
-
-          setUserProfile(res.data);
-          setMessages([
-            {
-              sender: "bot",
-              text: `👋 Hello! How can I help you as an astrologer? 
-I already have your birth details:
-- DOB: ${res.data.dob?.split("T")[0]}
-- Birth Time: ${res.data.birthTime}
-- Birth Place: ${res.data.birthPlace}`,
-            },
-          ]);
+        const token = parsedUser.token; // token from user object
+        if (!parsedUser.id || !token) {
+          alert("Please login first.");
+          navigate("/login");
+          return;
         }
+
+        setUserProfile(parsedUser);
+
+        setMessages([
+          {
+            sender: "bot",
+            text: `👋 Hello! How can I help you as an astrologer?\nI already have your birth details:\n- DOB: ${parsedUser.dob?.split("T")[0]}\n- Birth Time: ${parsedUser.birthTime}\n- Birth Place: ${parsedUser.birthPlace}`,
+          },
+        ]);
       } catch (err) {
         console.error("Profile fetch error:", err);
         alert("Please login first.");
@@ -72,32 +50,36 @@ I already have your birth details:
     fetchProfile();
   }, [navigate]);
 
-const sendMessage = async () => {
-  if (!input) return;
+  const sendMessage = async () => {
+    if (!input.trim() || !userProfile) return;
 
-  const userMessage = { sender: "user", text: input };
-  setMessages((prev) => [...prev, userMessage]);
-  setInput("");
+    const userMessage = { sender: "user", text: input };
+    setMessages((prev) => [...prev, userMessage]);
+    setInput("");
 
-  try {
-    const token = sessionStorage.getItem("token");
-    const res = await axios.post(
-      "http://localhost:5000/api/chatbot/chat", // backend endpoint
-      { query: input, profile: userProfile },
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
+    try {
+      const token = userProfile.token;
 
-    const botMessage = { sender: "bot", text: res.data.reply };
-    setMessages((prev) => [...prev, botMessage]);
-  } catch (err) {
-    console.error("Chat error:", err);
-    setMessages((prev) => [
-      ...prev,
-      { sender: "bot", text: "⚠️ Error contacting astrologer." },
-    ]);
-  }
-};
+      const res = await axios.post(
+        "http://localhost:5000/api/chatbot/chat", // Falcon 7B backend route
+        { query: input, profile: userProfile },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
 
+      const botMessage = { sender: "bot", text: res.data.reply };
+      setMessages((prev) => [...prev, botMessage]);
+    } catch (err) {
+      console.error("Chat error:", err);
+      setMessages((prev) => [
+        ...prev,
+        { sender: "bot", text: "⚠️ Error contacting astrologer." },
+      ]);
+    }
+  };
+
+  const handleKeyPress = (e) => {
+    if (e.key === "Enter") sendMessage();
+  };
 
   return (
     <div className="w-[400px] mx-auto mt-6 border border-gray-300 rounded-xl p-4 flex flex-col bg-white shadow">
@@ -114,6 +96,7 @@ const sendMessage = async () => {
             {msg.text}
           </div>
         ))}
+        <div ref={chatEndRef} />
       </div>
 
       <div className="flex mt-3">
@@ -121,6 +104,7 @@ const sendMessage = async () => {
           className="flex-1 px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400"
           value={input}
           onChange={(e) => setInput(e.target.value)}
+          onKeyDown={handleKeyPress}
           placeholder="Ask about your stars..."
         />
         <button
