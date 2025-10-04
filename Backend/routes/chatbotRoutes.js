@@ -35,18 +35,19 @@ User question: ${query}
 
     // Call Hugging Face Falcon 7B Instruct model
     const response = await axios.post(
-      "https://api-inference.huggingface.co/models/tiiuae/falcon-7b-instruct",
-      { inputs: prompt },
-      {
-        headers: {
-          Authorization: `Bearer ${HF_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-      }
-    );
+  "https://api-inference.huggingface.co/models/tiiuae/falcon-7b-instruct",
+  {
+    inputs: prompt,
+    parameters: { max_new_tokens: 512, temperature: 0.7 },
+  },
+  { headers: { Authorization: `Bearer ${HF_API_KEY}` } }
+);
 
-    // Falcon 7B returns generated_text inside response.data[0].generated_text
-    const reply = response.data[0]?.generated_text || "Sorry, I couldn't generate a reply.";
+console.log("HF response:", response.data); // log it
+const reply = response.data[0]?.generated_text || response.data.generated_text || "Sorry, AI could not respond.";
+
+
+
 
     res.json({ reply });
   } catch (err) {
