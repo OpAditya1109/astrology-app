@@ -86,10 +86,16 @@ function Footer() {
       </div>
 
       {/* Contact Us */}
-      <div className="container mx-auto px-6 mt-10 text-center md:text-left">
-        <h3 className="font-semibold text-lg mb-2">Contact Us</h3>
-        <p className="text-gray-300">📧 contact@astrobhavana.com</p>
-      </div>
+<div className="container mx-auto px-6 mt-10 text-center md:text-left">
+  <h3 className="font-semibold text-lg mb-2">Contact Us</h3>
+  <a
+    href="mailto:contact@astrobhavana.com"
+    className="text-gray-300 hover:text-blue-400 transition-colors duration-200"
+  >
+    📧 contact@astrobhavana.com
+  </a>
+</div>
+
 
       {/* Social Media */}
       <div className="mt-10 flex space-x-5 justify-center">
