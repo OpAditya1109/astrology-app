@@ -61,7 +61,7 @@ export default function AstroChat() {
       const token = userProfile.token;
 
       const res = await axios.post(
-        "http://localhost:5000/api/chatbot/chat", // Falcon 7B backend route
+        "https://bhavanaastro.onrender.com/api/chatbot/chat", // Falcon 7B backend route
         { query: input, profile: userProfile },
         { headers: { Authorization: `Bearer ${token}` } }
       );
