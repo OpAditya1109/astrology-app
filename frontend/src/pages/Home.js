@@ -116,26 +116,72 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ================= Astrologers Section ================= */}
-      <section className="max-w-7xl mx-auto px-6 py-12">
-        <h2 className="text-3xl font-semibold mb-6 text-gray-900">Our Astrologers</h2>
-        <div className="flex overflow-x-auto space-x-6 pb-4 scrollbar-hide">
-          {astrologers.length > 0 ? (
-            astrologers.map((astro) => (
-              <div key={astro._id} className="min-w-[220px] bg-white rounded-xl shadow-md p-4 flex-shrink-0 text-center border hover:shadow-lg transition">
-                <img src={astro.photo || "/default-astrologer.png"} alt={astro.name} className="w-24 h-24 rounded-full object-cover mx-auto mb-3" />
-                <h3 className="text-lg font-semibold text-gray-800">{astro.name}</h3>
-                <p className="text-sm text-gray-500">{astro.experience} yrs exp</p>
-                <p className="text-sm text-gray-600">{astro.languagesKnown?.join(", ")}</p>
-                <p className="text-xs text-gray-500">{astro.city}, {astro.country}</p>
-                <Link to="/login" className="mt-3 inline-block px-4 py-2 bg-purple-600 text-white text-sm rounded-lg hover:bg-purple-700">Chat Now</Link>
-              </div>
-            ))
-          ) : (
-            <p className="text-gray-500">No astrologers available right now.</p>
-          )}
+{/* ================= 🌟 Our Astrologers Section ================= */}
+<section className="max-w-7xl mx-auto px-6 py-20">
+  {/* Elegant Gradient Heading */}
+  <div className="text-center mb-14">
+    <h2 className="text-5xl font-extrabold bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-500 bg-clip-text text-transparent tracking-tight">
+      Meet Our Expert Astrologers
+    </h2>
+    <p className="text-gray-500 mt-3 text-base max-w-2xl mx-auto">
+      Trusted professionals with years of experience in astrology, ready to guide you toward clarity and success.
+    </p>
+  </div>
+
+  {/* Scrollable Astrologers List */}
+  <div className="flex overflow-x-auto gap-8 pb-6 scrollbar-hide snap-x snap-mandatory">
+    {astrologers.length > 0 ? (
+      astrologers.map((astro) => (
+        <div
+          key={astro._id}
+          className="min-w-[260px] snap-center bg-white rounded-2xl shadow-lg p-6 flex-shrink-0 text-center border border-gray-100 hover:shadow-2xl transition-all transform hover:-translate-y-2 relative overflow-hidden group"
+        >
+          {/* Soft Glow Hover Border */}
+          <div className="absolute inset-0 bg-gradient-to-r from-purple-500/10 to-indigo-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-2xl"></div>
+
+          {/* Profile Image */}
+          <div className="relative w-28 h-28 mx-auto mb-5">
+            <img
+              src={astro.photo || "/default-astrologer.png"}
+              alt={astro.name}
+              className="w-full h-full rounded-full object-cover border-4 border-purple-500/20 shadow-md group-hover:scale-105 transition-transform duration-300"
+            />
+          </div>
+
+          {/* Name & Experience */}
+          <h3 className="text-lg font-semibold text-gray-900 mb-1">
+            {astro.name}
+          </h3>
+          <p className="text-sm text-purple-600 font-medium mb-2">
+            {astro.experience} yrs experience
+          </p>
+
+          {/* Languages & Location */}
+          <p className="text-sm text-gray-600 mb-1">
+            {astro.languagesKnown?.join(", ") || "Languages not listed"}
+          </p>
+          <p className="text-xs text-gray-500">
+            {astro.city}, {astro.country}
+          </p>
+
+          {/* Chat Now Button */}
+          <Link
+            to="/login"
+            className="mt-5 inline-block w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold text-sm py-2.5 rounded-lg hover:from-indigo-700 hover:to-purple-700 transition-all duration-300 shadow-md"
+          >
+            Chat Now
+          </Link>
         </div>
-      </section>
+      ))
+    ) : (
+      <p className="text-gray-500 text-center w-full">
+        No astrologers available right now.
+      </p>
+    )}
+  </div>
+</section>
+
+
 
       <PanchangCard />
 

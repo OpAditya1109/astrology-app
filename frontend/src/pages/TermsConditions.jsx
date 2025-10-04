@@ -115,10 +115,10 @@ export default function Terms() {
         contact us at: <br />
         📧{" "}
         <a
-          href="mailto:bhavanaastro6@gmail.com"
+          href="mailto:contact@astrobhavana.com"
           className="text-blue-600 underline"
         >
-          bhavanaastro6@gmail.com
+          contact@astrobhavana.com
         </a>
         <br />
        

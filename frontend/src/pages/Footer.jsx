@@ -88,7 +88,7 @@ function Footer() {
       {/* Contact Us */}
       <div className="container mx-auto px-6 mt-10 text-center md:text-left">
         <h3 className="font-semibold text-lg mb-2">Contact Us</h3>
-        <p className="text-gray-300">📧 bhavanaastro6@gmail.com</p>
+        <p className="text-gray-300">📧 contact@astrobhavana.com</p>
       </div>
 
       {/* Social Media */}

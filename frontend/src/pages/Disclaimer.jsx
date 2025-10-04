@@ -90,10 +90,10 @@ export default function Disclaimer() {
         For any questions regarding this Disclaimer, please contact us: <br />
         📧{" "}
         <a
-          href="mailto:bhavanaastro6@gmail.com"
+          href="mailto:contact@astrobhavana.com"
           className="text-blue-600 underline"
         >
-          bhavanaastro6@gmail.com
+          contact@astrobhavana.com
         </a>
         <br />
       

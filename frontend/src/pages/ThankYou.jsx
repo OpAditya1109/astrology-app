@@ -26,7 +26,7 @@ export default function ThankYouPage() {
 
           {/* Contact Us (mailto link with subject) */}
           <a
-            href="mailto:bhavanaastro6@gmail.com?subject=Astrologer%20Registration%20Support"
+            href="mailto:contact@astrobhavana.com?subject=Astrologer%20Registration%20Support"
             className="px-5 py-2 rounded-xl border border-gray-300 text-gray-700 font-medium hover:bg-gray-100 transition"
           >
             Contact Us
