@@ -9,6 +9,7 @@ const router = express.Router();
 const HF_API_KEY = process.env.HF_API_KEY;
 
 router.post("/chat", async (req, res) => {
+  console.log("Chat request received:", req.body);
   try {
     const { query, profile } = req.body;
 
