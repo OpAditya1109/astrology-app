@@ -41,7 +41,7 @@ export default function Navbar() {
   className="cursor-pointer flex items-center gap-2"
 >
   <img
-    src="/Bhavanaastro-logo.jpeg"
+    src="/Bhavanaastro-logo.png"
     alt="Logo"
     className="h-10 w-10 rounded-full object-cover"
   />

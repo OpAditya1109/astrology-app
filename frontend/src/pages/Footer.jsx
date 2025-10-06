@@ -10,7 +10,7 @@ function Footer() {
   {/* Logo Section */}
   <div className="flex items-center space-x-3">
     <img
-      src="/Bhavanaastro-logo.jpeg"
+      src="/Bhavanaastro-logo.png"
       alt="Astro Bhavana Logo"
       className="h-10 w-10 object-contain rounded-full border border-gray-300"
     />
