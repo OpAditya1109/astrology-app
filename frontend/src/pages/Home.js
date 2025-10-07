@@ -188,17 +188,18 @@ export default function Home() {
 {/* ================= Services Section ================= */}
 <section className="relative max-w-7xl mx-auto px-6 py-20 overflow-hidden">
   {/* CRAZY Neon Heading */}
-  <h2 className="text-6xl font-extrabold text-center mb-16 relative">
-    {`Our Services`.split("").map((char, i) => (
-      <span
-        key={i}
-        className="inline-block animate-char-wave"
-        style={{ animationDelay: `${i * 0.1}s` }}
-      >
-        {char === " " ? "\u00A0" : char}
-      </span>
-    ))}
-  </h2>
+<h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold text-center mb-10 sm:mb-14 md:mb-16 relative leading-tight">
+  {"Our Services".split("").map((char, i) => (
+    <span
+      key={i}
+      className="inline-block animate-char-wave"
+      style={{ animationDelay: `${i * 0.08}s` }}
+    >
+      {char === " " ? "\u00A0" : char}
+    </span>
+  ))}
+</h2>
+
 
   {/* Services Grid */}
   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-10">
