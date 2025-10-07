@@ -188,7 +188,7 @@ export default function Home() {
 {/* ================= Services Section ================= */}
 <section className="relative max-w-7xl mx-auto px-6 py-20 overflow-hidden">
   {/* CRAZY Neon Heading */}
-<h2 className="text-4xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold text-center mb-10 sm:mb-14 md:mb-16 relative leading-tight">
+<h2 className="text-6xl sm:text-6xl md:text-5xl lg:text-6xl font-extrabold text-center mb-10 sm:mb-14 md:mb-16 relative leading-tight">
   {"Our Services".split("").map((char, i) => (
     <span
       key={i}
