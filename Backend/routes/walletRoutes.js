@@ -21,7 +21,7 @@ router.post("/create-payment", async (req, res) => {
     const payload = {
       merchantId,
       amount: Number(amount),
-      currency: "INR",
+      currency: "USD",
       orderId: `ORDER_${Date.now()}`,
       callbackUrl: `https://bhavanaastro.onrender.com/api/wallet/payment-webhook?userId=${userId}`, // webhook URL
     };

@@ -86,7 +86,7 @@ router.post('/topup', async (req, res) => {
     // Create Cashfree order
     const orderData = {
       order_amount: amount,
-      order_currency: 'INR',
+      order_currency: 'AED',
       order_id: orderId,
       customer_details: {
         customer_id: `USER_${userId}`,
