@@ -233,4 +233,36 @@ router.post("/ai", async (req, res) => {
   }
 });
 
+// POST /api/wallet/deduct
+router.post("/deduct", async (req, res) => {
+  try {
+    const { userId, amount } = req.body;
+
+    if (!userId || !amount) return res.status(400).json({ message: "Missing data" });
+
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    if (user.wallet.balance < amount) {
+      return res.status(400).json({ message: "Insufficient balance" });
+    }
+
+    user.wallet.balance -= amount;
+    user.wallet.transactions.push({
+      type: "debit",
+      amount,
+      description: "AI Chat extension",
+    });
+
+    await user.save();
+
+    res.json({ balance: user.wallet.balance, message: "Amount deducted" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Failed to deduct amount" });
+  }
+});
+
+
+
 module.exports = router;

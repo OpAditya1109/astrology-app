@@ -65,7 +65,7 @@ export default function AstroChat() {
     try {
       // Deduct from wallet (backend call)
       await axios.post(
-        "https://bhavanaastro.onrender.com/api/wallet/deduct",
+       "https://bhavanaastro.onrender.com/api/consultations/deduct",
         { userId: userProfile.id, amount: cost }
       );
 
