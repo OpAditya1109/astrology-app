@@ -13,6 +13,7 @@ export default function AstroChat() {
   const [tenSecondMessageSent, setTenSecondMessageSent] = useState(false);
   const [screenProtected, setScreenProtected] = useState(false);
   const [astrologerPhoto, setAstrologerPhoto] = useState("/default-astro.png");
+  const [viewportHeight, setViewportHeight] = useState(window.innerHeight);
 
   const astroPhotoRef = useRef(astrologerPhoto);
   const chatEndRef = useRef(null);
@@ -32,10 +33,17 @@ export default function AstroChat() {
     sessionStorage.setItem("chatTimer", timer.toString());
   }, [timer]);
 
+  // Handle mobile keyboard resize
+  useEffect(() => {
+    const handleResize = () => setViewportHeight(window.innerHeight);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
   // Auto-scroll
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, loading]);
+  }, [messages, loading, viewportHeight]);
 
   // Animate bot messages
   const typeMessage = (text, delay = 50) => {
@@ -196,8 +204,11 @@ What would you like to ask today? 🌟`;
   }, []);
 
   return (
-    <div className="w-[400px] mx-auto mt-32 flex flex-col h-[600px] relative border border-gray-300 rounded-xl bg-white shadow-lg">
-      {/* Chat messages (scrollable) */}
+    <div
+      className="w-full max-w-[400px] mx-auto mt-16 flex flex-col border border-gray-300 rounded-xl bg-white shadow-lg"
+      style={{ height: viewportHeight - 32 }} // adjust height dynamically
+    >
+      {/* Chat messages */}
       <div className="flex-1 p-3 overflow-y-auto flex flex-col gap-3 bg-gray-50 rounded-t-lg">
         {messages.map((msg, i) => (
           <div
