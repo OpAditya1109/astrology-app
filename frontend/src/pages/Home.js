@@ -17,6 +17,8 @@ import astrologer3 from "../assets/astrologer3.jpg";
 
 export default function Home() {
   const [astrologers, setAstrologers] = useState([]);
+  const [aiAstrologers, setAiAstrologers] = useState([]);
+
   const [currentIndex, setCurrentIndex] = useState(0);
   const [fade, setFade] = useState(true); // ✅ for fade animation
 
