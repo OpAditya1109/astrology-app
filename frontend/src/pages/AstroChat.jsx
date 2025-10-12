@@ -17,78 +17,46 @@ export default function AstroChat() {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // Fetch user profile
+  // Fetch user profile (from sessionStorage)
   useEffect(() => {
-    const fetchProfile = async () => {
-      const storedUser = sessionStorage.getItem("user");
-      if (!storedUser) {
-        alert("Please login first.");
-        navigate("/login");
-        return;
-      }
-      const parsedUser = JSON.parse(storedUser);
-      setUserProfile(parsedUser);
-      setMessages([
-        {
-          sender: "bot",
-          text: `👋 Hello! I already have your birth details:\n- DOB: ${parsedUser.dob?.split("T")[0]}\n- Birth Time: ${parsedUser.birthTime}\n- Birth Place: ${parsedUser.birthPlace}`,
-        },
-      ]);
-    };
-    fetchProfile();
+    const storedUser = sessionStorage.getItem("user");
+    if (!storedUser) {
+      alert("Please login first.");
+      navigate("/login");
+      return;
+    }
+    const parsedUser = JSON.parse(storedUser);
+    setUserProfile(parsedUser);
+
+    setMessages([
+      {
+        sender: "bot",
+        text: `👋 Hello! I already have your birth details:\n- DOB: ${parsedUser.dob?.split("T")[0]}\n- Birth Time: ${parsedUser.birthTime}\n- Birth Place: ${parsedUser.birthPlace}`,
+      },
+    ]);
   }, [navigate]);
 
-  // Timer logic
+  // Timer
   useEffect(() => {
-    if (timer <= 0) return;
+    if (timer <= 0) {
+      alert("Your chat session has ended.");
+      navigate("/user/dashboard");
+      return;
+    }
 
     const interval = setInterval(() => {
       setTimer((prev) => prev - 1);
     }, 1000);
 
-    if (timer === 60) setShowExtendPopup(true); // show popup at 1 min remaining
+    if (timer === 60) setShowExtendPopup(true);
 
     return () => clearInterval(interval);
-  }, [timer]);
+  }, [timer, navigate]);
 
-  // Extend chat handler
-const handleExtendChat = async () => {
-  if (!userProfile) return;
-
-  const rate = userProfile.rate || 10; // or fetch astrologer rate from backend
-  const cost = extendMinutes * rate; // calculate cost for extension
-
-  if (userProfile.wallet.balance < cost) {
-    alert("Insufficient balance. Please top up.");
-    setShowExtendPopup(false);
-    return;
-  }
-
-  try {
-    // Deduct from wallet using same route
-    const res = await axios.post(
-      "https://bhavanaastro.onrender.com/api/consultations/deduct",
-      { userId: userProfile.id, amount: cost }
-    );
-
-    // Update local wallet from backend response
-    setUserProfile((prev) => ({
-      ...prev,
-      wallet: { ...prev.wallet, balance: res.data.balance },
-    }));
-
-    // Extend timer
-    setTimer((prev) => prev + extendMinutes * 60);
-    setShowExtendPopup(false);
-  } catch (err) {
-    console.error(err);
-    alert("Failed to extend chat.");
-  }
-};
-
-
+  // Send chat message
   const sendMessage = async () => {
     if (!input.trim() || !userProfile) return;
+
     const userMessage = { sender: "user", text: input };
     setMessages((prev) => [...prev, userMessage]);
     setInput("");
@@ -96,7 +64,7 @@ const handleExtendChat = async () => {
     try {
       const res = await axios.post(
         "https://bhavanaastro.onrender.com/api/chatbot/chat",
-        { query: input, profile: userProfile },
+        { query: input, userId: userProfile.id },
         { headers: { Authorization: `Bearer ${userProfile.token}` } }
       );
 
@@ -111,12 +79,38 @@ const handleExtendChat = async () => {
     }
   };
 
+  // Extend chat
+  const handleExtendChat = async () => {
+    if (!userProfile) return;
+
+    try {
+      const res = await axios.post(
+        "https://bhavanaastro.onrender.com/api/consultations/deduct",
+        { userId: userProfile.id, minutes: extendMinutes } // send only userId & minutes
+      );
+
+      // Backend will handle rate, wallet deduction & validation
+      if (res.data.success) {
+        setTimer((prev) => prev + extendMinutes * 60); // extend timer
+        alert(res.data.message || "Chat extended successfully!");
+      } else {
+        alert(res.data.message || "Insufficient balance.");
+      }
+      setShowExtendPopup(false);
+    } catch (err) {
+      console.error(err);
+      alert("Failed to extend chat.");
+      setShowExtendPopup(false);
+    }
+  };
+
   const handleKeyPress = (e) => {
     if (e.key === "Enter") sendMessage();
   };
 
   return (
     <div className="w-[400px] mx-auto mt-6 border border-gray-300 rounded-xl p-4 flex flex-col bg-white shadow">
+      {/* Chat messages */}
       <div className="flex-1 flex flex-col gap-2 p-2 max-h-[400px] overflow-y-auto">
         {messages.map((msg, i) => (
           <div
@@ -133,10 +127,14 @@ const handleExtendChat = async () => {
         <div ref={chatEndRef} />
       </div>
 
+      {/* Timer */}
       <div className="flex justify-between mt-2 items-center">
-        <span className="text-sm text-gray-500">⏱ {Math.floor(timer / 60)}:{(timer % 60).toString().padStart(2, "0")}</span>
+        <span className="text-sm text-gray-500">
+          ⏱ {Math.floor(timer / 60)}:{(timer % 60).toString().padStart(2, "0")}
+        </span>
       </div>
 
+      {/* Input */}
       <div className="flex mt-2">
         <input
           className="flex-1 px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400"
