@@ -12,6 +12,8 @@ export default function AstroChat() {
   const [loading, setLoading] = useState(false);
   const [tenSecondMessageSent, setTenSecondMessageSent] = useState(false);
   const [screenProtected, setScreenProtected] = useState(false);
+  const [astrologerPhoto, setAstrologerPhoto] = useState("/default-astro.png");
+
   const chatEndRef = useRef(null);
   const navigate = useNavigate();
 
@@ -24,7 +26,10 @@ export default function AstroChat() {
   const typeMessage = (text, delay = 80) => {
     return new Promise((resolve) => {
       let i = 0;
-      setMessages((prev) => [...prev, { sender: "bot", text: "", photo: userProfile?.kundaliUrl }]);
+      setMessages((prev) => [
+        ...prev,
+        { sender: "bot", text: "", photo: astrologerPhoto },
+      ]);
       const interval = setInterval(() => {
         setMessages((prev) => {
           const newPrev = [...prev];
@@ -44,11 +49,16 @@ export default function AstroChat() {
   // Fetch user profile and initial messages
   useEffect(() => {
     const storedUser = sessionStorage.getItem("user");
+    const storedAstroPhoto = sessionStorage.getItem("astrologerPhoto");
+
     if (!storedUser) {
       alert("Please login first.");
       navigate("/login");
       return;
     }
+
+    if (storedAstroPhoto) setAstrologerPhoto(storedAstroPhoto);
+
     const parsedUser = JSON.parse(storedUser);
     setUserProfile(parsedUser);
     const userName = parsedUser.name || "User";
@@ -112,7 +122,7 @@ What would you like to ask today? 🌟`;
       console.error(err);
       setMessages((prev) => [
         ...prev,
-        { sender: "bot", text: "⚠️ Error contacting astrologer.", photo: userProfile?.kundaliUrl },
+        { sender: "bot", text: "⚠️ Error contacting astrologer.", photo: astrologerPhoto },
       ]);
     } finally {
       setLoading(false);
@@ -179,7 +189,7 @@ What would you like to ask today? 🌟`;
           >
             {msg.sender === "bot" && (
               <img
-                src={msg.photo || "/default-astro.png"}
+                src={msg.photo || astrologerPhoto}
                 alt="Astrologer"
                 className="w-8 h-8 rounded-full object-cover"
               />
@@ -198,7 +208,7 @@ What would you like to ask today? 🌟`;
         {loading && (
           <div className="self-start text-gray-400 animate-pulse flex items-center gap-2">
             <img
-              src={userProfile?.kundaliUrl || "/default-astro.png"}
+              src={astrologerPhoto}
               alt="Astrologer"
               className="w-8 h-8 rounded-full object-cover"
             />
