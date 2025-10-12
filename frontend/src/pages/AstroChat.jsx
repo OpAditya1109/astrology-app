@@ -18,18 +18,17 @@ export default function AstroChat() {
   const chatEndRef = useRef(null);
   const navigate = useNavigate();
 
-  // Keep astroPhotoRef updated
   useEffect(() => {
     astroPhotoRef.current = astrologerPhoto;
   }, [astrologerPhoto]);
 
-  // Scroll to bottom
+  // Auto-scroll
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, loading]);
 
-  // Animate bot message character by character
-  const typeMessage = (text, delay = 80) => {
+  // Animate bot messages
+  const typeMessage = (text, delay = 50) => {
     return new Promise((resolve) => {
       let i = 0;
       setMessages((prev) => [
@@ -44,7 +43,7 @@ export default function AstroChat() {
           return newPrev;
         });
         i++;
-        if (i === text.length) {
+        if (i >= text.length) {
           clearInterval(interval);
           resolve();
         }
@@ -52,7 +51,7 @@ export default function AstroChat() {
     });
   };
 
-  // Fetch user profile and initial messages
+  // Load user profile and intro messages
   useEffect(() => {
     const storedUser = sessionStorage.getItem("user");
     const storedAstroPhoto = sessionStorage.getItem("astrologerPhoto");
@@ -112,7 +111,7 @@ What would you like to ask today? 🌟`;
     return () => clearInterval(interval);
   }, [timer, navigate, tenSecondMessageSent, userProfile]);
 
-  // Send chat message
+  // Send message
   const sendMessage = async () => {
     if (!input.trim() || !userProfile) return;
     const userMessage = { sender: "user", text: input };
@@ -166,7 +165,7 @@ What would you like to ask today? 🌟`;
 
   const handleEndChat = () => navigate("/user/dashboard");
 
-  // Screenshot / tab switch protection
+  // Screenshot protection
   useEffect(() => {
     const protectScreen = () => setScreenProtected(true);
     const unprotectScreen = () => setScreenProtected(false);
@@ -187,8 +186,8 @@ What would you like to ask today? 🌟`;
 
   return (
     <div className="w-[400px] mx-auto mt-6 flex flex-col h-[600px] relative border border-gray-300 rounded-xl bg-white shadow-lg">
-      {/* Chat messages */}
-      <div className="flex-1 flex flex-col gap-3 p-3 overflow-y-auto bg-gray-50 rounded-t-lg">
+      {/* Chat messages (scrollable) */}
+      <div className="flex-1 p-3 overflow-y-auto flex flex-col gap-3 bg-gray-50 rounded-t-lg">
         {messages.map((msg, i) => (
           <div
             key={i}
@@ -214,6 +213,7 @@ What would you like to ask today? 🌟`;
             </div>
           </div>
         ))}
+
         {loading && (
           <div className="self-start text-gray-400 animate-pulse flex items-center gap-2">
             <img
@@ -227,8 +227,8 @@ What would you like to ask today? 🌟`;
         <div ref={chatEndRef} />
       </div>
 
-      {/* Input + Timer + End button */}
-      <div className="p-3 border-t border-gray-300 flex flex-col gap-2">
+      {/* Input + Timer (fixed at bottom) */}
+      <div className="p-3 border-t border-gray-300 flex flex-col gap-2 bg-white">
         <div className="flex gap-2">
           <input
             className="flex-1 px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400"
