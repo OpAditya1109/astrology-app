@@ -17,7 +17,7 @@ import AstrologerDashboard from "./pages/AstrologerDashboard";
 import AstrologerConsultations from "./pages/AstrologerConsultations";
 import ChatPage from "./pages/ChatPage";
 import AstrologerChat from "./pages/AstrologerChat";
-import AIConsultation from "./pages/AIConsultation";
+// import AIConsultation from "./pages/AIConsultation";
 import MatchMakingForm from "./pages/MatchMakingForm";
 import VideoCall from "./pages/VideoCall";
 import AudioCall from "./pages/AudioCall";
@@ -47,7 +47,7 @@ import FreeKundali from "./pages/FreeKundali";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import HealingAcce from "./pages/HealingAcce"
-import AIConsultation from "./pages/AIConsultation";
+import AIConsultation from "./pages/UserAIConsultancy";
 
 // 🔹 Helper: Get logged-in user from storage
 const getStoredUser = () => {
@@ -96,7 +96,7 @@ function App() {
           <Route path="/astrologer/register" element={<AstrologerRegister />} />
           <Route path="/consultancy" element={<Consultancy />} />
           <Route path="/shopping" element={<Shopping />} />
-          <Route path="/ai-consultation" element={<AIConsultation />} />
+          {/* <Route path="/ai-consultation" element={<AIConsultation />} /> */}
           <Route path="/match-making" element={<MatchMakingForm />} />
           <Route path="/wallet-success" element={<WalletSuccess />} />
           <Route path="/astrochat" element={<Astrochat />} />
