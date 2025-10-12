@@ -52,37 +52,40 @@ export default function AstroChat() {
   }, [timer]);
 
   // Extend chat handler
-  const handleExtendChat = async () => {
-    if (!userProfile) return;
+const handleExtendChat = async () => {
+  if (!userProfile) return;
 
-    const cost = extendMinutes * 10; // ₹10 per min
-    if (userProfile.wallet.balance < cost) {
-      alert("Insufficient balance. Please top up.");
-      setShowExtendPopup(false);
-      return;
-    }
+  const rate = userProfile.rate || 10; // or fetch astrologer rate from backend
+  const cost = extendMinutes * rate; // calculate cost for extension
 
-    try {
-      // Deduct from wallet (backend call)
-      await axios.post(
-       "https://bhavanaastro.onrender.com/api/consultations/deduct",
-        { userId: userProfile.id, amount: cost }
-      );
+  if (userProfile.wallet.balance < cost) {
+    alert("Insufficient balance. Please top up.");
+    setShowExtendPopup(false);
+    return;
+  }
 
-      // Update local wallet
-      setUserProfile((prev) => ({
-        ...prev,
-        wallet: { ...prev.wallet, balance: prev.wallet.balance - cost },
-      }));
+  try {
+    // Deduct from wallet using same route
+    const res = await axios.post(
+      "https://bhavanaastro.onrender.com/api/consultations/deduct",
+      { userId: userProfile.id, amount: cost }
+    );
 
-      // Extend timer
-      setTimer((prev) => prev + extendMinutes * 60);
-      setShowExtendPopup(false);
-    } catch (err) {
-      console.error(err);
-      alert("Failed to extend chat.");
-    }
-  };
+    // Update local wallet from backend response
+    setUserProfile((prev) => ({
+      ...prev,
+      wallet: { ...prev.wallet, balance: res.data.balance },
+    }));
+
+    // Extend timer
+    setTimer((prev) => prev + extendMinutes * 60);
+    setShowExtendPopup(false);
+  } catch (err) {
+    console.error(err);
+    alert("Failed to extend chat.");
+  }
+};
+
 
   const sendMessage = async () => {
     if (!input.trim() || !userProfile) return;
