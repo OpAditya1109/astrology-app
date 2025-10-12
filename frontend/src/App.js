@@ -47,6 +47,8 @@ import FreeKundali from "./pages/FreeKundali";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import HealingAcce from "./pages/HealingAcce"
+import AIConsultation from "./pages/AIConsultation";
+
 // 🔹 Helper: Get logged-in user from storage
 const getStoredUser = () => {
   return (
@@ -74,6 +76,14 @@ function App() {
         <Routes>
           {/* Public Routes */}
       
+<Route
+  path="/ai-consultancy"
+  element={
+    <ProtectedRoute allowedRoles={["user"]}>
+      <AIConsultation />
+    </ProtectedRoute>
+  }
+/>
 
           <Route path="/" element={<Home />} />
           <Route path="/thank-you" element={<ThankYouPage />} />

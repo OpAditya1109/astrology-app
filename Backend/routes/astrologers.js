@@ -3,7 +3,7 @@ const router = express.Router();
 const Astrologer = require("../models/Astrologer");
 const Review = require("../models/Review");
 
-// GET /api/astrologers
+// GET /api/Consult-astrologers
 router.get("/", async (req, res) => {
   try {
     const {
@@ -11,12 +11,16 @@ router.get("/", async (req, res) => {
       experience,
       language,
       category,
-      systems, // optional filter by systemsKnown
+      systems, // optional filter
+      aiOnly, // 👈 new query flag
       page = 1,
       limit = 6,
     } = req.query;
 
-    const query = { isVerified: true }; // ✅ only verified astrologers
+    const query = { isVerified: true };
+
+    // ✅ Optional: Filter only AI astrologers if requested
+    if (aiOnly === "true") query.isAI = true;
 
     if (name) query.name = { $regex: name, $options: "i" };
     if (experience) query.experience = { $gte: Number(experience) };
@@ -31,7 +35,9 @@ router.get("/", async (req, res) => {
       .skip(skip)
       .limit(Number(limit))
       .sort({ experience: -1 })
-      .select("name experience languagesKnown categories systemsKnown city country photo online rates");
+      .select(
+        "name experience languagesKnown categories systemsKnown city country photo online rates isAI"
+      );
 
     res.json({
       total,
@@ -64,12 +70,11 @@ router.put("/update-rates-online/:id", async (req, res) => {
 // GET single astrologer
 router.get("/:id", async (req, res) => {
   try {
-    // ✅ Find astrologer (already what you are doing)
     const astrologer = await Astrologer.findOne({
       _id: req.params.id,
       isVerified: true,
     }).select(
-      "name email experience languagesKnown categories systemsKnown city country photo rates online description totalChatTime totalVideoTime totalAudioTime"
+      "name email experience languagesKnown categories systemsKnown city country photo rates online description totalChatTime totalVideoTime totalAudioTime isAI"
     );
 
     if (!astrologer)
@@ -77,9 +82,8 @@ router.get("/:id", async (req, res) => {
         .status(404)
         .json({ error: "Astrologer not found or not verified" });
 
-    // ✅ Fetch reviews for this astrologer + populate user name
     const reviews = await Review.find({ astrologerId: astrologer._id })
-      .populate("userId", "name") // only fetch name field from User
+      .populate("userId", "name")
       .sort({ createdAt: -1 });
 
     res.json({ ...astrologer.toObject(), reviews });
@@ -88,23 +92,21 @@ router.get("/:id", async (req, res) => {
     res.status(500).json({ error: "Server error" });
   }
 });
-// GET astrologer from session
-// GET astrologer talk time using id from frontend
+
+// GET astrologer talk time using id
 router.get("/session/:id", async (req, res) => {
   try {
     const astrologerId = req.params.id;
-
     const astrologer = await Astrologer.findOne({
       _id: astrologerId,
       isVerified: true,
-    }).select("totalChatTime totalVideoTime totalAudioTime "); // fetch all fields
+    }).select("totalChatTime totalVideoTime totalAudioTime");
 
     if (!astrologer) {
       return res.status(404).json({ error: "Astrologer not found" });
     }
 
     res.json({
-
       chat: astrologer.totalChatTime || "00:00",
       video: astrologer.totalVideoTime || "00:00",
       audio: astrologer.totalAudioTime || "00:00",
@@ -114,6 +116,5 @@ router.get("/session/:id", async (req, res) => {
     res.status(500).json({ error: "Server error" });
   }
 });
-
 
 module.exports = router;
