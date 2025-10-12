@@ -188,5 +188,49 @@ router.delete("/:id", async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+router.post("/ai", async (req, res) => {
+  try {
+    const { userId, astrologerId, rate } = req.body;
+
+    // 1️⃣ Fetch user
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    // 2️⃣ Calculate cost for 5 minutes
+    const totalCost = rate * 5;
+
+    // 3️⃣ Check balance
+    if (user.wallet.balance < totalCost) {
+      return res.status(400).json({ message: "Insufficient balance" });
+    }
+
+    // 4️⃣ Deduct from user wallet
+    user.wallet.balance -= totalCost;
+    user.wallet.transactions.push({
+      type: "debit",
+      amount: totalCost,
+      description: `AI Astrologer consultation (first 5 min)`,
+    });
+    await user.save();
+
+    // 5️⃣ Credit admin wallet
+    await creditAdminWallet({
+      amount: totalCost,
+      description: `AI Astrologer consultation payment from ${user.name}`,
+      referenceId: astrologerId,
+    });
+
+    // 6️⃣ Return response
+    res.status(200).json({
+      success: true,
+      message: `₹${totalCost} deducted successfully for AI astrologer consultation.`,
+      newBalance: user.wallet.balance,
+    });
+
+  } catch (err) {
+    console.error("AI Consultation Error:", err);
+    res.status(500).json({ error: "Failed to process AI consultation payment" });
+  }
+});
 
 module.exports = router;

@@ -16,10 +16,7 @@ export default function UserAIConsultancy() {
         );
 
         // Filter only AI astrologers
-        const aiOnly = response.data.astrologers?.filter(
-          (a) => a.isAI === true
-        );
-
+        const aiOnly = response.data.astrologers?.filter((a) => a.isAI === true);
         setAiAstrologers(aiOnly || []);
       } catch (error) {
         console.error("Error fetching AI astrologers:", error);
@@ -43,24 +40,21 @@ export default function UserAIConsultancy() {
       }
 
       const userId = userData.id;
-      const userName = userData.name;
       const rate = 2; // ₹2/min for AI chat
-      const mode = "AI Chat";
-      const topic = "AI Prediction";
 
+      // 🔹 Call the new AI route that only deducts and credits
       const res = await axios.post(
-        "https://bhavanaastro.onrender.com/api/consultations",
+        "https://bhavanaastro.onrender.com/api/consultations/ai",
         {
           userId,
-          userName,
           astrologerId: astrologer._id,
-          topic,
-          mode,
           rate,
         }
       );
 
-      navigate(`/astrochat/${res.data._id}`);
+      alert(res.data.message || "₹10 deducted for AI consultation.");
+      navigate(`/astrochat/ai/${astrologer._id}`); // go to AI chat page
+
     } catch (error) {
       if (error.response?.data?.message === "Insufficient balance") {
         alert("You need at least ₹10 in your wallet to start an AI chat.");
