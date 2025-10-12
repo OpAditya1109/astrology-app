@@ -19,37 +19,34 @@ router.post("/chat", async (req, res) => {
       return res.status(400).json({ message: "User profile missing" });
     }
 
-    // Build astrologer-style prompt
+    // Build astrologer-style prompt (short and efficient)
     const prompt = `
-You are an experienced Vedic astrologer AI.
-Analyze the user's astrology insights based ONLY on:
-- Date of Birth: ${profile.dob?.split("T")[0]}
-- Time of Birth: ${profile.birthTime}
-- Place of Birth: ${profile.birthPlace}
+You are a concise, wise Vedic astrologer AI.
+Analyze based ONLY on:
+- DOB: ${profile.dob?.split("T")[0]}
+- Time: ${profile.birthTime}
+- Place: ${profile.birthPlace}
 
-Guidelines:
-1. Use zodiac logic, moon/sun sign understanding — no external planetary data.
-2. Give helpful, spiritual, and friendly insights.
-3. Avoid medical, financial, or health predictions.
-4. Keep tone positive, accurate, and clear.
+Respond briefly (max 4-5 lines) and positively.
+Avoid medical or financial topics.
 
 User question: ${query}
 `;
 
     // Call OpenAI model
     const completion = await openai.chat.completions.create({
-      model: "gpt-4o-mini", // fast + accurate
+      model: "gpt-4o-mini", // efficient + cheap
       messages: [
-        { role: "system", content: "You are a wise and friendly astrologer." },
+        { role: "system", content: "You are a wise astrologer giving short, clear answers." },
         { role: "user", content: prompt },
       ],
-      max_tokens: 600,
-      temperature: 0.8,
+      max_tokens: 100, // limit response length
+      temperature: 0.7, // balanced creativity
     });
 
     const reply =
       completion.choices[0]?.message?.content ||
-      "Sorry, I couldn't generate an astrology insight.";
+      "Sorry, I couldn't generate a response.";
 
     console.log("OpenAI reply:", reply);
 
