@@ -196,15 +196,24 @@ router.post("/ai", async (req, res) => {
     const user = await User.findById(userId);
     if (!user) return res.status(404).json({ message: "User not found" });
 
-    // 2️⃣ Calculate cost for 5 minutes
+    // 2️⃣ Fetch astrologer
+    const astrologer = await Astrologer.findById(astrologerId);
+    if (!astrologer) return res.status(404).json({ message: "Astrologer not found" });
+
+    // 3️⃣ Store astrologer image in session (frontend can use this)
+    // Assuming you are using Express session or some way to send back session info
+    // You can also return it in the API response
+    const astrologerPhoto = astrologer.photo || "/default-astro.png";
+
+    // 4️⃣ Calculate cost for 5 minutes
     const totalCost = rate * 5;
 
-    // 3️⃣ Check balance
+    // 5️⃣ Check balance
     if (user.wallet.balance < totalCost) {
-      return res.status(400).json({ message: "Insufficient balance" });
+      return res.status(400).json({ message: "Insufficient balance", astrologerPhoto });
     }
 
-    // 4️⃣ Deduct from user wallet
+    // 6️⃣ Deduct from user wallet
     user.wallet.balance -= totalCost;
     user.wallet.transactions.push({
       type: "debit",
@@ -213,18 +222,19 @@ router.post("/ai", async (req, res) => {
     });
     await user.save();
 
-    // 5️⃣ Credit admin wallet
+    // 7️⃣ Credit admin wallet
     await creditAdminWallet({
       amount: totalCost,
       description: `AI Astrologer consultation payment from ${user.name}`,
       referenceId: astrologerId,
     });
 
-    // 6️⃣ Return response
+    // 8️⃣ Return response with astrologer photo
     res.status(200).json({
       success: true,
       message: `₹${totalCost} deducted successfully for AI astrologer consultation.`,
       newBalance: user.wallet.balance,
+      astrologerPhoto,
     });
 
   } catch (err) {
@@ -232,6 +242,7 @@ router.post("/ai", async (req, res) => {
     res.status(500).json({ error: "Failed to process AI consultation payment" });
   }
 });
+
 
 // POST /api/wallet/deduct
 router.post("/deduct", async (req, res) => {

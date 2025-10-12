@@ -32,41 +32,46 @@ setAiAstrologers(aiOnly || []);
   }, []);
 
   // 🌟 Helper function to start AI chat
-  const handleStartChat = async (astrologer) => {
-    try {
-      const userData = JSON.parse(sessionStorage.getItem("user"));
+const handleStartChat = async (astrologer) => {
+  try {
+    const userData = JSON.parse(sessionStorage.getItem("user"));
 
-      if (!userData) {
-        alert("Please login to start a consultation.");
-        navigate("/login");
-        return;
-      }
-
-      const userId = userData.id;
-      const rate = 2; // ₹2/min for AI chat
-
-      // 🔹 Call the new AI route that only deducts and credits
-      const res = await axios.post(
-        "https://bhavanaastro.onrender.com/api/consultations/ai",
-        {
-          userId,
-          astrologerId: astrologer._id,
-          rate,
-        }
-      );
-
-      alert(res.data.message || "₹10 deducted for AI consultation.");
-      navigate(`/astrochat/ai/${astrologer._id}`); // go to AI chat page
-
-    } catch (error) {
-      if (error.response?.data?.message === "Insufficient balance") {
-        alert("You need at least ₹10 in your wallet to start an AI chat.");
-      } else {
-        console.error("Error starting AI consultation:", error);
-        alert("Unable to start consultation. Please try again.");
-      }
+    if (!userData) {
+      alert("Please login to start a consultation.");
+      navigate("/login");
+      return;
     }
-  };
+
+    const userId = userData.id;
+    const rate = 2; // ₹2/min for AI chat
+
+    // 🔹 Call the new AI route that deducts and credits
+    const res = await axios.post(
+      "https://bhavanaastro.onrender.com/api/consultations/ai",
+      {
+        userId,
+        astrologerId: astrologer._id,
+        rate,
+      }
+    );
+
+    // 🔹 Store the astrologer photo in sessionStorage
+    if (res.data.astrologerPhoto) {
+      sessionStorage.setItem("astrologerPhoto", res.data.astrologerPhoto);
+    }
+
+    alert(res.data.message || "₹10 deducted for AI consultation.");
+    navigate(`/astrochat/ai/${astrologer._id}`); // go to AI chat page
+
+  } catch (error) {
+    if (error.response?.data?.message === "Insufficient balance") {
+      alert("You need at least ₹10 in your wallet to start an AI chat.");
+    } else {
+      console.error("Error starting AI consultation:", error);
+      alert("Unable to start consultation. Please try again.");
+    }
+  }
+};
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-purple-50 to-white p-8">
