@@ -99,7 +99,7 @@ function App() {
           {/* <Route path="/ai-consultation" element={<AIConsultation />} /> */}
           <Route path="/match-making" element={<MatchMakingForm />} />
           <Route path="/wallet-success" element={<WalletSuccess />} />
-          <Route path="/astrochat" element={<Astrochat />} />
+          <Route path="/astrochat/ai/:astrologerId" element={<Astrochat />} />
           <Route path="/aboutus" element={<Aboutus />} />
           <Route path="/Horoscopes" element={<DailyHoroscopes />} />
           <Route path="/refund-cancellation" element={<RefundCancellation />} />
