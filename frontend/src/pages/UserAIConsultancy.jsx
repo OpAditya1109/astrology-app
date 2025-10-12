@@ -11,13 +11,16 @@ export default function UserAIConsultancy() {
     const fetchAstrologers = async () => {
       setLoading(true);
       try {
-        const response = await axios.get(
-          "https://bhavanaastro.onrender.com/api/Consult-astrologers"
-        );
+      const response = await axios.get(
+  "https://bhavanaastro.onrender.com/api/Consult-astrologers?isAI=true&limit=100"
+);
 
-        // Filter only AI astrologers
-        const aiOnly = response.data.astrologers?.filter((a) => a.isAI === true);
-        setAiAstrologers(aiOnly || []);
+const aiOnly = response.data.astrologers?.filter(
+  a => a.isAI === true || a.isAI === "true"
+);
+
+setAiAstrologers(aiOnly || []);
+
       } catch (error) {
         console.error("Error fetching AI astrologers:", error);
       } finally {
