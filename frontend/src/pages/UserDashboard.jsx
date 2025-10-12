@@ -62,21 +62,25 @@ export default function UserDashboard() {
   ];
 
   // ✅ Fetch real astrologers and AI astrologers separately
-  useEffect(() => {
-    const fetchAstrologers = async () => {
-      try {
-        const [realRes, aiRes] = await Promise.all([
-          axios.get("https://bhavanaastro.onrender.com/api/Consult-astrologers?limit=10"),
-          axios.get("https://bhavanaastro.onrender.com/api/Consult-astrologers?isAI=true"),
-        ]);
-        setAstrologers(realRes.data.astrologers || []);
-        setAiAstrologers(aiRes.data.astrologers || []);
-      } catch (error) {
-        console.error("Error fetching astrologers:", error);
-      }
-    };
-    fetchAstrologers();
-  }, []);
+  // ✅ Fetch real astrologers and AI astrologers separately
+ useEffect(() => {
+  const fetchAstrologers = async () => {
+    try {
+      const res = await axios.get("https://bhavanaastro.onrender.com/api/Consult-astrologers?limit=20");
+      const allAstrologers = res.data.astrologers || [];
+
+      // Separate based on isAI flag
+      const real = allAstrologers.filter((a) => !a.isAI);
+      const ai = allAstrologers.filter((a) => a.isAI);
+
+      setAstrologers(real);
+      setAiAstrologers(ai);
+    } catch (error) {
+      console.error("Error fetching astrologers:", error);
+    }
+  };
+  fetchAstrologers();
+}, []);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -91,84 +95,86 @@ export default function UserDashboard() {
           check horoscopes, shop astrology products, explore courses, and manage your wallet.
         </p>
 
-        {/* 🔮 Human Astrologers Row */}
-        <section className="max-w-7xl mx-auto px-6 py-8">
-          <h2 className="text-2xl font-semibold mb-4 text-gray-900">
-            Our Astrologers
-          </h2>
-          <div className="flex overflow-x-auto space-x-6 pb-4 scrollbar-hide">
-            {astrologers.length > 0 ? (
-              astrologers.map((astro) => (
-                <div
-                  key={astro._id}
-                  className="min-w-[220px] bg-white rounded-xl shadow-md p-4 flex-shrink-0 text-center border hover:shadow-lg transition"
-                >
-                  <img
-                    src={astro.photo || "/default-astrologer.png"}
-                    alt={astro.name}
-                    className="w-24 h-24 rounded-full object-cover mx-auto mb-3"
-                  />
-                  <h3 className="text-lg font-semibold text-gray-800">
-                    {astro.name}
-                  </h3>
-                  <p className="text-sm text-gray-500">{astro.experience} yrs exp</p>
-                  <p className="text-sm text-gray-600">
-                    {astro.languagesKnown?.join(", ")}
-                  </p>
-                  <p className="text-xs text-gray-500">{astro.city}, {astro.country}</p>
-                  <Link
-                    to={`/astrologer/${astro._id}`}
-                    className="mt-3 inline-block px-4 py-2 bg-purple-600 text-white text-sm rounded-lg hover:bg-purple-700"
-                  >
-                    Chat Now
-                  </Link>
-                </div>
-              ))
-            ) : (
-              <p className="text-gray-500">No astrologers available right now.</p>
-            )}
-          </div>
-        </section>
+ {/* 🧑‍🪄 Real Astrologers */}
+<section className="max-w-7xl mx-auto px-6 py-8">
+  <h2 className="text-2xl font-semibold mb-4 text-gray-900">
+    Our Astrologers
+  </h2>
+  <div className="flex overflow-x-auto space-x-6 pb-4 scrollbar-hide">
+    {astrologers.length > 0 ? (
+      astrologers.map((astro) => (
+        <div
+          key={astro._id}
+          className="min-w-[220px] bg-white rounded-xl shadow-md p-4 flex-shrink-0 text-center border hover:shadow-lg transition"
+        >
+          <img
+            src={astro.photo || "/default-astrologer.png"}
+            alt={astro.name}
+            className="w-24 h-24 rounded-full object-cover mx-auto mb-3"
+          />
+          <h3 className="text-lg font-semibold text-gray-800">
+            {astro.name}
+          </h3>
+          <p className="text-sm text-gray-500">{astro.experience} yrs exp</p>
+          <p className="text-sm text-gray-600">
+            {astro.languagesKnown?.join(", ")}
+          </p>
+          <p className="text-xs text-gray-500">
+            {astro.city}, {astro.country}
+          </p>
+          <Link
+            to={`/astrologer/${astro._id}`}
+            className="mt-3 inline-block px-4 py-2 bg-purple-600 text-white text-sm rounded-lg hover:bg-purple-700"
+          >
+            Chat Now
+          </Link>
+        </div>
+      ))
+    ) : (
+      <p className="text-gray-500">No astrologers available right now.</p>
+    )}
+  </div>
+</section>
 
-        {/* 🤖 AI Astrologers Row */}
-        <section className="max-w-7xl mx-auto px-6 py-8">
-          <h2 className="text-2xl font-semibold mb-4 text-purple-700">
-            AI Astrologers
-          </h2>
-          <div className="flex overflow-x-auto space-x-6 pb-4 scrollbar-hide">
-            {aiAstrologers.length > 0 ? (
-              aiAstrologers.map((astro) => (
-                <div
-                  key={astro._id}
-                  className="min-w-[220px] bg-gradient-to-br from-purple-50 to-white rounded-xl shadow-md p-4 flex-shrink-0 text-center border hover:shadow-xl transition"
-                >
-                  <img
-                    src={astro.photo || "/ai.png"}
-                    alt={astro.name}
-                    className="w-24 h-24 rounded-full object-cover mx-auto mb-3"
-                  />
-                  <h3 className="text-lg font-semibold text-purple-800">
-                    {astro.name}
-                  </h3>
-                  <p className="text-sm text-gray-500">
-                    {astro.systemsKnown?.join(", ") || "AI Astrological Model"}
-                  </p>
-                  <p className="text-sm text-gray-600">
-                    {astro.languagesKnown?.join(", ")}
-                  </p>
-                  <Link
-                    to="/ai-consultancy"
-                    className="mt-3 inline-block px-4 py-2 bg-purple-600 text-white text-sm rounded-lg hover:bg-purple-700"
-                  >
-                    Chat with AI
-                  </Link>
-                </div>
-              ))
-            ) : (
-              <p className="text-gray-500">AI astrologer not available right now.</p>
-            )}
-          </div>
-        </section>
+{/* 🤖 AI Astrologers */}
+<section className="max-w-7xl mx-auto px-6 py-8">
+  <h2 className="text-2xl font-semibold mb-4 text-purple-700">
+    AI Astrologers
+  </h2>
+  <div className="flex overflow-x-auto space-x-6 pb-4 scrollbar-hide">
+    {aiAstrologers.length > 0 ? (
+      aiAstrologers.map((astro) => (
+        <div
+          key={astro._id}
+          className="min-w-[220px] bg-gradient-to-br from-purple-50 to-white rounded-xl shadow-md p-4 flex-shrink-0 text-center border hover:shadow-xl transition"
+        >
+          <img
+            src={astro.photo || "/ai.png"}
+            alt={astro.name}
+            className="w-24 h-24 rounded-full object-cover mx-auto mb-3"
+          />
+          <h3 className="text-lg font-semibold text-purple-800">
+            {astro.name}
+          </h3>
+          <p className="text-sm text-gray-500">
+            {astro.systemsKnown?.join(", ") || "AI Astrological Model"}
+          </p>
+          <p className="text-sm text-gray-600">
+            {astro.languagesKnown?.join(", ")}
+          </p>
+          <Link
+            to="/ai-consultancy"
+            className="mt-3 inline-block px-4 py-2 bg-purple-600 text-white text-sm rounded-lg hover:bg-purple-700"
+          >
+            Chat with AI
+          </Link>
+        </div>
+      ))
+    ) : (
+      <p className="text-gray-500">AI astrologer not available right now.</p>
+    )}
+  </div>
+</section>
 
         {/* 📦 Dashboard Services */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-8">
