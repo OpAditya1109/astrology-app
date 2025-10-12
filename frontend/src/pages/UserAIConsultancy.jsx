@@ -106,12 +106,45 @@ export default function UserAIConsultancy() {
 </div>
 
               {/* View Profile Button */}
-              <button
-                onClick={() => navigate(`/ai-astrologer/${astrologer._id}`)}
-                className="mt-auto px-6 py-2 bg-purple-600 text-white font-semibold rounded-xl hover:bg-purple-700 transition"
-              >
-                Start Chat
-              </button>
+             {/* View Profile / Start Chat Button */}
+<button
+  onClick={async () => {
+    try {
+      const userId = localStorage.getItem("userId"); // or your logged-in user context
+      const userName = localStorage.getItem("userName"); // optional
+      const rate = 2; // ₹2 per min for AI
+      const mode = "AI Chat";
+      const topic = "AI Prediction";
+
+      // Create a consultation
+      const res = await axios.post(
+        "https://bhavanaastro.onrender.com/api/consultations",
+        {
+          userId,
+          userName,
+          astrologerId: astrologer._id,
+          topic,
+          mode,
+          rate,
+        }
+      );
+
+      // Redirect to chat page (already existing)
+      navigate(`/astrochat/${res.data._id}`);
+    } catch (error) {
+      if (error.response?.data?.message === "Insufficient balance") {
+        alert("You need at least ₹10 in your wallet to start an AI chat.");
+      } else {
+        console.error("Error starting AI consultation:", error);
+        alert("Unable to start consultation. Please try again.");
+      }
+    }
+  }}
+  className="mt-auto px-6 py-2 bg-purple-600 text-white font-semibold rounded-xl hover:bg-purple-700 transition"
+>
+  Start Chat
+</button>
+
             </div>
           ))}
         </div>
