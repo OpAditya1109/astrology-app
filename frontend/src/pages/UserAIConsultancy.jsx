@@ -31,6 +31,46 @@ export default function UserAIConsultancy() {
     fetchAstrologers();
   }, []);
 
+  // 🌟 Helper function to start AI chat
+  const handleStartChat = async (astrologer) => {
+    try {
+      const userData = JSON.parse(sessionStorage.getItem("user"));
+
+      if (!userData) {
+        alert("Please login to start a consultation.");
+        navigate("/login");
+        return;
+      }
+
+      const userId = userData.id;
+      const userName = userData.name;
+      const rate = 2; // ₹2/min for AI chat
+      const mode = "AI Chat";
+      const topic = "AI Prediction";
+
+      const res = await axios.post(
+        "https://bhavanaastro.onrender.com/api/consultations",
+        {
+          userId,
+          userName,
+          astrologerId: astrologer._id,
+          topic,
+          mode,
+          rate,
+        }
+      );
+
+      navigate(`/astrochat/${res.data._id}`);
+    } catch (error) {
+      if (error.response?.data?.message === "Insufficient balance") {
+        alert("You need at least ₹10 in your wallet to start an AI chat.");
+      } else {
+        console.error("Error starting AI consultation:", error);
+        alert("Unable to start consultation. Please try again.");
+      }
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-purple-50 to-white p-8">
       <h2 className="text-4xl font-bold mb-10 text-purple-700 text-center">
@@ -94,57 +134,28 @@ export default function UserAIConsultancy() {
                 {astrologer.categories?.join(", ") || "General Predictions"}
               </p>
 
-             {/* Rates */}
-<div className="flex flex-col items-center mb-4">
-  <div className="flex items-center gap-2">
-    <span className="text-gray-400 line-through text-sm">₹20/min</span>
-    <span className="text-purple-700 font-semibold text-lg">₹2/min</span>
-  </div>
-  <span className="mt-1 px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-sm font-medium">
-    🤖 AI Chat — Special Offer
-  </span>
-</div>
+              {/* Rates */}
+              <div className="flex flex-col items-center mb-4">
+                <div className="flex items-center gap-2">
+                  <span className="text-gray-400 line-through text-sm">
+                    ₹20/min
+                  </span>
+                  <span className="text-purple-700 font-semibold text-lg">
+                    ₹2/min
+                  </span>
+                </div>
+                <span className="mt-1 px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-sm font-medium">
+                  🤖 AI Chat — Special Offer
+                </span>
+              </div>
 
-              {/* View Profile Button */}
-             {/* View Profile / Start Chat Button */}
-<button
-  onClick={async () => {
-    try {
-  const userId = sessionStorage.getItem("userId");
-const userName = sessionStorage.getItem("userName");
-      const rate = 2; // ₹2 per min for AI
-      const mode = "AI Chat";
-      const topic = "AI Prediction";
-
-      // Create a consultation
-      const res = await axios.post(
-        "https://bhavanaastro.onrender.com/api/consultations",
-        {
-          userId,
-          userName,
-          astrologerId: astrologer._id,
-          topic,
-          mode,
-          rate,
-        }
-      );
-
-      // Redirect to chat page (already existing)
-      navigate(`/astrochat/${res.data._id}`);
-    } catch (error) {
-      if (error.response?.data?.message === "Insufficient balance") {
-        alert("You need at least ₹10 in your wallet to start an AI chat.");
-      } else {
-        console.error("Error starting AI consultation:", error);
-        alert("Unable to start consultation. Please try again.");
-      }
-    }
-  }}
-  className="mt-auto px-6 py-2 bg-purple-600 text-white font-semibold rounded-xl hover:bg-purple-700 transition"
->
-  Start Chat
-</button>
-
+              {/* Start Chat Button */}
+              <button
+                onClick={() => handleStartChat(astrologer)}
+                className="mt-auto px-6 py-2 bg-purple-600 text-white font-semibold rounded-xl hover:bg-purple-700 transition"
+              >
+                Start Chat
+              </button>
             </div>
           ))}
         </div>
