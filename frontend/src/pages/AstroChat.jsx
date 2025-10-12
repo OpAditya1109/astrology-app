@@ -14,8 +14,14 @@ export default function AstroChat() {
   const [screenProtected, setScreenProtected] = useState(false);
   const [astrologerPhoto, setAstrologerPhoto] = useState("/default-astro.png");
 
+  const astroPhotoRef = useRef(astrologerPhoto);
   const chatEndRef = useRef(null);
   const navigate = useNavigate();
+
+  // Keep astroPhotoRef updated
+  useEffect(() => {
+    astroPhotoRef.current = astrologerPhoto;
+  }, [astrologerPhoto]);
 
   // Scroll to bottom
   useEffect(() => {
@@ -28,7 +34,7 @@ export default function AstroChat() {
       let i = 0;
       setMessages((prev) => [
         ...prev,
-        { sender: "bot", text: "", photo: astrologerPhoto },
+        { sender: "bot", text: "", photo: astroPhotoRef.current },
       ]);
       const interval = setInterval(() => {
         setMessages((prev) => {
@@ -57,7 +63,10 @@ export default function AstroChat() {
       return;
     }
 
-    if (storedAstroPhoto) setAstrologerPhoto(storedAstroPhoto);
+    if (storedAstroPhoto) {
+      setAstrologerPhoto(storedAstroPhoto);
+      astroPhotoRef.current = storedAstroPhoto;
+    }
 
     const parsedUser = JSON.parse(storedUser);
     setUserProfile(parsedUser);
@@ -122,7 +131,7 @@ What would you like to ask today? 🌟`;
       console.error(err);
       setMessages((prev) => [
         ...prev,
-        { sender: "bot", text: "⚠️ Error contacting astrologer.", photo: astrologerPhoto },
+        { sender: "bot", text: "⚠️ Error contacting astrologer.", photo: astroPhotoRef.current },
       ]);
     } finally {
       setLoading(false);
@@ -189,7 +198,7 @@ What would you like to ask today? 🌟`;
           >
             {msg.sender === "bot" && (
               <img
-                src={msg.photo || astrologerPhoto}
+                src={msg.photo || astroPhotoRef.current}
                 alt="Astrologer"
                 className="w-8 h-8 rounded-full object-cover"
               />
@@ -208,7 +217,7 @@ What would you like to ask today? 🌟`;
         {loading && (
           <div className="self-start text-gray-400 animate-pulse flex items-center gap-2">
             <img
-              src={astrologerPhoto}
+              src={astroPhotoRef.current}
               alt="Astrologer"
               className="w-8 h-8 rounded-full object-cover"
             />
