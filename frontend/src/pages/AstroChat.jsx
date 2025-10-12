@@ -6,11 +6,12 @@ export default function AstroChat() {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [userProfile, setUserProfile] = useState(null);
-  const [timer, setTimer] = useState(300); // 5 mins
+  const [timer, setTimer] = useState(300);
   const [showExtendPopup, setShowExtendPopup] = useState(false);
   const [extendMinutes, setExtendMinutes] = useState(1);
-  const [loading, setLoading] = useState(false); // AI thinking
+  const [loading, setLoading] = useState(false);
   const [tenSecondMessageSent, setTenSecondMessageSent] = useState(false);
+  const [screenProtected, setScreenProtected] = useState(false);
   const chatEndRef = useRef(null);
   const navigate = useNavigate();
 
@@ -23,7 +24,7 @@ export default function AstroChat() {
   const typeMessage = (text, delay = 80) => {
     return new Promise((resolve) => {
       let i = 0;
-      setMessages((prev) => [...prev, { sender: "bot", text: "" }]);
+      setMessages((prev) => [...prev, { sender: "bot", text: "", photo: userProfile?.kundaliUrl }]);
       const interval = setInterval(() => {
         setMessages((prev) => {
           const newPrev = [...prev];
@@ -40,7 +41,7 @@ export default function AstroChat() {
     });
   };
 
-  // Fetch user profile and show initial messages
+  // Fetch user profile and initial messages
   useEffect(() => {
     const storedUser = sessionStorage.getItem("user");
     if (!storedUser) {
@@ -50,7 +51,6 @@ export default function AstroChat() {
     }
     const parsedUser = JSON.parse(storedUser);
     setUserProfile(parsedUser);
-
     const userName = parsedUser.name || "User";
 
     const introText = `👋 Namaste ${userName}! Welcome to AstroBhavana.
@@ -81,7 +81,6 @@ What would you like to ask today? 🌟`;
       return;
     }
 
-    // Send AI nudge at 10 seconds
     if (timer <= 10 && !tenSecondMessageSent && userProfile) {
       typeMessage(
         `✨ ${userProfile.name}, something important is about to happen in your life! Let's chat again to explore what the stars have in store for you. 🌟`
@@ -97,7 +96,6 @@ What would you like to ask today? 🌟`;
   // Send chat message
   const sendMessage = async () => {
     if (!input.trim() || !userProfile) return;
-
     const userMessage = { sender: "user", text: input };
     setMessages((prev) => [...prev, userMessage]);
     setInput("");
@@ -109,13 +107,12 @@ What would you like to ask today? 🌟`;
         { query: input, profile: userProfile },
         { headers: { Authorization: `Bearer ${userProfile.token}` } }
       );
-
       await typeMessage(res.data.reply);
     } catch (err) {
       console.error(err);
       setMessages((prev) => [
         ...prev,
-        { sender: "bot", text: "⚠️ Error contacting astrologer." },
+        { sender: "bot", text: "⚠️ Error contacting astrologer.", photo: userProfile?.kundaliUrl },
       ]);
     } finally {
       setLoading(false);
@@ -125,13 +122,11 @@ What would you like to ask today? 🌟`;
   // Extend chat
   const handleExtendChat = async () => {
     if (!userProfile) return;
-
     try {
       const res = await axios.post(
         "https://bhavanaastro.onrender.com/api/consultations/deduct",
         { userId: userProfile.id, minutes: extendMinutes }
       );
-
       if (res.data.success) {
         setTimer((prev) => prev + extendMinutes * 60);
         alert(res.data.message || "Chat extended successfully!");
@@ -149,58 +144,98 @@ What would you like to ask today? 🌟`;
   const handleKeyPress = (e) => {
     if (e.key === "Enter") sendMessage();
   };
+
   const handleEndChat = () => navigate("/user/dashboard");
 
-  return (
-    <div className="w-[400px] mx-auto mt-6 border border-gray-300 rounded-xl p-4 flex flex-col bg-white shadow-lg">
-      {/* Timer & End Chat at top */}
-      <div className="flex justify-between items-center mb-3">
-        <span className="text-sm text-gray-500 font-medium">
-          ⏱ {Math.floor(timer / 60)}:{(timer % 60).toString().padStart(2, "0")}
-        </span>
-        <button
-          className="px-3 py-1 text-sm rounded bg-red-500 text-white hover:bg-red-600 transition"
-          onClick={handleEndChat}
-        >
-          End Chat
-        </button>
-      </div>
+  // Screenshot / tab switch protection
+  useEffect(() => {
+    const protectScreen = () => setScreenProtected(true);
+    const unprotectScreen = () => setScreenProtected(false);
 
+    document.addEventListener("visibilitychange", () => {
+      if (document.hidden) protectScreen();
+      else unprotectScreen();
+    });
+
+    window.addEventListener("blur", protectScreen);
+    window.addEventListener("focus", unprotectScreen);
+
+    return () => {
+      window.removeEventListener("blur", protectScreen);
+      window.removeEventListener("focus", unprotectScreen);
+    };
+  }, []);
+
+  return (
+    <div className="w-[400px] mx-auto mt-6 flex flex-col h-[600px] relative border border-gray-300 rounded-xl bg-white shadow-lg">
       {/* Chat messages */}
-      <div className="flex-1 flex flex-col gap-3 p-3 max-h-[450px] overflow-y-auto bg-gray-50 rounded-lg">
+      <div className="flex-1 flex flex-col gap-3 p-3 overflow-y-auto bg-gray-50 rounded-t-lg">
         {messages.map((msg, i) => (
           <div
             key={i}
-            className={`px-4 py-2 rounded-lg max-w-[75%] break-words ${
-              msg.sender === "user"
-                ? "bg-blue-100 self-end text-right"
-                : "bg-gray-200 self-start text-left"
+            className={`flex items-start gap-2 ${
+              msg.sender === "user" ? "justify-end" : "justify-start"
             }`}
           >
-            {msg.text}
+            {msg.sender === "bot" && (
+              <img
+                src={msg.photo || "/default-astro.png"}
+                alt="Astrologer"
+                className="w-8 h-8 rounded-full object-cover"
+              />
+            )}
+            <div
+              className={`px-4 py-2 rounded-lg max-w-[75%] break-words ${
+                msg.sender === "user"
+                  ? "bg-blue-100 text-right"
+                  : "bg-gray-200 text-left"
+              }`}
+            >
+              {msg.text}
+            </div>
           </div>
         ))}
         {loading && (
-          <div className="self-start text-gray-400 animate-pulse">🤖 Thinking...</div>
+          <div className="self-start text-gray-400 animate-pulse flex items-center gap-2">
+            <img
+              src={userProfile?.kundaliUrl || "/default-astro.png"}
+              alt="Astrologer"
+              className="w-8 h-8 rounded-full object-cover"
+            />
+            🤖 Thinking...
+          </div>
         )}
         <div ref={chatEndRef} />
       </div>
 
-      {/* Input */}
-      <div className="flex mt-3">
-        <input
-          className="flex-1 px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={handleKeyPress}
-          placeholder="Ask about your stars..."
-        />
-        <button
-          onClick={sendMessage}
-          className="ml-2 px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition"
-        >
-          Send
-        </button>
+      {/* Input + Timer + End button */}
+      <div className="p-3 border-t border-gray-300 flex flex-col gap-2">
+        <div className="flex gap-2">
+          <input
+            className="flex-1 px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={handleKeyPress}
+            placeholder="Ask about your stars..."
+          />
+          <button
+            onClick={sendMessage}
+            className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition"
+          >
+            Send
+          </button>
+        </div>
+        <div className="flex justify-between items-center mt-1">
+          <span className="text-sm text-gray-500 font-medium">
+            ⏱ {Math.floor(timer / 60)}:{(timer % 60).toString().padStart(2, "0")}
+          </span>
+          <button
+            className="px-3 py-1 text-sm rounded bg-red-500 text-white hover:bg-red-600 transition"
+            onClick={handleEndChat}
+          >
+            End Chat
+          </button>
+        </div>
       </div>
 
       {/* Extend Popup */}
@@ -234,6 +269,13 @@ What would you like to ask today? 🌟`;
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Screenshot protection overlay */}
+      {screenProtected && (
+        <div className="absolute inset-0 bg-black z-50 flex items-center justify-center text-white text-xl">
+          Screenshot Protected
         </div>
       )}
     </div>
