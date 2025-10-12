@@ -110,8 +110,8 @@ export default function UserAIConsultancy() {
 <button
   onClick={async () => {
     try {
-      const userId = localStorage.getItem("userId"); // or your logged-in user context
-      const userName = localStorage.getItem("userName"); // optional
+  const userId = sessionStorage.getItem("userId");
+const userName = sessionStorage.getItem("userName");
       const rate = 2; // ₹2 per min for AI
       const mode = "AI Chat";
       const topic = "AI Prediction";
