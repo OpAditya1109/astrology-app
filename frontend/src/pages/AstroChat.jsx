@@ -18,7 +18,30 @@ export default function AstroChat() {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, loading]);
 
-  // Fetch user profile
+  // Animate bot message character by character
+  const typeMessage = (text, delay = 20) => {
+    return new Promise((resolve) => {
+      let i = 0;
+      const interval = setInterval(() => {
+        setMessages((prev) => {
+          const lastMsg = prev[prev.length - 1];
+          if (!lastMsg || lastMsg.sender !== "bot" || lastMsg.text.length >= text.length) {
+            return [...prev, { sender: "bot", text: text.slice(0, i + 1) }];
+          }
+          const newPrev = [...prev];
+          newPrev[newPrev.length - 1].text = text.slice(0, i + 1);
+          return newPrev;
+        });
+        i++;
+        if (i === text.length) {
+          clearInterval(interval);
+          resolve();
+        }
+      }, delay);
+    });
+  };
+
+  // Fetch user profile and show initial messages
   useEffect(() => {
     const storedUser = sessionStorage.getItem("user");
     if (!storedUser) {
@@ -29,24 +52,24 @@ export default function AstroChat() {
     const parsedUser = JSON.parse(storedUser);
     setUserProfile(parsedUser);
 
-    // First message: greeting, intro, prompt
-    setMessages([
-      {
-        sender: "bot",
-        text: `👋 Namaste ${parsedUser.firstName || "User"}! Welcome to AstroBhavana.\n\nI am your personal astrologer AI. I provide guidance based on Vedic astrology, focusing on your strengths, opportunities, and life insights.\n\nWhat would you like to ask today? 🌟`,
-      },
-    ]);
+    const introText = `👋 Namaste ${parsedUser.firstName || "User"}! Welcome to AstroBhavana.
 
-    // Second message: birth details
-    setTimeout(() => {
-      setMessages(prev => [
-        ...prev,
-        {
-          sender: "bot",
-          text: `Here are your birth details I have on record:\n- DOB: ${parsedUser.dob?.split("T")[0]}\n- Birth Time: ${parsedUser.birthTime}\n- Birth Place: ${parsedUser.birthPlace}`,
-        },
-      ]);
-    }, 800); // slight delay to simulate chat flow
+I am your personal astrologer AI. I provide guidance based on Vedic astrology, focusing on your strengths, opportunities, and life insights.
+
+What would you like to ask today? 🌟`;
+
+    const birthDetails = `Here are your birth details I have on record:
+- DOB: ${parsedUser.dob?.split("T")[0]}
+- Birth Time: ${parsedUser.birthTime}
+- Birth Place: ${parsedUser.birthPlace}`;
+
+    const animateMessages = async () => {
+      await typeMessage(introText);
+      await new Promise((r) => setTimeout(r, 500));
+      await typeMessage(birthDetails);
+    };
+
+    animateMessages();
   }, [navigate]);
 
   // Timer
@@ -57,7 +80,7 @@ export default function AstroChat() {
       return;
     }
 
-    const interval = setInterval(() => setTimer(prev => prev - 1), 1000);
+    const interval = setInterval(() => setTimer((prev) => prev - 1), 1000);
     if (timer === 60) setShowExtendPopup(true);
     return () => clearInterval(interval);
   }, [timer, navigate]);
@@ -67,7 +90,7 @@ export default function AstroChat() {
     if (!input.trim() || !userProfile) return;
 
     const userMessage = { sender: "user", text: input };
-    setMessages(prev => [...prev, userMessage]);
+    setMessages((prev) => [...prev, userMessage]);
     setInput("");
     setLoading(true); // AI thinking
 
@@ -78,11 +101,10 @@ export default function AstroChat() {
         { headers: { Authorization: `Bearer ${userProfile.token}` } }
       );
 
-      const botMessage = { sender: "bot", text: res.data.reply };
-      setMessages(prev => [...prev, botMessage]);
+      await typeMessage(res.data.reply); // animate AI reply
     } catch (err) {
       console.error(err);
-      setMessages(prev => [
+      setMessages((prev) => [
         ...prev,
         { sender: "bot", text: "⚠️ Error contacting astrologer." },
       ]);
@@ -102,7 +124,7 @@ export default function AstroChat() {
       );
 
       if (res.data.success) {
-        setTimer(prev => prev + extendMinutes * 60);
+        setTimer((prev) => prev + extendMinutes * 60);
         alert(res.data.message || "Chat extended successfully!");
       } else {
         alert(res.data.message || "Insufficient balance.");
@@ -115,12 +137,13 @@ export default function AstroChat() {
     }
   };
 
-  const handleKeyPress = (e) => { if (e.key === "Enter") sendMessage(); };
+  const handleKeyPress = (e) => {
+    if (e.key === "Enter") sendMessage();
+  };
   const handleEndChat = () => navigate("/user/dashboard");
 
   return (
     <div className="w-[400px] mx-auto mt-6 border border-gray-300 rounded-xl p-4 flex flex-col bg-white shadow-lg">
-      
       {/* Timer & End Chat at top */}
       <div className="flex justify-between items-center mb-3">
         <span className="text-sm text-gray-500 font-medium">
@@ -149,9 +172,7 @@ export default function AstroChat() {
           </div>
         ))}
         {loading && (
-          <div className="self-start text-gray-400 animate-pulse">
-            🤖 Thinking...
-          </div>
+          <div className="self-start text-gray-400 animate-pulse">🤖 Thinking...</div>
         )}
         <div ref={chatEndRef} />
       </div>
