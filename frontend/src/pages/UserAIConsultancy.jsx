@@ -94,12 +94,16 @@ export default function UserAIConsultancy() {
                 {astrologer.categories?.join(", ") || "General Predictions"}
               </p>
 
-              {/* Rates */}
-              <div className="flex gap-3 mb-4 flex-wrap justify-center">
-                <span className="px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-sm font-medium">
-                  🤖 AI Chat — Free
-                </span>
-              </div>
+             {/* Rates */}
+<div className="flex flex-col items-center mb-4">
+  <div className="flex items-center gap-2">
+    <span className="text-gray-400 line-through text-sm">₹20/min</span>
+    <span className="text-purple-700 font-semibold text-lg">₹2/min</span>
+  </div>
+  <span className="mt-1 px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-sm font-medium">
+    🤖 AI Chat — Special Offer
+  </span>
+</div>
 
               {/* View Profile Button */}
               <button
