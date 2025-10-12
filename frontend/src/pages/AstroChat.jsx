@@ -10,6 +10,7 @@ export default function AstroChat() {
   const [showExtendPopup, setShowExtendPopup] = useState(false);
   const [extendMinutes, setExtendMinutes] = useState(1);
   const [loading, setLoading] = useState(false); // AI thinking
+  const [tenSecondMessageSent, setTenSecondMessageSent] = useState(false);
   const chatEndRef = useRef(null);
   const navigate = useNavigate();
 
@@ -22,7 +23,6 @@ export default function AstroChat() {
   const typeMessage = (text, delay = 80) => {
     return new Promise((resolve) => {
       let i = 0;
-      // Add empty bot message first
       setMessages((prev) => [...prev, { sender: "bot", text: "" }]);
       const interval = setInterval(() => {
         setMessages((prev) => {
@@ -51,7 +51,9 @@ export default function AstroChat() {
     const parsedUser = JSON.parse(storedUser);
     setUserProfile(parsedUser);
 
-    const introText = `👋 Namaste ${parsedUser.firstName || "User"}! Welcome to AstroBhavana.
+    const userName = parsedUser.name || "User";
+
+    const introText = `👋 Namaste ${userName}! Welcome to AstroBhavana.
 
 I am your personal astrologer AI. I provide guidance based on Vedic astrology, focusing on your strengths, opportunities, and life insights.
 
@@ -79,10 +81,18 @@ What would you like to ask today? 🌟`;
       return;
     }
 
+    // Send AI nudge at 10 seconds
+    if (timer <= 10 && !tenSecondMessageSent && userProfile) {
+      typeMessage(
+        `✨ ${userProfile.name}, something important is about to happen in your life! Let's chat again to explore what the stars have in store for you. 🌟`
+      );
+      setTenSecondMessageSent(true);
+    }
+
     const interval = setInterval(() => setTimer((prev) => prev - 1), 1000);
     if (timer === 60) setShowExtendPopup(true);
     return () => clearInterval(interval);
-  }, [timer, navigate]);
+  }, [timer, navigate, tenSecondMessageSent, userProfile]);
 
   // Send chat message
   const sendMessage = async () => {
@@ -91,7 +101,7 @@ What would you like to ask today? 🌟`;
     const userMessage = { sender: "user", text: input };
     setMessages((prev) => [...prev, userMessage]);
     setInput("");
-    setLoading(true); // AI thinking
+    setLoading(true);
 
     try {
       const res = await axios.post(
@@ -100,7 +110,7 @@ What would you like to ask today? 🌟`;
         { headers: { Authorization: `Bearer ${userProfile.token}` } }
       );
 
-      await typeMessage(res.data.reply); // animate AI reply
+      await typeMessage(res.data.reply);
     } catch (err) {
       console.error(err);
       setMessages((prev) => [
