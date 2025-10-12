@@ -62,11 +62,12 @@ export default function AstroChat() {
     setInput("");
 
     try {
-      const res = await axios.post(
-        "https://bhavanaastro.onrender.com/api/chatbot/chat",
-        { query: input, userId: userProfile.id },
-        { headers: { Authorization: `Bearer ${userProfile.token}` } }
-      );
+  const res = await axios.post(
+  "https://bhavanaastro.onrender.com/api/chatbot/chat",
+  { query: input, profile: userProfile }, // ✅ send profile, not just userId
+  { headers: { Authorization: `Bearer ${userProfile.token}` } }
+);
+
 
       const botMessage = { sender: "bot", text: res.data.reply };
       setMessages((prev) => [...prev, botMessage]);
