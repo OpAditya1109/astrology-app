@@ -19,17 +19,16 @@ export default function AstroChat() {
   }, [messages, loading]);
 
   // Animate bot message character by character
-  const typeMessage = (text, delay = 20) => {
+  const typeMessage = (text, delay = 50) => {
     return new Promise((resolve) => {
       let i = 0;
+      // Add empty bot message first
+      setMessages((prev) => [...prev, { sender: "bot", text: "" }]);
       const interval = setInterval(() => {
         setMessages((prev) => {
-          const lastMsg = prev[prev.length - 1];
-          if (!lastMsg || lastMsg.sender !== "bot" || lastMsg.text.length >= text.length) {
-            return [...prev, { sender: "bot", text: text.slice(0, i + 1) }];
-          }
           const newPrev = [...prev];
-          newPrev[newPrev.length - 1].text = text.slice(0, i + 1);
+          const lastIndex = newPrev.length - 1;
+          newPrev[lastIndex].text = text.slice(0, i + 1);
           return newPrev;
         });
         i++;
