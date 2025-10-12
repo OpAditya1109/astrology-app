@@ -19,7 +19,7 @@ export default function AstroChat() {
   }, [messages, loading]);
 
   // Animate bot message character by character
-  const typeMessage = (text, delay = 50) => {
+  const typeMessage = (text, delay = 30) => {
     return new Promise((resolve) => {
       let i = 0;
       // Add empty bot message first
