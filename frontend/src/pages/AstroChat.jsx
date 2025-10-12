@@ -185,7 +185,7 @@ What would you like to ask today? 🌟`;
   }, []);
 
   return (
-    <div className="w-[400px] mx-auto mt-16 flex flex-col h-[600px] relative border border-gray-300 rounded-xl bg-white shadow-lg">
+    <div className="w-[400px] mx-auto mt-32 flex flex-col h-[600px] relative border border-gray-300 rounded-xl bg-white shadow-lg">
       {/* Chat messages (scrollable) */}
       <div className="flex-1 p-3 overflow-y-auto flex flex-col gap-3 bg-gray-50 rounded-t-lg">
         {messages.map((msg, i) => (
