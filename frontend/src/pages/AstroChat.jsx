@@ -9,7 +9,7 @@ export default function AstroChat() {
   const [timer, setTimer] = useState(300); // 5 mins
   const [showExtendPopup, setShowExtendPopup] = useState(false);
   const [extendMinutes, setExtendMinutes] = useState(1);
-  const [loading, setLoading] = useState(false); // ✅ AI thinking
+  const [loading, setLoading] = useState(false); // AI thinking
   const chatEndRef = useRef(null);
   const navigate = useNavigate();
 
@@ -28,12 +28,25 @@ export default function AstroChat() {
     }
     const parsedUser = JSON.parse(storedUser);
     setUserProfile(parsedUser);
+
+    // First message: greeting, intro, prompt
     setMessages([
       {
         sender: "bot",
-        text: `👋 Hello! I already have your birth details:\n- DOB: ${parsedUser.dob?.split("T")[0]}\n- Birth Time: ${parsedUser.birthTime}\n- Birth Place: ${parsedUser.birthPlace}`,
+        text: `👋 Namaste ${parsedUser.firstName || "User"}! Welcome to AstroBhavana.\n\nI am your personal astrologer AI. I provide guidance based on Vedic astrology, focusing on your strengths, opportunities, and life insights.\n\nWhat would you like to ask today? 🌟`,
       },
     ]);
+
+    // Second message: birth details
+    setTimeout(() => {
+      setMessages(prev => [
+        ...prev,
+        {
+          sender: "bot",
+          text: `Here are your birth details I have on record:\n- DOB: ${parsedUser.dob?.split("T")[0]}\n- Birth Time: ${parsedUser.birthTime}\n- Birth Place: ${parsedUser.birthPlace}`,
+        },
+      ]);
+    }, 800); // slight delay to simulate chat flow
   }, [navigate]);
 
   // Timer
@@ -56,7 +69,7 @@ export default function AstroChat() {
     const userMessage = { sender: "user", text: input };
     setMessages(prev => [...prev, userMessage]);
     setInput("");
-    setLoading(true); // show AI thinking
+    setLoading(true); // AI thinking
 
     try {
       const res = await axios.post(
@@ -107,12 +120,26 @@ export default function AstroChat() {
 
   return (
     <div className="w-[400px] mx-auto mt-6 border border-gray-300 rounded-xl p-4 flex flex-col bg-white shadow-lg">
+      
+      {/* Timer & End Chat at top */}
+      <div className="flex justify-between items-center mb-3">
+        <span className="text-sm text-gray-500 font-medium">
+          ⏱ {Math.floor(timer / 60)}:{(timer % 60).toString().padStart(2, "0")}
+        </span>
+        <button
+          className="px-3 py-1 text-sm rounded bg-red-500 text-white hover:bg-red-600 transition"
+          onClick={handleEndChat}
+        >
+          End Chat
+        </button>
+      </div>
+
       {/* Chat messages */}
-      <div className="flex-1 flex flex-col gap-2 p-3 max-h-[450px] overflow-y-auto bg-gray-50 rounded-lg">
+      <div className="flex-1 flex flex-col gap-3 p-3 max-h-[450px] overflow-y-auto bg-gray-50 rounded-lg">
         {messages.map((msg, i) => (
           <div
             key={i}
-            className={`px-3 py-2 rounded-lg max-w-[75%] break-words ${
+            className={`px-4 py-2 rounded-lg max-w-[75%] break-words ${
               msg.sender === "user"
                 ? "bg-blue-100 self-end text-right"
                 : "bg-gray-200 self-start text-left"
@@ -127,19 +154,6 @@ export default function AstroChat() {
           </div>
         )}
         <div ref={chatEndRef} />
-      </div>
-
-      {/* Timer & End Chat */}
-      <div className="flex justify-between mt-2 items-center">
-        <span className="text-sm text-gray-500">
-          ⏱ {Math.floor(timer / 60)}:{(timer % 60).toString().padStart(2, "0")}
-        </span>
-        <button
-          className="px-3 py-1 text-sm rounded bg-red-500 text-white hover:bg-red-600 transition"
-          onClick={handleEndChat}
-        >
-          End Chat
-        </button>
       </div>
 
       {/* Input */}
