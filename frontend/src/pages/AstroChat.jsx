@@ -18,9 +18,19 @@ export default function AstroChat() {
   const chatEndRef = useRef(null);
   const navigate = useNavigate();
 
+  // Persist timer in sessionStorage
+  useEffect(() => {
+    const savedTimer = sessionStorage.getItem("chatTimer");
+    if (savedTimer) setTimer(Number(savedTimer));
+  }, []);
+
   useEffect(() => {
     astroPhotoRef.current = astrologerPhoto;
   }, [astrologerPhoto]);
+
+  useEffect(() => {
+    sessionStorage.setItem("chatTimer", timer.toString());
+  }, [timer]);
 
   // Auto-scroll
   useEffect(() => {
@@ -91,7 +101,7 @@ What would you like to ask today? 🌟`;
     animateMessages();
   }, [navigate]);
 
-  // Timer
+  // Timer countdown
   useEffect(() => {
     if (timer <= 0) {
       alert("Your chat session has ended.");
@@ -108,6 +118,7 @@ What would you like to ask today? 🌟`;
 
     const interval = setInterval(() => setTimer((prev) => prev - 1), 1000);
     if (timer === 60) setShowExtendPopup(true);
+
     return () => clearInterval(interval);
   }, [timer, navigate, tenSecondMessageSent, userProfile]);
 
@@ -227,7 +238,7 @@ What would you like to ask today? 🌟`;
         <div ref={chatEndRef} />
       </div>
 
-      {/* Input + Timer (fixed at bottom) */}
+      {/* Input + Timer */}
       <div className="p-3 border-t border-gray-300 flex flex-col gap-2 bg-white">
         <div className="flex gap-2">
           <input
@@ -291,7 +302,7 @@ What would you like to ask today? 🌟`;
         </div>
       )}
 
-      {/* Screenshot protection overlay */}
+      {/* Screenshot protection */}
       {screenProtected && (
         <div className="absolute inset-0 bg-black z-50 flex items-center justify-center text-white text-xl">
           Screenshot Protected
