@@ -12,7 +12,7 @@ router.get("/", async (req, res) => {
       language,
       category,
       systems, // optional filter
-      aiOnly, // 👈 new query flag
+      isAI, // 👈 new query flag
       page = 1,
       limit = 6,
     } = req.query;
@@ -20,7 +20,7 @@ router.get("/", async (req, res) => {
     const query = { isVerified: true };
 
     // ✅ Optional: Filter only AI astrologers if requested
-    if (aiOnly === "true") query.isAI = true;
+    if (isAI === "true") query.isAI = true;
 
     if (name) query.name = { $regex: name, $options: "i" };
     if (experience) query.experience = { $gte: Number(experience) };
