@@ -27,7 +27,7 @@ const [astrologers, setAstrologers] = useState([]);
   {
     title: "AI Astrologer",
     desc: "Chat instantly with our AI-powered astrologer",
-    link: "/astrochat",
+    link: "/ai-consultancy",
     image: aiImg,
     button: "Chat with AI",
   },
