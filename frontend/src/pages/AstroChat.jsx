@@ -11,15 +11,13 @@ export default function AstroChat() {
   const [extendMinutes, setExtendMinutes] = useState(1);
   const [loading, setLoading] = useState(false);
   const [tenSecondMessageSent, setTenSecondMessageSent] = useState(false);
-  const [screenProtected, setScreenProtected] = useState(false);
   const [astrologerPhoto, setAstrologerPhoto] = useState("/default-astro.png");
-  const [viewportHeight, setViewportHeight] = useState(window.innerHeight);
 
   const astroPhotoRef = useRef(astrologerPhoto);
   const chatEndRef = useRef(null);
   const navigate = useNavigate();
 
-  // Persist timer in sessionStorage
+  // Persist timer
   useEffect(() => {
     const savedTimer = sessionStorage.getItem("chatTimer");
     if (savedTimer) setTimer(Number(savedTimer));
@@ -33,17 +31,10 @@ export default function AstroChat() {
     sessionStorage.setItem("chatTimer", timer.toString());
   }, [timer]);
 
-  // Handle mobile keyboard resize
-  useEffect(() => {
-    const handleResize = () => setViewportHeight(window.innerHeight);
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
-
   // Auto-scroll
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, loading, viewportHeight]);
+  }, [messages, loading]);
 
   // Animate bot messages
   const typeMessage = (text, delay = 50) => {
@@ -184,32 +175,10 @@ What would you like to ask today? 🌟`;
 
   const handleEndChat = () => navigate("/user/dashboard");
 
-  // Screenshot protection
-  useEffect(() => {
-    const protectScreen = () => setScreenProtected(true);
-    const unprotectScreen = () => setScreenProtected(false);
-
-    document.addEventListener("visibilitychange", () => {
-      if (document.hidden) protectScreen();
-      else unprotectScreen();
-    });
-
-    window.addEventListener("blur", protectScreen);
-    window.addEventListener("focus", unprotectScreen);
-
-    return () => {
-      window.removeEventListener("blur", protectScreen);
-      window.removeEventListener("focus", unprotectScreen);
-    };
-  }, []);
-
   return (
-    <div
-      className="w-full max-w-[400px] mx-auto mt-16 flex flex-col border border-gray-300 rounded-xl bg-white shadow-lg"
-      style={{ height: viewportHeight - 32 }} // adjust height dynamically
-    >
+    <div className="w-full max-w-[400px] mx-auto flex flex-col h-screen border border-gray-300 rounded-xl bg-white shadow-lg relative">
       {/* Chat messages */}
-      <div className="flex-1 p-3 overflow-y-auto flex flex-col gap-3 bg-gray-50 rounded-t-lg">
+      <div className="flex-1 p-3 overflow-y-auto flex flex-col gap-3 bg-gray-50">
         {messages.map((msg, i) => (
           <div
             key={i}
@@ -249,8 +218,8 @@ What would you like to ask today? 🌟`;
         <div ref={chatEndRef} />
       </div>
 
-      {/* Input + Timer */}
-      <div className="p-3 border-t border-gray-300 flex flex-col gap-2 bg-white">
+      {/* Input + Timer fixed at bottom */}
+      <div className="w-full px-3 py-2 bg-white border-t border-gray-300 fixed bottom-0 left-0 flex flex-col gap-2">
         <div className="flex gap-2">
           <input
             className="flex-1 px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400"
@@ -266,12 +235,12 @@ What would you like to ask today? 🌟`;
             Send
           </button>
         </div>
-        <div className="flex justify-between items-center mt-1">
-          <span className="text-sm text-gray-500 font-medium">
+        <div className="flex justify-between items-center mt-1 text-sm text-gray-500">
+          <span>
             ⏱ {Math.floor(timer / 60)}:{(timer % 60).toString().padStart(2, "0")}
           </span>
           <button
-            className="px-3 py-1 text-sm rounded bg-red-500 text-white hover:bg-red-600 transition"
+            className="px-3 py-1 rounded bg-red-500 text-white hover:bg-red-600 transition"
             onClick={handleEndChat}
           >
             End Chat
@@ -310,13 +279,6 @@ What would you like to ask today? 🌟`;
               </button>
             </div>
           </div>
-        </div>
-      )}
-
-      {/* Screenshot protection */}
-      {screenProtected && (
-        <div className="absolute inset-0 bg-black z-50 flex items-center justify-center text-white text-xl">
-          Screenshot Protected
         </div>
       )}
     </div>
