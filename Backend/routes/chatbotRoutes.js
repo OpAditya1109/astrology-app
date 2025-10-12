@@ -1,12 +1,14 @@
 // routes/chatbotRoutes.js
 const express = require("express");
-const axios = require("axios");
+const OpenAI = require("openai");
 require("dotenv").config();
 
 const router = express.Router();
 
-// Hugging Face API key from .env
-const HF_API_KEY = process.env.HF_API_KEY;
+// Initialize OpenAI client
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
 
 router.post("/chat", async (req, res) => {
   console.log("Chat request received:", req.body);
@@ -17,42 +19,43 @@ router.post("/chat", async (req, res) => {
       return res.status(400).json({ message: "User profile missing" });
     }
 
-    // Build prompt including user birth details
+    // Build astrologer-style prompt
     const prompt = `
-You are an expert astrologer AI. 
-User birth details:
-- Name: ${profile.name}
-- DOB: ${profile.dob?.split("T")[0]}
-- Birth Time: ${profile.birthTime}
-- Birth Place: ${profile.birthPlace}
+You are an experienced Vedic astrologer AI.
+Analyze the user's astrology insights based ONLY on:
+- Date of Birth: ${profile.dob?.split("T")[0]}
+- Time of Birth: ${profile.birthTime}
+- Place of Birth: ${profile.birthPlace}
 
-Instructions:
-1. Analyze their zodiac, planetary positions, and life events.
-2. Provide astrology-based, friendly, and clear advice.
-3. Do not ask for birth details again.
+Guidelines:
+1. Use zodiac logic, moon/sun sign understanding — no external planetary data.
+2. Give helpful, spiritual, and friendly insights.
+3. Avoid medical, financial, or health predictions.
+4. Keep tone positive, accurate, and clear.
 
 User question: ${query}
 `;
 
-    // Call Hugging Face Falcon 7B Instruct model
-    const response = await axios.post(
-  "https://api-inference.huggingface.co/models/tiiuae/falcon-7b-instruct",
-  {
-    inputs: prompt,
-    parameters: { max_new_tokens: 512, temperature: 0.7 },
-  },
-  { headers: { Authorization: `Bearer ${HF_API_KEY}` } }
-);
+    // Call OpenAI model
+    const completion = await openai.chat.completions.create({
+      model: "gpt-4o-mini", // fast + accurate
+      messages: [
+        { role: "system", content: "You are a wise and friendly astrologer." },
+        { role: "user", content: prompt },
+      ],
+      max_tokens: 600,
+      temperature: 0.8,
+    });
 
-console.log("HF response:", response.data); // log it
-const reply = response.data[0]?.generated_text || response.data.generated_text || "Sorry, AI could not respond.";
+    const reply =
+      completion.choices[0]?.message?.content ||
+      "Sorry, I couldn't generate an astrology insight.";
 
-
-
+    console.log("OpenAI reply:", reply);
 
     res.json({ reply });
   } catch (err) {
-    console.error("Chatbot error:", err.response?.data || err.message);
+    console.error("Chatbot error:", err.message || err);
     res.status(500).json({ error: "Failed to generate reply." });
   }
 });
