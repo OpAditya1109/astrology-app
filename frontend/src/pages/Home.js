@@ -55,24 +55,22 @@ export default function Home() {
 
   // Fetch astrologers
   // ✅ Fetch real astrologers and AI astrologers separately
- useEffect(() => {
+useEffect(() => {
   const fetchAstrologers = async () => {
     try {
-      const res = await axios.get("https://bhavanaastro.onrender.com/api/Consult-astrologers?limit=20");
-      const allAstrologers = res.data.astrologers || [];
-
-      // Separate based on isAI flag
-      const real = allAstrologers.filter((a) => !a.isAI);
-      const ai = allAstrologers.filter((a) => a.isAI);
-
-      setAstrologers(real);
-      setAiAstrologers(ai);
+      const [res1, res2] = await Promise.all([
+        axios.get("https://bhavanaastro.onrender.com/api/Consult-astrologers?isAI=false&limit=10"),
+        axios.get("https://bhavanaastro.onrender.com/api/Consult-astrologers?isAI=true&limit=10")
+      ]);
+      setAstrologers(res1.data.astrologers || []);
+      setAiAstrologers(res2.data.astrologers || []);
     } catch (error) {
       console.error("Error fetching astrologers:", error);
     }
   };
   fetchAstrologers();
 }, []);
+
 
 
   // Prevent back button exit
