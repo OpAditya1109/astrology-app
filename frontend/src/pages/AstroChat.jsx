@@ -176,7 +176,8 @@ What would you like to ask today? 🌟`;
   const handleEndChat = () => navigate("/user/dashboard");
 
 return (
-  <div className="flex flex-col h-[calc(100vh-80px)] max-w-[400px] mx-auto border border-gray-300 rounded-xl bg-white shadow-lg mt-[80px] relative">
+<div className="flex flex-col h-[calc(100vh-80px)] max-w-[400px] mx-auto border border-gray-300 rounded-xl bg-white shadow-lg pt-[100px] relative">
+
     
     {/* Chat Header (optional for title or astrologer info) */}
     {/* <div className="p-3 border-b font-semibold bg-white">AstroBhavana Chat</div> */}
