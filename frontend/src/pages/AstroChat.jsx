@@ -179,13 +179,14 @@ What would you like to ask today? 🌟`;
     <div className="flex flex-col h-[calc(100vh-80px)] max-w-[400px] mx-auto border border-gray-300 rounded-xl bg-white shadow-lg mt-[80px] relative">
       {/* Chat messages */}
       <div className="flex-1 overflow-y-auto p-3 bg-gray-50 pb-[100px]">
-        {messages.map((msg, i) => (
-          <div
-            key={i}
-            className={`flex items-start gap-2 ${
-              msg.sender === "user" ? "justify-end" : "justify-start"
-            }`}
-          >
+     {messages.map((msg, i) => (
+  <div
+    key={i}
+    className={`flex items-start gap-2 mb-3 ${
+      msg.sender === "user" ? "justify-end" : "justify-start"
+    }`}
+  >
+
             {msg.sender === "bot" && (
               <img
                 src={msg.photo || astroPhotoRef.current}
