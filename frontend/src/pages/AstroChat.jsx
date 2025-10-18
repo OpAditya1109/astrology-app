@@ -175,18 +175,22 @@ What would you like to ask today? 🌟`;
 
   const handleEndChat = () => navigate("/user/dashboard");
 
- return (
-    <div className="flex flex-col h-[calc(100vh-80px)] max-w-[400px] mx-auto border border-gray-300 rounded-xl bg-white shadow-lg mt-[80px] relative">
-      {/* Chat messages */}
-      <div className="flex-1 overflow-y-auto p-3 bg-gray-50 pb-[100px]">
-     {messages.map((msg, i) => (
-  <div
-    key={i}
-    className={`flex items-start gap-2 mb-3 ${
-      msg.sender === "user" ? "justify-end" : "justify-start"
-    }`}
-  >
+return (
+  <div className="flex flex-col h-[calc(100vh-80px)] max-w-[400px] mx-auto border border-gray-300 rounded-xl bg-white shadow-lg mt-[80px] relative">
+    
+    {/* Chat Header (optional for title or astrologer info) */}
+    {/* <div className="p-3 border-b font-semibold bg-white">AstroBhavana Chat</div> */}
 
+    {/* Chat messages area — FIXED height and scrollable */}
+    <div className="flex-1 flex flex-col bg-gray-50">
+      <div className="flex-1 overflow-y-auto p-3">
+        {messages.map((msg, i) => (
+          <div
+            key={i}
+            className={`flex items-start gap-2 mb-3 ${
+              msg.sender === "user" ? "justify-end" : "justify-start"
+            }`}
+          >
             {msg.sender === "bot" && (
               <img
                 src={msg.photo || astroPhotoRef.current}
@@ -207,7 +211,7 @@ What would you like to ask today? 🌟`;
         ))}
 
         {loading && (
-          <div className="self-start text-gray-400 animate-pulse flex items-center gap-2">
+          <div className="text-gray-400 animate-pulse flex items-center gap-2">
             <img
               src={astroPhotoRef.current}
               alt="Astrologer"
@@ -219,8 +223,8 @@ What would you like to ask today? 🌟`;
         <div ref={chatEndRef} />
       </div>
 
-      {/* Input + Timer fixed at bottom */}
-      <div className="absolute bottom-0 left-0 w-full bg-white border-t border-gray-300 px-3 py-2">
+      {/* Input section stays fixed at bottom of this area */}
+      <div className="border-t border-gray-300 bg-white px-3 py-2">
         <div className="flex gap-2">
           <input
             className="flex-1 px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400"
@@ -236,9 +240,11 @@ What would you like to ask today? 🌟`;
             Send
           </button>
         </div>
+
         <div className="flex justify-between items-center mt-1 text-sm text-gray-500">
           <span>
-            ⏱ {Math.floor(timer / 60)}:{(timer % 60).toString().padStart(2, "0")}
+            ⏱ {Math.floor(timer / 60)}:
+            {(timer % 60).toString().padStart(2, "0")}
           </span>
           <button
             className="px-3 py-1 rounded bg-red-500 text-white hover:bg-red-600 transition"
@@ -248,40 +254,41 @@ What would you like to ask today? 🌟`;
           </button>
         </div>
       </div>
+    </div>
 
-      {/* Extend Popup */}
-      {showExtendPopup && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50">
-          <div className="bg-white p-6 rounded-lg shadow-lg w-[300px]">
-            <h3 className="font-semibold text-lg mb-2">Extend Chat?</h3>
-            <p>1 minute remaining. Do you want to extend?</p>
-            <div className="flex items-center gap-2 mt-3">
-              <input
-                type="number"
-                min="1"
-                value={extendMinutes}
-                onChange={(e) => setExtendMinutes(Number(e.target.value))}
-                className="border px-2 py-1 rounded w-16"
-              />
-              <span>minute(s) × ₹10 = ₹{extendMinutes * 10}</span>
-            </div>
-            <div className="flex justify-end gap-2 mt-4">
-              <button
-                className="px-4 py-2 rounded bg-gray-300 hover:bg-gray-400"
-                onClick={() => setShowExtendPopup(false)}
-              >
-                Cancel
-              </button>
-              <button
-                className="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700"
-                onClick={handleExtendChat}
-              >
-                Extend
-              </button>
-            </div>
+    {/* Extend Popup */}
+    {showExtendPopup && (
+      <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50">
+        <div className="bg-white p-6 rounded-lg shadow-lg w-[300px]">
+          <h3 className="font-semibold text-lg mb-2">Extend Chat?</h3>
+          <p>1 minute remaining. Do you want to extend?</p>
+          <div className="flex items-center gap-2 mt-3">
+            <input
+              type="number"
+              min="1"
+              value={extendMinutes}
+              onChange={(e) => setExtendMinutes(Number(e.target.value))}
+              className="border px-2 py-1 rounded w-16"
+            />
+            <span>minute(s) × ₹10 = ₹{extendMinutes * 10}</span>
+          </div>
+          <div className="flex justify-end gap-2 mt-4">
+            <button
+              className="px-4 py-2 rounded bg-gray-300 hover:bg-gray-400"
+              onClick={() => setShowExtendPopup(false)}
+            >
+              Cancel
+            </button>
+            <button
+              className="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700"
+              onClick={handleExtendChat}
+            >
+              Extend
+            </button>
           </div>
         </div>
-      )}
-    </div>
-  );
+      </div>
+    )}
+  </div>
+);
 }
