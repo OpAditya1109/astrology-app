@@ -175,10 +175,10 @@ What would you like to ask today? 🌟`;
 
   const handleEndChat = () => navigate("/user/dashboard");
 
-  return (
-    <div className="w-full max-w-[400px] mx-auto flex flex-col h-screen border border-gray-300 rounded-xl bg-white shadow-lg relative">
+ return (
+    <div className="flex flex-col h-[calc(100vh-80px)] max-w-[400px] mx-auto border border-gray-300 rounded-xl bg-white shadow-lg mt-[80px] relative">
       {/* Chat messages */}
-      <div className="flex-1 p-3 overflow-y-auto flex flex-col gap-3 bg-gray-50">
+      <div className="flex-1 overflow-y-auto p-3 bg-gray-50 pb-[100px]">
         {messages.map((msg, i) => (
           <div
             key={i}
@@ -219,7 +219,7 @@ What would you like to ask today? 🌟`;
       </div>
 
       {/* Input + Timer fixed at bottom */}
-      <div className="w-full px-3 py-2 bg-white border-t border-gray-300 fixed bottom-0 left-0 flex flex-col gap-2">
+      <div className="absolute bottom-0 left-0 w-full bg-white border-t border-gray-300 px-3 py-2">
         <div className="flex gap-2">
           <input
             className="flex-1 px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400"
