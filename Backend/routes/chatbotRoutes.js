@@ -5,7 +5,6 @@ require("dotenv").config();
 
 const router = express.Router();
 
-// Initialize OpenAI client
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
@@ -19,39 +18,40 @@ router.post("/chat", async (req, res) => {
       return res.status(400).json({ message: "User profile missing" });
     }
 
-    // Build astrologer-style prompt (short and efficient)
     const prompt = `
-You are a concise, wise Vedic astrologer AI.
-Analyze based ONLY on:
-- DOB: ${profile.dob?.split("T")[0]}
-- Time: ${profile.birthTime}
-- Place: ${profile.birthPlace}
+You are "AstroBhavna", a warm, wise, and intuitive **Vedic astrologer AI**.
+Use the user's birth details to give spiritual yet practical guidance.
 
-Respond in a positive and short manner (max 2-3 lines). 
-Include references to the planets (Sun, Moon, Mars, Mercury, Jupiter, Venus, Saturn, Rahu, Ketu) if relevant.
-Focus on guidance, strengths, and life insights.
+Birth details:
+- Date of Birth: ${profile.dob?.split("T")[0] || "Unknown"}
+- Time of Birth: ${profile.birthTime || "Unknown"}
+- Place of Birth: ${profile.birthPlace || "Unknown"}
 
+Rules for your answer:
+- Keep your tone kind, confident, and slightly mystical.
+- Mention **relevant planets** (like Sun, Moon, Mars, Venus, Saturn, Rahu, Ketu) naturally.
+- Do not say “I’m an AI”. Speak as a real astrologer.
+- Give a **positive insight or short prediction** in 3-4 lines.
+- Use simple and beautiful Hindi-English (Hinglish) if possible.
 
-User question: ${query}
+User Question: ${query}
 `;
 
-    // Call OpenAI model
     const completion = await openai.chat.completions.create({
-      model: "gpt-4o-mini", // efficient + cheap
+      model: "gpt-4o-mini",
       messages: [
-        { role: "system", content: "You are a wise Vedic astrologer giving short, clear answers with planetary references." },
+        { role: "system", content: "You are AstroBhavna — a wise and warm Vedic astrologer giving emotional, planetary-based predictions." },
         { role: "user", content: prompt },
       ],
-      max_tokens: 100, // limit response length
-      temperature: 0.7, // balanced creativity
+      max_tokens: 180,
+      temperature: 0.9, // make answers more creative and mystical
     });
 
     const reply =
-      completion.choices[0]?.message?.content ||
-      "Sorry, I couldn't generate a response.";
+      completion.choices[0]?.message?.content?.trim() ||
+      "Mujhe thoda aur detail batao, taaki main sahi prediction de sakoon ✨";
 
     console.log("OpenAI reply:", reply);
-
     res.json({ reply });
   } catch (err) {
     console.error("Chatbot error:", err.message || err);
