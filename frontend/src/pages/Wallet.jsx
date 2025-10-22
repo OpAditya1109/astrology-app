@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { load } from "@cashfreepayments/cashfree-js";
-import { Wallet as WalletIcon, PlusCircle, RefreshCw, Bitcoin } from "lucide-react";
+import { Wallet as WalletIcon, PlusCircle, RefreshCw } from "lucide-react";
 
 const Wallet = () => {
   const [amount, setAmount] = useState("");
@@ -100,41 +100,6 @@ const Wallet = () => {
     }
   };
 
-  // 🪙 Crypto payment using NOWPayments
-// 🪙 Crypto payment using NOWPayments
-const handleCryptoRecharge = async () => {
-  if (!amount) return alert("Enter an amount");
-  if (!userId) return alert("User not logged in!");
-  setError("");
-
-  try {
-    setLoading(true);
-
-    const res = await axios.post(
-      "https://bhavanaastro.onrender.com/api/cryptopayment/create",
-      {
-        orderId: `crypto-${Date.now()}-${userId}`,
-        amount: parseFloat(amount),
-        priceCurrency: "INR", // NOWPayments mainly supports USD, EUR, etc.
-        payCurrency: "SHIB", // ✅ Default to Shiba Inu
-      }
-    );
-
-    if (res.data.success && res.data.paymentUrl) {
-      // Redirect user to NOWPayments checkout
-      window.location.href = res.data.paymentUrl;
-    } else {
-      setError("Failed to generate crypto payment link");
-    }
-  } catch (err) {
-    console.error("Crypto Payment Error:", err);
-    setError("Failed to initiate crypto payment");
-  } finally {
-    setLoading(false);
-  }
-};
-
-
   if (!user) {
     return (
       <div className="flex items-center justify-center h-screen">
@@ -176,7 +141,7 @@ const handleCryptoRecharge = async () => {
           />
         </div>
 
-        {/* Payment Buttons */}
+        {/* Payment Button */}
         <div className="flex flex-wrap gap-3 mb-4">
           <button
             onClick={handleRecharge}
@@ -184,15 +149,6 @@ const handleCryptoRecharge = async () => {
             className="bg-green-600 hover:bg-green-700 text-white px-5 py-2 rounded-lg shadow-md transition disabled:opacity-50"
           >
             {loading ? "Processing..." : "Add via Cashfree"}
-          </button>
-
-          <button
-            onClick={handleCryptoRecharge}
-            disabled={loading || !amount}
-            className="bg-yellow-500 hover:bg-yellow-600 text-white flex items-center gap-2 px-5 py-2 rounded-lg shadow-md transition disabled:opacity-50"
-          >
-            <Bitcoin size={18} />
-            {loading ? "Processing..." : "Pay with Crypto"}
           </button>
         </div>
 
