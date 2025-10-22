@@ -26,7 +26,7 @@ export default function CheckoutPage() {
     try {
       // Create order on backend
       const res = await axios.post(
-        "https://bhavanaastro.onrender.com/api/checkout/create-order",
+        "https://bhavanaastro.onrender.com/api/wallet/topup",
         {
           userId,
           amount: service.price,
