@@ -101,37 +101,39 @@ const Wallet = () => {
   };
 
   // 🪙 Crypto payment using NOWPayments
-  const handleCryptoRecharge = async () => {
-    if (!amount) return alert("Enter an amount");
-    if (!userId) return alert("User not logged in!");
-    setError("");
+// 🪙 Crypto payment using NOWPayments
+const handleCryptoRecharge = async () => {
+  if (!amount) return alert("Enter an amount");
+  if (!userId) return alert("User not logged in!");
+  setError("");
 
-    try {
-      setLoading(true);
+  try {
+    setLoading(true);
 
-      const res = await axios.post(
-        "https://bhavanaastro.onrender.com/api/cryptopayment/create",
-        {
-          orderId: `crypto-${Date.now()}-${userId}`,
-          amount: parseFloat(amount),
-          priceCurrency: "USD", // NOWPayments mainly supports USD, EUR, etc.
-          payCurrency: "USDT", // or "BTC", "ETH", etc.
-        }
-      );
-
-      if (res.data.success && res.data.paymentUrl) {
-        // Redirect user to NOWPayments checkout
-        window.location.href = res.data.paymentUrl;
-      } else {
-        setError("Failed to generate crypto payment link");
+    const res = await axios.post(
+      "https://bhavanaastro.onrender.com/api/cryptopayment/create",
+      {
+        orderId: `crypto-${Date.now()}-${userId}`,
+        amount: parseFloat(amount),
+        priceCurrency: "USD", // NOWPayments mainly supports USD, EUR, etc.
+        payCurrency: "SHIB", // ✅ Default to Shiba Inu
       }
-    } catch (err) {
-      console.error("Crypto Payment Error:", err);
-      setError("Failed to initiate crypto payment");
-    } finally {
-      setLoading(false);
+    );
+
+    if (res.data.success && res.data.paymentUrl) {
+      // Redirect user to NOWPayments checkout
+      window.location.href = res.data.paymentUrl;
+    } else {
+      setError("Failed to generate crypto payment link");
     }
-  };
+  } catch (err) {
+    console.error("Crypto Payment Error:", err);
+    setError("Failed to initiate crypto payment");
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   if (!user) {
     return (

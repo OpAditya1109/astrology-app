@@ -12,7 +12,7 @@ router.post("/create", async (req, res) => {
       orderId,
       amount,
       priceCurrency = "usd", // default USD
-      payCurrency = "usdttrc20", // default USDT on TRC20
+      payCurrency = "shib", // ✅ default Shiba Inu
     } = req.body;
 
     if (!amount || !orderId) {
@@ -24,7 +24,7 @@ router.post("/create", async (req, res) => {
     // ✅ Create invoice payload
     const invoicePayload = {
       price_amount: parseFloat(amount),
-      price_currency: priceCurrency.toLowerCase(), // must be lowercase
+      price_currency: priceCurrency.toLowerCase(),
       pay_currency: payCurrency.toLowerCase(),
       order_id: orderId,
       order_description: "AstroBhavana Recharge / Booking",
@@ -40,7 +40,7 @@ router.post("/create", async (req, res) => {
       "Content-Type": "application/json",
     };
 
-    // ✅ Call NOWPayments API
+    // ✅ Create invoice
     const nowRes = await axios.post(
       "https://api.nowpayments.io/v1/invoice",
       invoicePayload,
