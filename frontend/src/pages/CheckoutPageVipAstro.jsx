@@ -25,7 +25,6 @@ export default function CheckoutPage() {
     setLoading(true);
 
     try {
-      // Create order on backend
       const res = await axios.post(
         "https://bhavanaastro.onrender.com/api/wallet/topup",
         {
@@ -67,15 +66,14 @@ export default function CheckoutPage() {
         {
           orderId: `ASTRO_${Date.now()}`,
           amount: Number(service.price),
-          priceCurrency: "INR", // Customer pays equivalent in INR
-          payCurrency: "shib", // SHIB payment
+          priceCurrency: "INR",
+          payCurrency: "shib",
         }
       );
 
       const { paymentUrl } = res.data;
       if (!paymentUrl) throw new Error("Crypto payment URL not received");
 
-      // Redirect to NOWPayments invoice page
       window.location.href = paymentUrl;
     } catch (err) {
       console.error("NOWPayments error:", err.response?.data || err.message);
@@ -107,7 +105,14 @@ export default function CheckoutPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-yellow-50 via-white to-yellow-50 flex flex-col items-center py-16 px-4">
+    <div className="relative min-h-screen bg-gradient-to-b from-yellow-50 via-white to-yellow-50 flex flex-col items-center py-16 px-4">
+      {/* ---------- Spinner Overlay ---------- */}
+      {loading && (
+        <div className="absolute inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
+          <div className="w-16 h-16 border-4 border-yellow-400 border-t-transparent border-solid rounded-full animate-spin"></div>
+        </div>
+      )}
+
       <div className="max-w-3xl w-full bg-white rounded-3xl shadow-2xl border border-yellow-200 p-10">
         <h1 className="text-4xl font-extrabold text-yellow-700 mb-6 text-center drop-shadow-md">
           Checkout — {service.title}
