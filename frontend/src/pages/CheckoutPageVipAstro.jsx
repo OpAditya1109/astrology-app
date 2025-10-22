@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
 export default function CheckoutPage() {
@@ -6,9 +6,20 @@ export default function CheckoutPage() {
   const navigate = useNavigate();
   const service = location.state || { title: "Consultation", price: 0 };
 
+  const [paymentMethod, setPaymentMethod] = useState("");
+
   const handleSubmit = (e) => {
     e.preventDefault();
-    alert("Your consultation has been booked successfully!");
+    if (!paymentMethod) {
+      alert("Please select a payment method!");
+      return;
+    }
+
+    alert(`Your consultation has been booked successfully!\nPayment Method: ${paymentMethod}`);
+    
+    // Here you can call your payment API (Cashfree or Crypto) before navigating
+    // Example: if (paymentMethod === 'Cashfree') { initiateCashfreePayment(); }
+
     navigate("/");
   };
 
@@ -92,9 +103,38 @@ export default function CheckoutPage() {
             </label>
           </div>
 
+          {/* Payment Options */}
+          <div className="mt-6">
+            <h3 className="text-lg font-semibold text-gray-700 mb-2">Select Payment Method</h3>
+            <div className="flex flex-col md:flex-row gap-4">
+              <button
+                type="button"
+                onClick={() => setPaymentMethod("Cashfree")}
+                className={`flex-1 py-3 rounded-xl font-semibold text-white transition ${
+                  paymentMethod === "Cashfree"
+                    ? "bg-green-800 shadow-lg"
+                    : "bg-black hover:bg-yellow-600"
+                }`}
+              >
+                Cashfree
+              </button>
+              <button
+                type="button"
+                onClick={() => setPaymentMethod("Crypto")}
+                className={`flex-1 py-3 rounded-xl font-semibold text-white transition ${
+                  paymentMethod === "Crypto"
+                    ? "bg-green-800 shadow-lg"
+                    : "bg-black hover:bg-green-600"
+                }`}
+              >
+                Crypto
+              </button>
+            </div>
+          </div>
+
           <button
             type="submit"
-            className="w-full bg-yellow-500 hover:bg-yellow-600 text-white py-4 rounded-xl font-bold text-lg shadow-lg hover:shadow-yellow-300 transition transform hover:-translate-y-1"
+            className="w-full bg-yellow-500 hover:bg-yellow-600 text-white py-4 rounded-xl font-bold text-lg shadow-lg hover:shadow-yellow-300 transition transform hover:-translate-y-1 mt-6"
           >
             Confirm & Proceed to Pay
           </button>
