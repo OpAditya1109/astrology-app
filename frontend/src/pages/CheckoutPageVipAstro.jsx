@@ -1,5 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import axios from "axios";
+import { load } from "@cashfreepayments/cashfree-js";
 
 export default function CheckoutPage() {
   const location = useLocation();
@@ -7,20 +9,71 @@ export default function CheckoutPage() {
   const service = location.state || { title: "Consultation", price: 0 };
 
   const [paymentMethod, setPaymentMethod] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [orderId, setOrderId] = useState(null);
+  const [error, setError] = useState("");
 
-  const handleSubmit = (e) => {
+  const storedUser = sessionStorage.getItem("user");
+  const user = storedUser ? JSON.parse(storedUser) : null;
+  const userId = user?._id || user?.id;
+  const { name, email, mobile } = user || {};
+
+  const handleCashfreePayment = async () => {
+    if (!userId) return alert("User not logged in!");
+    setError("");
+    setLoading(true);
+
+    try {
+      // Create order on backend
+      const res = await axios.post(
+        "https://bhavanaastro.onrender.com/api/checkout/create-order",
+        {
+          userId,
+          amount: service.price,
+          phone: mobile,
+          name,
+          email,
+          service: service.title,
+        }
+      );
+
+      const { orderId, paymentSessionId } = res.data;
+      if (!paymentSessionId) throw new Error("Payment session not received");
+
+      setOrderId(orderId);
+
+      const cashfree = await load({ mode: "production" });
+      await cashfree.checkout({
+        paymentSessionId,
+        redirectTarget: "_self",
+      });
+    } catch (err) {
+      console.error(err);
+      setError("Failed to initiate payment. Try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
+
     if (!paymentMethod) {
       alert("Please select a payment method!");
       return;
     }
 
-    alert(`Your consultation has been booked successfully!\nPayment Method: ${paymentMethod}`);
-    
-    // Here you can call your payment API (Cashfree or Crypto) before navigating
-    // Example: if (paymentMethod === 'Cashfree') { initiateCashfreePayment(); }
+    if (!user) {
+      alert("Please log in first!");
+      return;
+    }
 
-    navigate("/");
+    if (paymentMethod === "Cashfree") {
+      await handleCashfreePayment();
+    } else if (paymentMethod === "Crypto") {
+      alert("Crypto payment flow coming soon!");
+      // Here you can redirect to crypto payment or your crypto API
+    }
   };
 
   return (
@@ -43,6 +96,7 @@ export default function CheckoutPage() {
             <input
               type="text"
               required
+              defaultValue={name || ""}
               className="peer w-full border border-gray-300 rounded-xl p-4 focus:ring-2 focus:ring-yellow-400 focus:border-yellow-400 transition outline-none"
               placeholder=" "
             />
@@ -56,6 +110,7 @@ export default function CheckoutPage() {
             <input
               type="tel"
               required
+              defaultValue={mobile || ""}
               className="peer w-full border border-gray-300 rounded-xl p-4 focus:ring-2 focus:ring-yellow-400 focus:border-yellow-400 transition outline-none"
               placeholder=" "
             />
@@ -105,7 +160,9 @@ export default function CheckoutPage() {
 
           {/* Payment Options */}
           <div className="mt-6">
-            <h3 className="text-lg font-semibold text-gray-700 mb-2">Select Payment Method</h3>
+            <h3 className="text-lg font-semibold text-gray-700 mb-2">
+              Select Payment Method
+            </h3>
             <div className="flex flex-col md:flex-row gap-4">
               <button
                 type="button"
@@ -132,11 +189,16 @@ export default function CheckoutPage() {
             </div>
           </div>
 
+          {error && (
+            <p className="text-red-500 text-sm mt-2 text-center">{error}</p>
+          )}
+
           <button
             type="submit"
-            className="w-full bg-yellow-500 hover:bg-yellow-600 text-white py-4 rounded-xl font-bold text-lg shadow-lg hover:shadow-yellow-300 transition transform hover:-translate-y-1 mt-6"
+            disabled={loading}
+            className="w-full bg-yellow-500 hover:bg-yellow-600 text-white py-4 rounded-xl font-bold text-lg shadow-lg hover:shadow-yellow-300 transition transform hover:-translate-y-1 mt-6 disabled:opacity-50"
           >
-            Confirm & Proceed to Pay
+            {loading ? "Processing Payment..." : "Confirm & Proceed to Pay"}
           </button>
         </form>
 
