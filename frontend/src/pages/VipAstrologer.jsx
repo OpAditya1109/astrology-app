@@ -1,7 +1,15 @@
 import React from "react";
 import { motion } from "framer-motion";
+import { useNavigate } from "react-router-dom";
 
 export default function ConsultationPage() {
+  const navigate = useNavigate();
+
+  const handleBookNow = (type, price) => {
+navigate("/checkout-Astro", { state: { title: type, price } });
+
+  };
+
   return (
     <div className="consultation-page bg-gradient-to-b from-white via-yellow-50 to-white text-gray-800">
 
@@ -191,7 +199,10 @@ export default function ConsultationPage() {
               <p className="text-lg font-semibold text-gray-800 mb-2">
                 <strong>Price:</strong> ₹{s.price.toLocaleString("en-IN")}
               </p>
-              <button className="bg-yellow-500 hover:bg-yellow-600 text-white w-full py-3 mt-4 rounded-lg font-semibold transition">
+              <button
+                onClick={() => handleBookNow(s.title, s.price)}
+                className="bg-yellow-500 hover:bg-yellow-600 text-white w-full py-3 mt-4 rounded-lg font-semibold transition"
+              >
                 Book Now
               </button>
             </motion.div>
