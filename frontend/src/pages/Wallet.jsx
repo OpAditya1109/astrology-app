@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { load } from "@cashfreepayments/cashfree-js";
-import { Wallet as WalletIcon, PlusCircle, RefreshCw } from "lucide-react";
+import { Wallet as WalletIcon, PlusCircle, RefreshCw, Bitcoin } from "lucide-react";
 
 const Wallet = () => {
   const [amount, setAmount] = useState("");
@@ -34,6 +34,7 @@ const Wallet = () => {
     fetchBalance();
   }, [userId]);
 
+  // 🪙 Cashfree recharge (INR)
   const handleRecharge = async () => {
     if (!amount) return alert("Enter an amount");
     if (!userId) return alert("User not logged in!");
@@ -74,6 +75,7 @@ const Wallet = () => {
     }
   };
 
+  // 🧾 Verify payment (Cashfree)
   const handleVerify = async () => {
     if (!orderId) return alert("No order ID to verify");
 
@@ -98,6 +100,39 @@ const Wallet = () => {
     }
   };
 
+  // 🪙 Crypto payment using NOWPayments
+  const handleCryptoRecharge = async () => {
+    if (!amount) return alert("Enter an amount");
+    if (!userId) return alert("User not logged in!");
+    setError("");
+
+    try {
+      setLoading(true);
+
+      const res = await axios.post(
+        "https://bhavanaastro.onrender.com/api/cryptopayment/create",
+        {
+          orderId: `crypto-${Date.now()}-${userId}`,
+          amount: parseFloat(amount),
+          priceCurrency: "USD", // NOWPayments mainly supports USD, EUR, etc.
+          payCurrency: "USDT", // or "BTC", "ETH", etc.
+        }
+      );
+
+      if (res.data.success && res.data.paymentUrl) {
+        // Redirect user to NOWPayments checkout
+        window.location.href = res.data.paymentUrl;
+      } else {
+        setError("Failed to generate crypto payment link");
+      }
+    } catch (err) {
+      console.error("Crypto Payment Error:", err);
+      setError("Failed to initiate crypto payment");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   if (!user) {
     return (
       <div className="flex items-center justify-center h-screen">
@@ -108,7 +143,6 @@ const Wallet = () => {
     );
   }
 
-  // ✅ Quick amount options
   const quickAmounts = [50, 100, 200, 500, 1000, 2000];
 
   return (
@@ -138,12 +172,25 @@ const Wallet = () => {
             onChange={(e) => setAmount(e.target.value)}
             className="flex-1 border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-green-500 outline-none"
           />
+        </div>
+
+        {/* Payment Buttons */}
+        <div className="flex flex-wrap gap-3 mb-4">
           <button
             onClick={handleRecharge}
             disabled={loading || !amount}
             className="bg-green-600 hover:bg-green-700 text-white px-5 py-2 rounded-lg shadow-md transition disabled:opacity-50"
           >
-            {loading ? "Processing..." : "Add Funds"}
+            {loading ? "Processing..." : "Add via Cashfree"}
+          </button>
+
+          <button
+            onClick={handleCryptoRecharge}
+            disabled={loading || !amount}
+            className="bg-yellow-500 hover:bg-yellow-600 text-white flex items-center gap-2 px-5 py-2 rounded-lg shadow-md transition disabled:opacity-50"
+          >
+            <Bitcoin size={18} />
+            {loading ? "Processing..." : "Pay with Crypto"}
           </button>
         </div>
 
@@ -180,9 +227,7 @@ const Wallet = () => {
       )}
 
       {/* Error Message */}
-      {error && (
-        <p className="text-red-500 text-sm mt-3 text-center">{error}</p>
-      )}
+      {error && <p className="text-red-500 text-sm mt-3 text-center">{error}</p>}
 
       {/* Transaction Status */}
       {status && transaction && (

@@ -45,6 +45,8 @@ app.use("/api/enquiries", enquiryRoutes);
 app.use("/api/admin", require("./routes/admin"));
 app.use("/api/reviews", reviewRoutes);
 app.use("/api", fcmRoutes);
+const cryptoPaymentRoutes = require("./routes/cryptopayment");
+app.use("/api/cryptopayment", cryptoPaymentRoutes);
 async function sendSystemMessage(roomId, text, kundaliUrl = null) {
   const consultation = await Consultation.findById(roomId);
   if (!consultation) return;
