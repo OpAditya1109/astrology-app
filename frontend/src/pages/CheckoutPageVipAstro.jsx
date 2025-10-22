@@ -29,11 +29,12 @@ export default function CheckoutPage() {
         "https://bhavanaastro.onrender.com/api/wallet/topup",
         {
           userId,
-          amount: service.price,
+       amount: Number(service.price),
+
           phone: mobile,
           name,
           email,
-          service: service.title,
+        //   service: service.title,
         }
       );
 
