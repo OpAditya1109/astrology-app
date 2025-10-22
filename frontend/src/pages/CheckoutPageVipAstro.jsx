@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { load } from "@cashfreepayments/cashfree-js";
@@ -18,6 +18,7 @@ export default function CheckoutPage() {
   const userId = user?._id || user?.id;
   const { name, email, mobile } = user || {};
 
+  // ---------- CASHFREE PAYMENT FLOW ----------
   const handleCashfreePayment = async () => {
     if (!userId) return alert("User not logged in!");
     setError("");
@@ -29,12 +30,10 @@ export default function CheckoutPage() {
         "https://bhavanaastro.onrender.com/api/wallet/topup",
         {
           userId,
-       amount: Number(service.price),
-
+          amount: Number(service.price),
           phone: mobile,
           name,
           email,
-        //   service: service.title,
         }
       );
 
@@ -50,12 +49,43 @@ export default function CheckoutPage() {
       });
     } catch (err) {
       console.error(err);
-      setError("Failed to initiate payment. Try again.");
+      setError("Failed to initiate Cashfree payment. Try again.");
     } finally {
       setLoading(false);
     }
   };
 
+  // ---------- NOWPAYMENTS CRYPTO PAYMENT FLOW ----------
+  const handleCryptoPayment = async () => {
+    if (!userId) return alert("User not logged in!");
+    setError("");
+    setLoading(true);
+
+    try {
+      const res = await axios.post(
+        "https://bhavanaastro.onrender.com/api/cryptopayment/create",
+        {
+          orderId: `ASTRO_${Date.now()}`,
+          amount: Number(service.price),
+          priceCurrency: "INR", // Customer pays equivalent in INR
+          payCurrency: "shib", // SHIB payment
+        }
+      );
+
+      const { paymentUrl } = res.data;
+      if (!paymentUrl) throw new Error("Crypto payment URL not received");
+
+      // Redirect to NOWPayments invoice page
+      window.location.href = paymentUrl;
+    } catch (err) {
+      console.error("NOWPayments error:", err.response?.data || err.message);
+      setError("Failed to initiate crypto payment. Try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ---------- HANDLE FORM SUBMIT ----------
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -72,8 +102,7 @@ export default function CheckoutPage() {
     if (paymentMethod === "Cashfree") {
       await handleCashfreePayment();
     } else if (paymentMethod === "Crypto") {
-      alert("Crypto payment flow coming soon!");
-      // Here you can redirect to crypto payment or your crypto API
+      await handleCryptoPayment();
     }
   };
 
@@ -185,7 +214,7 @@ export default function CheckoutPage() {
                     : "bg-black hover:bg-green-600"
                 }`}
               >
-                Crypto
+                Crypto (SHIB)
               </button>
             </div>
           </div>
