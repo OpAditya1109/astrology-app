@@ -176,17 +176,17 @@ navigate("/checkout-Astro", { state: { title: type, price } });
             {
               title: "Personal Consultation",
               desc: "Get deep insights into career, health, and personal life.",
-              price: 148000 * 0.75,
+              price: 18000 * 0.75,
             },
             {
               title: "Couple Consultation",
               desc: "Decode compatibility and relationship karma.",
-              price: 200000 * 0.75,
+              price: 20000 * 0.75,
             },
             {
               title: "Face-to-Face Meeting",
               desc: "Exclusive 1-on-1 session with Madhav Yadav in Noida.",
-              price: 500000 * 0.75,
+              price: 50000 * 0.75,
             },
           ].map((s, i) => (
             <motion.div
