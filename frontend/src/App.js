@@ -49,6 +49,8 @@ import ResetPassword from "./pages/ResetPassword";
 import HealingAcce from "./pages/HealingAcce"
 import AIConsultation from "./pages/UserAIConsultancy";
 import VipAstrologer from "./pages/VipAstrologer"
+import CheckoutPageAstro from "./pages/CheckoutPageVipAstro";
+
 // 🔹 Helper: Get logged-in user from storage
 const getStoredUser = () => {
   return (
@@ -86,6 +88,9 @@ function App() {
 />
 
           <Route path="/" element={<Home />} />
+
+              <Route path="/checkout-Astro" element={<CheckoutPageAstro />} />
+
           <Route path="/thank-you" element={<ThankYouPage />} />
            <Route path="/astrologer/:id" element={<AstrologerProfile />} />
            <Route path="/forgot-password" element={<ForgotPassword />} />
