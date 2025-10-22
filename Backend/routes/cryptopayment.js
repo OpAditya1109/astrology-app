@@ -11,7 +11,7 @@ router.post("/create", async (req, res) => {
     const {
       orderId,
       amount,
-      priceCurrency = "usd", // default USD
+      priceCurrency = "INR", // default USD
       payCurrency = "shib", // ✅ default Shiba Inu
     } = req.body;
 

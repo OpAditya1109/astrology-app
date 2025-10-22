@@ -115,7 +115,7 @@ const handleCryptoRecharge = async () => {
       {
         orderId: `crypto-${Date.now()}-${userId}`,
         amount: parseFloat(amount),
-        priceCurrency: "USD", // NOWPayments mainly supports USD, EUR, etc.
+        priceCurrency: "INR", // NOWPayments mainly supports USD, EUR, etc.
         payCurrency: "SHIB", // ✅ Default to Shiba Inu
       }
     );
