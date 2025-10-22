@@ -1,211 +1,242 @@
-import React from 'react';
+import React from "react";
+import { motion } from "framer-motion";
 
-function ConsultationPage() {
+export default function ConsultationPage() {
   return (
-    <div className="consultation-page">
-      {/* Hero Section */}
-      <section className="hero-section">
-        <h1>One Honest Conversation Can Help You See Everything Clearly</h1>
-        <h2>Speak Directly with Astrologer Madhav Yadav — The Man Behind the Miracles</h2>
-        <p>Starts @ ₹1,48,000/-</p>
-        <p><em>Highly Confidential | Life Changing Experience</em></p>
-        <div className="hero-buttons">
-          <button>Book Your Audio Consultation Call Now</button>
-          <button>Book Your Face-to-Face Consultation</button>
-        </div>
-        <div className="hero-image">
-          <img src="https://via.placeholder.com/600x400" alt="Consultation" />
-        </div>
-      </section>
+    <div className="consultation-page bg-gradient-to-b from-white via-yellow-50 to-white text-gray-800">
+{/* Hero Section */}
+<section className="flex flex-col-reverse md:flex-row items-center justify-between py-16 px-6 max-w-[1400px] mx-auto text-center md:text-left">
+  {/* Left Content */}
+  <div className="md:w-[45%]">
+    <h1 className="text-3xl md:text-5xl font-bold text-gray-900 leading-tight">
+      Clarity That Transforms — Speak with Astrologer{" "}
+      <span className="text-yellow-600">Madhav Yadav</span>
+    </h1>
+    <h2 className="mt-4 text-lg md:text-2xl text-gray-700 font-medium">
+      Experience deep insight, calm direction, and karmic healing in one call.
+    </h2>
 
-      {/* Stats Section */}
-      <section className="stats-section">
-        <div className="stat-item">
-          <h3>20+ Years of Legacy</h3>
-        </div>
-        <div className="stat-item">
-          <h3>10+ Countries Served</h3>
-        </div>
-        <div className="stat-item">
-          <h3>4.8/5 Average Rating</h3>
-        </div>
-        <div className="stat-item">
-          <h3>10,000+ Consultations Done</h3>
-        </div>
-        <div className="stat-item">
-          <h3>20+ Awards in Astrology</h3>
-        </div>
-      </section>
+    <p className="mt-6 text-2xl font-semibold text-yellow-700">
+      Starting at ₹1,00,000/-
+    </p>
+    <p className="text-gray-500 italic">100% Confidential | Transformative Guidance</p>
 
-      {/* Features Section */}
-      <section className="features-section">
-        <div className="feature-item">
-          <img src="https://via.placeholder.com/150" alt="Spiritual Precision" />
-          <h3>Spiritual Precision</h3>
-          <p>Decades of discipline in Vedic Astrology, Occult Sciences, and Karmic Psychology refined into razor sharp insights.</p>
-        </div>
-        <div className="feature-item">
-          <img src="https://via.placeholder.com/150" alt="No Sugarcoating" />
-          <h3>No Sugarcoating</h3>
-          <p>You do not get vague predictions. You get clarity, truth, and direction straight from the source.</p>
-        </div>
-        <div className="feature-item">
-          <img src="https://via.placeholder.com/150" alt="One Session Real Shifts" />
-          <h3>One Session, Real Shifts</h3>
-          <p>Clients walk in confused and walk out with purpose. This is the moment when things finally start to make sense.</p>
-        </div>
-        <div className="feature-item">
-          <img src="https://via.placeholder.com/150" alt="Remedies That Rewire Karma" />
-          <h3>Remedies That Rewire Karma</h3>
-          <p>Every solution comes from your own chart rooted in your planetary blueprint and energetically aligned with your purpose.</p>
-        </div>
-      </section>
+    <div className="mt-8 flex flex-col md:flex-row gap-4 justify-center md:justify-start">
+      <button className="bg-yellow-500 hover:bg-yellow-600 text-white px-6 py-3 rounded-lg font-semibold transition">
+        Book Audio Consultation
+      </button>
+      <button className="border border-yellow-600 text-yellow-700 px-6 py-3 rounded-lg font-semibold hover:bg-yellow-100 transition">
+        In-Person Consultation
+      </button>
+    </div>
+  </div>
+
+  {/* Right Image */}
+  <div className="md:w-[55%] flex justify-center mb-10 md:mb-0">
+    <img
+      src="/Madhav-Yadav3.png"
+      alt="Astrologer Madhav Yadav"
+      className="rounded-2xl shadow-2xl w-[95%] md:w-[720px] lg:w-[880px] xl:w-[950px] transition-transform hover:scale-[1.02]"
+    />
+  </div>
+</section>
+
+
+
+{/* Stats Section */}
+<section className="py-16 bg-white border-t border-b border-yellow-100">
+  <div className="grid grid-cols-2 md:grid-cols-4 max-w-6xl mx-auto text-center gap-6 px-6">
+    {[
+      { text: "35+ Years of Practice", delay: 0 },
+      { text: "Clients in 15+ Countries", delay: 0.2 },
+      { text: "15,000+ Consultations", delay: 0.4 },
+      { text: "Recognized Astrology Expert", delay: 0.6 },
+    ].map((item, i) => (
+      <motion.div
+        key={i}
+        initial={{ opacity: 0, y: 30 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        transition={{ duration: 0.8, delay: item.delay }}
+        whileHover={{ scale: 1.05 }}
+        className="bg-gradient-to-b from-yellow-50 to-white border border-yellow-100 p-8 rounded-2xl shadow-sm hover:shadow-md transition-all duration-300"
+      >
+        <h3 className="text-xl font-bold text-yellow-700 drop-shadow-sm">
+          {item.text}
+        </h3>
+        <div className="mt-2 h-[3px] w-12 mx-auto bg-yellow-500 rounded-full transition-all duration-300 group-hover:w-16"></div>
+      </motion.div>
+    ))}
+  </div>
+</section>
+   
 
       {/* Categories Section */}
-      <section className="categories-section">
-        <h2>Let’s Get to the Root of What’s Holding You Back</h2>
-        <p>Pinpoint the blocks in your life</p>
-        <div className="category-grid">
-          <div className="category-item">
-            <img src="https://via.placeholder.com/100" alt="Career" />
-            <h4>Career</h4>
-            <ul>
-              <li>Why does success always feel slow or just out of reach?</li>
-              <li>Should you keep going, switch paths, or try something new?</li>
-              <li>What kind of work will truly fulfill you and bring stability?</li>
-            </ul>
-          </div>
-          <div className="category-item">
-            <img src="https://via.placeholder.com/100" alt="Love & Relationships" />
-            <h4>Love & Relationships</h4>
-            <ul>
-              <li>Why do your relationships feel confusing, heavy, or stuck in a loop?</li>
-              <li>Is your current partner the right one or just a passing phase?</li>
-              <li>What’s really causing delays or issues in your love life or marriage?</li>
-            </ul>
-          </div>
-          <div className="category-item">
-            <img src="https://via.placeholder.com/100" alt="Money & Growth" />
-            <h4>Money & Growth</h4>
-            <ul>
-              <li>Why does money come in but never seem to stay?</li>
-              <li>Are you meant to struggle, or is something blocking your growth?</li>
-              <li>What changes can help you build real financial stability?</li>
-            </ul>
-          </div>
-          <div className="category-item">
-            <img src="https://via.placeholder.com/100" alt="Health & Inner Peace" />
-            <h4>Health & Inner Peace</h4>
-            <ul>
-              <li>Why do you keep facing the same health or energy issues?</li>
-              <li>Is stress or something deeper affecting your well-being?</li>
-              <li>What’s the best time and way to start healing, inside and out?</li>
-            </ul>
-          </div>
+      <section className="py-16 px-6 bg-white text-center">
+        <h2 className="text-3xl font-bold text-gray-900">
+          Find the Root Cause of Your Life’s Patterns
+        </h2>
+        <p className="text-gray-600 mt-2 mb-10">
+          Discover where your energy is blocked and how to realign with your purpose.
+        </p>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 max-w-6xl mx-auto">
+          {[
+            {
+              title: "Career & Growth",
+              img: "/Career.jpg", // 🔮 Gemini prompt below
+              list: [
+                "Feeling stuck or unrecognized at work?",
+                "Unsure if your career is aligned with destiny?",
+                "Want to know when your luck will turn?",
+              ],
+            },
+            {
+              title: "Love & Compatibility",
+              img: "/LoveandRelation.jpg",
+              list: [
+                "Struggling with understanding your partner?",
+                "Delays or issues in marriage?",
+                "Want to attract meaningful relationships?",
+              ],
+            },
+            {
+              title: "Wealth & Stability",
+              img: "/Money.png",
+              list: [
+                "Earning well but never saving enough?",
+                "Money comes and goes unpredictably?",
+                "Find the right time to invest or start business?",
+              ],
+            },
+            {
+              title: "Health & Energy",
+              img: "/peace.jpg",
+              list: [
+                "Facing recurring health issues?",
+                "Emotional fatigue or anxiety cycles?",
+                "Learn remedies for long-term wellness.",
+              ],
+            },
+          ].map((cat, i) => (
+            <div
+              key={i}
+              className="bg-gray-50 border border-gray-200 p-6 rounded-2xl shadow hover:shadow-lg transition text-left"
+            >
+              <img
+                src={cat.img}
+                alt={cat.title}
+                className="w-full h-40 object-cover rounded-lg mb-4"
+              />
+              <h4 className="text-xl font-semibold text-yellow-700 mb-3">
+                {cat.title}
+              </h4>
+              <ul className="text-gray-600 text-sm space-y-1 list-disc list-inside">
+                {cat.list.map((item, j) => (
+                  <li key={j}>{item}</li>
+                ))}
+              </ul>
+            </div>
+          ))}
         </div>
-        <p>If you’ve been feeling stuck for too long, it’s not a coincidence. It’s a sign that it’s time to understand what’s really going on and finally shift the direction of your life.</p>
-        <button className="cta-button">GET ON A CALL</button>
+
+        <p className="max-w-3xl mx-auto mt-10 text-gray-700">
+          When you understand the deeper reasons behind your struggles, real change begins.  
+          Let’s uncover the truth behind your journey and redirect your destiny.
+        </p>
+        <button className="mt-8 bg-yellow-500 hover:bg-yellow-600 text-white px-8 py-3 rounded-lg font-semibold transition">
+          Book a Session
+        </button>
       </section>
 
-      {/* Services Section */}
-      <section className="services-section">
-        <h2>Choose the One That Fits You Best</h2>
-        <p>Sometimes, one call to the right person can change everything.</p>
-        <ul className="services-list">
-          <li>Astrology Consultation</li>
-          <li>Name & Identity Services</li>
-          <li>Business & Brand Services</li>
-          <li>Event & Timing Services</li>
-          <li>VASTU</li>
-        </ul>
-        <p>For assistance, call <strong>+91-9266305029</strong></p>
-      </section>
+  {/* Services Section */}
+<section className="py-16 bg-yellow-50 text-center">
+  <h2 className="text-3xl font-bold text-gray-900">
+    Select Your Consultation Type
+  </h2>
+  <p className="text-gray-600 mt-2 mb-6">
+    Whether you seek clarity for yourself or your relationship, there’s a session for you.
+  </p>
 
-      {/* Consultation Call Section */}
-      <section className="consultation-call-section">
-        <h2>Consultation Call</h2>
-        <p>Ideal for individuals seeking clarity and solutions.</p>
-        <div className="form-group">
-          <label>Mode:</label>
-          <select>
-            <option>Normal</option>
-            <option>Urgent</option>
-          </select>
-        </div>
-        <div className="form-group">
-          <label>Duration:</label>
-          <select>
-            <option>30 Min</option>
-            <option>1 Hour</option>
-          </select>
-        </div>
-        <h4>Includes:</h4>
-        <ul>
-          <li>In-depth chart-based life analysis</li>
-          <li>Clear direction for career, health, and personal growth</li>
-          <li>Remedies aligned with your planetary blueprint</li>
-        </ul>
-        <p><strong>Price:</strong> ₹1,48,000</p>
-        <button>Book Now</button>
-        <p><em>Note: Pick your preferred Audio or Video Call type at the checkout.</em></p>
-      </section>
+  <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 max-w-7xl mx-auto px-4">
+    {[
+      {
+        title: "Personal Consultation",
+        desc: "Get deep insights into career, health, and personal life.",
+        price: 148000 * 0.75, // 25% discount
+      },
+      {
+        title: "Couple Consultation",
+        desc: "Decode compatibility and relationship karma.",
+        price: 200000 * 0.75, // 25% discount
+      },
+      {
+        title: "Face-to-Face Meeting",
+        desc: "Exclusive 1-on-1 session with Madhav Yadav in Noida.",
+        price: 500000 * 0.75, // 25% discount
+      },
+    ].map((s, i) => (
+      <div
+        key={i}
+        className="bg-white border border-gray-200 p-8 rounded-2xl shadow hover:shadow-xl transition transform hover:-translate-y-1"
+      >
+        <h2 className="text-2xl font-bold text-yellow-700 mb-2">{s.title}</h2>
+        <p className="text-gray-600 mb-4">{s.desc}</p>
+        <p className="text-lg font-semibold text-gray-800 mb-2">
+          <strong>Price:</strong> ₹{s.price.toLocaleString("en-IN")}
+        </p>
+        <button className="bg-yellow-500 hover:bg-yellow-600 text-white w-full py-3 mt-4 rounded-lg font-semibold transition">
+          Book Now
+        </button>
+      </div>
+    ))}
+  </div>
+</section>
 
-      {/* Couple Consultation Section */}
-      <section className="couple-consultation-section">
-        <h2>Couple Consultation</h2>
-        <p>Perfect for those navigating relationships or marriage decisions.</p>
-        <div className="form-group">
-          <label>Mode:</label>
-          <select>
-            <option>Normal</option>
-            <option>Urgent</option>
-          </select>
-        </div>
-        <div className="form-group">
-          <label>Duration:</label>
-          <select>
-            <option>30 Min</option>
-            <option>1 Hour</option>
-          </select>
-        </div>
-        <h4>Includes:</h4>
-        <ul>
-          <li>Compatibility and karmic alignment insights</li>
-          <li>Clarity on love, marriage, or partnership challenges</li>
-          <li>Remedies tailored to both partners’ charts</li>
-        </ul>
-        <p><strong>Price:</strong> ₹1,85,000</p>
-        <button>Book Now</button>
-        <p><em>Note: Pick your preferred Audio or Video Call type at the checkout.</em></p>
-      </section>
+      {/* Important Notes Section */}
+<section className="py-16 bg-white text-center border-t border-yellow-100 px-6">
+  <h2 className="text-3xl font-bold text-gray-900 mb-6">Important Notes</h2>
+  <div className="max-w-4xl mx-auto text-gray-700 text-base leading-relaxed space-y-4">
+    <p>
+      Once your booking is confirmed, you’ll be assigned the next available consultation slot. 
+      In case of rescheduling due to <strong>Pandit Ji’s busy schedule</strong>, your call will remain a 
+      top priority, and you’ll be allotted the nearest possible time.
+    </p>
+    <p>
+      Your consultation will be scheduled <strong>only after payment confirmation</strong>.  
+      All available slots are currently <strong>booked till 1st December 2025</strong>.
+    </p>
+    <p className="text-yellow-700 font-medium">
+      सभी कॉल पेमेंट के बाद ही शेड्यूल किये जायेंगे। सभी स्लॉट्स 1 दिसंबर 2025 तक बुक हैं।
+    </p>
+    <p className="italic text-gray-600">
+      Note: This is a one-time consultation service. There is no refund policy once the session 
+      is booked and the consultation has taken place.
+    </p>
+  </div>
+</section>
 
-      {/* Face to Face Consultation Section */}
-      <section className="face-consultation-section">
-        <h2>Face to Face Consultation with Astrologer Madhav Yadav</h2>
-        <p>A rare chance to meet him in person.</p>
-        <p>This is not for everyone. It is only for those who truly want answers, direction, and powerful results in life.</p>
-        <div className="form-group">
-          <label>Mode:</label>
-          <span>In person (Noida Office)</span>
-        </div>
-        <div className="form-group">
-          <label>Duration:</label>
-          <span>1 Hour</span>
-        </div>
-        <h4>What You Will Get:</h4>
-        <ul>
-          <li>Your kundli will be checked and explained in front of you</li>
-          <li>One on one spiritual and astrological advice</li>
-          <li>Remedies and energy solutions shared instantly</li>
-          <li>You can ask anything that is troubling you</li>
-          <li>Powerful insights you will not find anywhere else</li>
-        </ul>
-        <p><strong>Price:</strong> ₹5,00,000</p>
-        <button>Book Now</button>
-        <p><em>Note: This consultation is only available in 1v1 Mode with 1 Hour duration.</em></p>
-      </section>
+{/* One-Time Service & Support Section */}
+<section className="py-12 bg-yellow-50 text-center border-t border-yellow-200">
+  <div className="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8">
+    <div className="bg-white border border-yellow-200 rounded-2xl shadow p-8 hover:shadow-lg transition">
+      <h3 className="text-2xl font-bold text-yellow-700 mb-3">One-Time Service</h3>
+      <p className="text-gray-700">
+        Each consultation is a single, personalized session that provides deep astrological 
+        insights based on your birth details and chosen service.
+      </p>
+    </div>
+
+    <div className="bg-white border border-yellow-200 rounded-2xl shadow p-8 hover:shadow-lg transition">
+      <h3 className="text-2xl font-bold text-yellow-700 mb-3">15 Days Support</h3>
+      <p className="text-gray-700">
+        Get <strong>15 days of dedicated post-consultation support</strong> to assist you with 
+        remedies, follow-up questions, and continued astrological guidance.
+      </p>
+    </div>
+  </div>
+</section>
+
     </div>
   );
 }
-
-export default ConsultationPage;
