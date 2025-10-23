@@ -176,6 +176,37 @@ export default function UserDashboard() {
   </div>
 </section>
 
+{/* 🌟 Consultation Call Section */}
+<section className="bg-[#FFF6F1] py-14 px-6 md:px-12 flex flex-col md:flex-row items-center justify-between max-w-7xl mx-auto rounded-3xl mt-10 shadow-lg overflow-hidden">
+  {/* Left Content */}
+  <div className="md:w-1/2 mb-8 md:mb-0">
+    <h2 className="text-3xl md:text-4xl font-bold text-[#7b1f24] mb-4 leading-snug">
+      Talk To India’s Top Astrologer Today!
+    </h2>
+    <p className="text-gray-700 leading-relaxed mb-6">
+      Get personalized astrological guidance for love, career, health, marriage, 
+      and more. Our expert astrologers bring over five decades of trusted experience 
+      in Vedic astrology, palmistry, numerology, and kundli analysis — helping you 
+      find clarity and confidence in every step of life.
+    </p>
+
+    <Link
+      to="/VipAstrologer"
+      className="inline-block bg-[#f94c28] text-white px-8 py-3 rounded-lg font-semibold text-lg hover:bg-[#d53c20] transition-all shadow-md"
+    >
+      Book Now
+    </Link>
+  </div>
+
+  {/* Right Image */}
+  <div className="md:w-1/2 flex justify-center">
+    <img
+      src="/Astro-Bhavana.png"
+      alt="Consultation Call"
+      className="rounded-xl shadow-lg w-full max-w-sm md:max-w-md lg:max-w-md"
+    />
+  </div>
+</section>
         {/* 📦 Dashboard Services */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-8">
           {services.map((service, index) => (
