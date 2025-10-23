@@ -60,16 +60,20 @@ useEffect(() => {
     try {
       const [res1, res2] = await Promise.all([
         axios.get("https://bhavanaastro.onrender.com/api/Consult-astrologers?isAI=false&limit=10"),
-        axios.get("https://bhavanaastro.onrender.com/api/Consult-astrologers?isAI=true&limit=10")
+        axios.get("https://bhavanaastro.onrender.com/api/Consult-astrologers?isAI=true&limit=10"),
       ]);
-      setAstrologers(res1.data.astrologers || []);
-      setAiAstrologers(res2.data.astrologers || []);
+
+      // Handle both possible response formats
+      setAstrologers(res1.data.astrologers || res1.data || []);
+      setAiAstrologers(res2.data.astrologers || res2.data || []);
     } catch (error) {
       console.error("Error fetching astrologers:", error);
     }
   };
+
   fetchAstrologers();
 }, []);
+
 
 
 
