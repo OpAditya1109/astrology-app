@@ -58,14 +58,16 @@ export default function Home() {
 useEffect(() => {
   const fetchAstrologers = async () => {
     try {
-      const [res1, res2] = await Promise.all([
-        axios.get("https://bhavanaastro.onrender.com/api/Consult-astrologers?isAI=false&limit=10"),
-        axios.get("https://bhavanaastro.onrender.com/api/Consult-astrologers?isAI=true&limit=10"),
-      ]);
+      const res = await axios.get("https://bhavanaastro.onrender.com/api/Consult-astrologers?limit=20");
 
-      // Handle both possible response formats
-      setAstrologers(res1.data.astrologers || res1.data || []);
-      setAiAstrologers(res2.data.astrologers || res2.data || []);
+      const allAstrologers = res.data.astrologers || [];
+
+      // Separate real and AI astrologers
+      const realAstrologers = allAstrologers.filter(a => a.isAI === false);
+      const aiAstrologers = allAstrologers.filter(a => a.isAI === true);
+
+      setAstrologers(realAstrologers);
+      setAiAstrologers(aiAstrologers);
     } catch (error) {
       console.error("Error fetching astrologers:", error);
     }
@@ -73,6 +75,7 @@ useEffect(() => {
 
   fetchAstrologers();
 }, []);
+
 
 
 
