@@ -22,7 +22,7 @@ navigate("/checkout-Astro", { state: { title: type, price } });
             <span className="text-yellow-600">Madhav Yadav</span>
           </h1>
           <h2 className="mt-4 text-lg md:text-2xl text-gray-700 font-medium">
-            Experience deep insight, calm direction, and karmic healing in one call.
+            Experience deep insight, calm direction, and karmic healing — guided by pure intuition — in one call.
           </h2>
 
           <p className="mt-6 text-2xl font-semibold text-yellow-700">
