@@ -185,7 +185,7 @@ navigate("/checkout-Astro", { state: { title: type, price } });
             },
             {
               title: "Face-to-Face Meeting",
-              desc: "Exclusive 1-on-1 session with Madhav Yadav in Noida.",
+              desc: "Exclusive 1-on-1 session with Madhav Yadav in Pune.",
               price: 500000 * 0.75,
             },
           ].map((s, i) => (
@@ -216,7 +216,7 @@ navigate("/checkout-Astro", { state: { title: type, price } });
         <div className="max-w-4xl mx-auto text-gray-700 text-base leading-relaxed space-y-4">
           <p>
             Once your booking is confirmed, you’ll be assigned the next available consultation slot. 
-            In case of rescheduling due to <strong>Pandit Ji’s busy schedule</strong>, your call will remain a 
+            In case of rescheduling due to <strong>Madhav Ji’s busy schedule</strong>, your call will remain a 
             top priority, and you’ll be allotted the nearest possible time.
           </p>
           <p>
