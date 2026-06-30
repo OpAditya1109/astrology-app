@@ -24,6 +24,7 @@ const generateReceiptId = () =>
 const mapStatus = (status) => {
   switch (status) {
     case 'paid':
+    case 'captured':
       return 'paid';
     case 'failed':
       return 'failed';
