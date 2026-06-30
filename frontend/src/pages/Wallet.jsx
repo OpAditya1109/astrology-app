@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import axios from "axios";
-import { Wallet as WalletIcon, PlusCircle, RefreshCw } from "lucide-react";
+import { Wallet as WalletIcon, PlusCircle } from "lucide-react";
 
 // Load Razorpay script dynamically
 const loadRazorpayScript = () =>
@@ -17,7 +17,6 @@ const loadRazorpayScript = () =>
 const Wallet = () => {
   const [amount, setAmount] = useState("");
   const [loading, setLoading] = useState(false);
-  const [orderId, setOrderId] = useState(null);
   const [status, setStatus] = useState(null);
   const [transaction, setTransaction] = useState(null);
   const [error, setError] = useState("");
@@ -107,7 +106,7 @@ const Wallet = () => {
     [name, email, mobile, userId]
   );
 
-  // 💳 Razorpay recharge
+  // Razorpay recharge
   const handleRecharge = async () => {
     if (!amount) return alert("Enter an amount");
     if (!userId) return alert("User not logged in!");
@@ -119,6 +118,7 @@ const Wallet = () => {
       const loaded = await loadRazorpayScript();
       if (!loaded) {
         setError("Failed to load Razorpay. Check your internet connection.");
+        setLoading(false);
         return;
       }
 
@@ -136,10 +136,9 @@ const Wallet = () => {
       const { orderId: internalOrderId, razorpayOrderId, keyId, amount: rzpAmount, currency } = res.data;
       if (!razorpayOrderId) {
         setError("Payment order not received from server");
+        setLoading(false);
         return;
       }
-
-      setOrderId(internalOrderId);
 
       openRazorpayCheckout({ razorpayOrderId, keyId, amount: rzpAmount, currency, internalOrderId });
     } catch (err) {
@@ -208,7 +207,7 @@ const Wallet = () => {
               key={amt}
               onClick={() => setAmount(amt)}
               className={`px-4 py-2 rounded-lg border ${
-                amount == amt
+                amount === String(amt) || Number(amount) === amt
                   ? "bg-green-600 text-white border-green-600"
                   : "bg-white hover:bg-green-50 border-gray-300"
               } transition`}
