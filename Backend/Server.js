@@ -22,12 +22,23 @@ dotenv.config();
 connectDB();
 
 const app = express();
-app.use(express.json());
 app.use(cors());
 
+// Webhook routes need the RAW body for Razorpay signature verification,
+// so they must get their raw/text parsers BEFORE the global json() parser
+// ever has a chance to consume the request stream.
 app.use("/api/wallet/webhook", express.text({ type: "*/*" }));
-app.use("/api/wallet/webhook", express.urlencoded({ extended: true }));
-app.use("/api/wallet/webhook", express.json());
+app.use("/api/orders/webhook", express.raw({ type: "application/json" }));
+
+// Global JSON body parser for every other route (must come after the
+// webhook-specific parsers above, and skip the webhook paths entirely
+// since their body has already been parsed/raw-captured above).
+app.use((req, res, next) => {
+  if (req.path === "/api/wallet/webhook" || req.path === "/api/orders/webhook") {
+    return next();
+  }
+  express.json()(req, res, next);
+});
 
 app.use("/api/free-kundali", freeKundaliRoute);
 // --- REST API routes ---
