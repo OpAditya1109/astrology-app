@@ -19,7 +19,6 @@ export default function CheckoutPage() {
   const navigate = useNavigate();
   const service = location.state || { title: "Consultation", price: 0 };
 
-  const [paymentMethod, setPaymentMethod] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -116,54 +115,16 @@ export default function CheckoutPage() {
     }
   };
 
-  // ---------- NOWPAYMENTS CRYPTO PAYMENT FLOW ---------- (unchanged)
-  const handleCryptoPayment = async () => {
-    if (!userId) return alert("User not logged in!");
-    setError("");
-    setLoading(true);
-
-    try {
-      const res = await axios.post(
-        "https://bhavanaastro.onrender.com/api/cryptopayment/create",
-        {
-          orderId: `ASTRO_${Date.now()}`,
-          amount: Number(service.price),
-          priceCurrency: "INR",
-          payCurrency: "shib",
-        }
-      );
-
-      const { paymentUrl } = res.data;
-      if (!paymentUrl) throw new Error("Crypto payment URL not received");
-
-      window.location.href = paymentUrl;
-    } catch (err) {
-      console.error("NOWPayments error:", err.response?.data || err.message);
-      setError("Failed to initiate crypto payment. Try again.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
   // ---------- HANDLE FORM SUBMIT ----------
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    if (!paymentMethod) {
-      alert("Please select a payment method!");
-      return;
-    }
 
     if (!user) {
       alert("Please log in first!");
       return;
     }
 
-    if (paymentMethod === "Razorpay") {
-      await handleRazorpayPayment();
-    } else if (paymentMethod === "Crypto") {
-      await handleCryptoPayment();
-    }
+    await handleRazorpayPayment();
   };
 
   return (
@@ -255,36 +216,6 @@ export default function CheckoutPage() {
             </label>
           </div>
 
-          {/* Payment Options */}
-          <div className="mt-6">
-            <h3 className="text-lg font-semibold text-gray-700 mb-2">
-              Select Payment Method
-            </h3>
-            <div className="flex flex-col md:flex-row gap-4">
-              <button
-                type="button"
-                onClick={() => setPaymentMethod("Razorpay")}
-                className={`flex-1 py-3 rounded-xl font-semibold text-white transition ${
-                  paymentMethod === "Razorpay"
-                    ? "bg-green-800 shadow-lg"
-                    : "bg-black hover:bg-yellow-600"
-                }`}
-              >
-                Razorpay
-              </button>
-              <button
-                type="button"
-                onClick={() => setPaymentMethod("Crypto")}
-                className={`flex-1 py-3 rounded-xl font-semibold text-white transition ${
-                  paymentMethod === "Crypto"
-                    ? "bg-green-800 shadow-lg"
-                    : "bg-black hover:bg-green-600"
-                }`}
-              >
-                Crypto (SHIB)
-              </button>
-            </div>
-          </div>
 
           {error && (
             <p className="text-red-500 text-sm mt-2 text-center">{error}</p>
