@@ -21,6 +21,8 @@ const Wallet = () => {
   const [transaction, setTransaction] = useState(null);
   const [error, setError] = useState("");
   const [balance, setBalance] = useState(0);
+  const [showResultPopup, setShowResultPopup] = useState(false);
+  const [resultType, setResultType] = useState(null); // "success" | "failed"
 
   const storedUser = sessionStorage.getItem("user");
   const user = storedUser ? JSON.parse(storedUser) : null;
@@ -76,6 +78,12 @@ const Wallet = () => {
             setStatus(res.data.orderStatus);
             setTransaction(res.data.transaction);
 
+            const isPaid =
+              (res.data.orderStatus || "").toLowerCase() === "paid" ||
+              (res.data.orderStatus || "").toLowerCase() === "captured";
+            setResultType(isPaid ? "success" : "failed");
+            setShowResultPopup(true);
+
             // Refresh balance
             const userRes = await axios.get(
               `https://bhavanaastro.onrender.com/api/users/${userId}/details`
@@ -84,6 +92,8 @@ const Wallet = () => {
           } catch (err) {
             console.error(err);
             setError("Payment succeeded but verification failed. Contact support.");
+            setResultType("failed");
+            setShowResultPopup(true);
           } finally {
             setLoading(false);
           }
@@ -99,6 +109,8 @@ const Wallet = () => {
       const rzp = new window.Razorpay(options);
       rzp.on("payment.failed", function (response) {
         setError(`Payment failed: ${response.error.description}`);
+        setResultType("failed");
+        setShowResultPopup(true);
         setLoading(false);
       });
       rzp.open();
@@ -219,38 +231,68 @@ const Wallet = () => {
       </div>
 
       {/* Error Message */}
-      {error && <p className="text-red-500 text-sm mt-3 text-center">{error}</p>}
+      {error && !showResultPopup && (
+        <p className="text-red-500 text-sm mt-3 text-center">{error}</p>
+      )}
 
-      {/* Transaction Status */}
-      {status && transaction && (
-        <div className="mt-8 p-5 border border-gray-200 rounded-xl bg-white shadow-sm">
-          <h3 className="text-lg font-semibold text-gray-700 mb-3">
-            Transaction Details
-          </h3>
-          <div className="space-y-1 text-sm text-gray-600">
-            <p>
-              <b>Status:</b> {status}
-            </p>
-            <p>
-              <b>Order ID:</b> {transaction.orderId}
-            </p>
-            <p>
-              <b>Amount:</b> ₹{transaction.amount}
-            </p>
-            <p>
-              <b>Payment ID:</b> {transaction.paymentId}
-            </p>
-            <p>
-              <b>Method:</b> {transaction.paymentMethod}
-            </p>
-            <p>
-              <b>Time:</b> {transaction.paymentTime}
-            </p>
-            {transaction.paymentMessage && (
-              <p>
-                <b>Message:</b> {transaction.paymentMessage}
-              </p>
+      {/* Payment Result Popup */}
+      {showResultPopup && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 px-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 text-center animate-in fade-in zoom-in duration-200">
+            {resultType === "success" ? (
+              <>
+                <div className="mx-auto mb-4 w-16 h-16 rounded-full bg-green-100 flex items-center justify-center">
+                  <svg
+                    className="w-9 h-9 text-green-600"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={2.5}
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+                <h3 className="text-xl font-semibold text-gray-800 mb-2">
+                  Payment Successful
+                </h3>
+                <p className="text-gray-500 mb-1">
+                  ₹{transaction?.amount || amount} added to your wallet
+                </p>
+                <p className="text-gray-400 text-sm">
+                  New balance: ₹{balance}
+                </p>
+              </>
+            ) : (
+              <>
+                <div className="mx-auto mb-4 w-16 h-16 rounded-full bg-red-100 flex items-center justify-center">
+                  <svg
+                    className="w-9 h-9 text-red-600"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={2.5}
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </div>
+                <h3 className="text-xl font-semibold text-gray-800 mb-2">
+                  Payment Failed
+                </h3>
+                <p className="text-gray-500">
+                  We couldn't complete your payment. Please try again.
+                </p>
+              </>
             )}
+
+            <button
+              onClick={() => {
+                setShowResultPopup(false);
+                setError("");
+              }}
+              className="mt-6 w-full bg-green-600 hover:bg-green-700 text-white py-2.5 rounded-lg font-medium transition"
+            >
+              Done
+            </button>
           </div>
         </div>
       )}
