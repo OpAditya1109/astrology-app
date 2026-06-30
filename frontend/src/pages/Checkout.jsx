@@ -1,14 +1,25 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { load } from "@cashfreepayments/cashfree-js";
 import axios from "axios";
-import products from "../data/product"; // import product list
+import products from "../data/product";
+
+// Load Razorpay script dynamically
+const loadRazorpayScript = () =>
+  new Promise((resolve) => {
+    if (document.getElementById("razorpay-script")) return resolve(true);
+    const script = document.createElement("script");
+    script.id = "razorpay-script";
+    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.body.appendChild(script);
+  });
 
 const OrderPayment = () => {
-  const { id } = useParams(); // get product id from URL
+  const { id } = useParams();
   const navigate = useNavigate();
 
-  const product = products.find((p) => p.id === id); // find the product from product list
+  const product = products.find((p) => p.id === id);
   const [user, setUser] = useState(null);
   const [formData, setFormData] = useState({
     name: "",
@@ -20,14 +31,13 @@ const OrderPayment = () => {
     pincode: "",
   });
   const [loading, setLoading] = useState(false);
-  const [orderId, setOrderId] = useState(null);
   const [status, setStatus] = useState(null);
   const [error, setError] = useState("");
   const [loginMessage, setLoginMessage] = useState("");
 
   useEffect(() => {
     if (!product) {
-      navigate("/"); // redirect if product not found
+      navigate("/");
       return;
     }
 
@@ -52,6 +62,62 @@ const OrderPayment = () => {
     setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
+  // Open Razorpay checkout modal
+  const openRazorpayCheckout = useCallback(
+    ({ razorpayOrderId, keyId, amount, currency, internalOrderId }) => {
+      const options = {
+        key: keyId,
+        amount,           // paise from backend
+        currency: currency || "INR",
+        name: "AstroBhavana Shop",
+        description: product?.name || "Product Purchase",
+        order_id: razorpayOrderId,
+        prefill: {
+          name: formData.name,
+          email: formData.email,
+          contact: formData.phone,
+        },
+        theme: { color: "#16a34a" },
+        handler: async function (response) {
+          try {
+            setLoading(true);
+            const res = await axios.post(
+              "https://bhavanaastro.onrender.com/api/orders/verify",
+              {
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature,
+                orderId: internalOrderId,
+              }
+            );
+            setStatus(res.data.orderStatus);
+            // Redirect to order success page
+            navigate(`/order-success?order_id=${internalOrderId}`);
+          } catch (err) {
+            console.error(err);
+            setError("Payment succeeded but verification failed. Contact support.");
+          } finally {
+            setLoading(false);
+          }
+        },
+        modal: {
+          ondismiss: () => {
+            setLoading(false);
+            setError("Payment cancelled.");
+          },
+        },
+      };
+
+      const rzp = new window.Razorpay(options);
+      rzp.on("payment.failed", function (response) {
+        setError(`Payment failed: ${response.error.description}`);
+        setLoading(false);
+      });
+      rzp.open();
+    },
+    [formData, product, navigate]
+  );
+
   const handlePayNow = async () => {
     const { name, email, phone, address, city, state, pincode } = formData;
     if (!name || !email || !phone || !address || !city || !state || !pincode) {
@@ -65,8 +131,14 @@ const OrderPayment = () => {
     try {
       setLoading(true);
 
+      const loaded = await loadRazorpayScript();
+      if (!loaded) {
+        setError("Failed to load Razorpay. Check your internet connection.");
+        return;
+      }
+
       const payload = {
-        userId: user.id, // user id from session
+        userId: user.id,
         productId: product.id,
         amount: product.price,
         name,
@@ -78,39 +150,17 @@ const OrderPayment = () => {
         pincode,
       };
 
-      console.log("Sending order payload:", payload);
-
       const res = await axios.post(
         "https://bhavanaastro.onrender.com/api/orders/create-order",
         payload
       );
 
-      const { orderId, paymentSessionId } = res.data;
-      setOrderId(orderId);
+      const { orderId, razorpayOrderId, keyId, amount: rzpAmount, currency } = res.data;
 
-      const cashfree = await load({ mode: "production" });
-      await cashfree.checkout({ paymentSessionId, redirectTarget: "_self" });
+      openRazorpayCheckout({ razorpayOrderId, keyId, amount: rzpAmount, currency, internalOrderId: orderId });
     } catch (err) {
       console.error(err);
       setError("Failed to initiate payment. Check backend or network.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleVerify = async () => {
-    if (!orderId) return;
-    try {
-      setLoading(true);
-      const res = await axios.post(
-        "https://bhavanaastro.onrender.com/api/orders/verify",
-        { orderId }
-      );
-      setStatus(res.data.orderStatus);
-    } catch (err) {
-      console.error(err);
-      setError("Failed to verify payment");
-    } finally {
       setLoading(false);
     }
   };
@@ -148,15 +198,13 @@ const OrderPayment = () => {
         <input type="text" name="state" placeholder="State" value={formData.state} onChange={handleChange} className="w-full p-3 border rounded-lg" />
         <input type="text" name="pincode" placeholder="Pincode" value={formData.pincode} onChange={handleChange} className="w-full p-3 border rounded-lg" />
 
-        <button onClick={handlePayNow} disabled={loading} className="mt-4 w-full bg-green-600 text-white px-5 py-3 rounded-lg font-medium hover:bg-green-700 transition">
+        <button
+          onClick={handlePayNow}
+          disabled={loading}
+          className="mt-4 w-full bg-green-600 text-white px-5 py-3 rounded-lg font-medium hover:bg-green-700 transition disabled:opacity-50"
+        >
           {loading ? "Processing Payment..." : "Pay Now"}
         </button>
-
-        {orderId && (
-          <button onClick={handleVerify} className="mt-2 w-full bg-blue-600 text-white px-5 py-3 rounded-lg font-medium hover:bg-blue-700 transition">
-            Verify Payment
-          </button>
-        )}
 
         {status && <p className="mt-3 font-medium text-gray-700">Status: {status}</p>}
         {error && <p className="mt-2 text-red-500">{error}</p>}

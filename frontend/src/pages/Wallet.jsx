@@ -1,7 +1,18 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import axios from "axios";
-import { load } from "@cashfreepayments/cashfree-js";
 import { Wallet as WalletIcon, PlusCircle, RefreshCw } from "lucide-react";
+
+// Load Razorpay script dynamically
+const loadRazorpayScript = () =>
+  new Promise((resolve) => {
+    if (document.getElementById("razorpay-script")) return resolve(true);
+    const script = document.createElement("script");
+    script.id = "razorpay-script";
+    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.body.appendChild(script);
+  });
 
 const Wallet = () => {
   const [amount, setAmount] = useState("");
@@ -34,7 +45,69 @@ const Wallet = () => {
     fetchBalance();
   }, [userId]);
 
-  // 🪙 Cashfree recharge (INR)
+  // Open Razorpay checkout
+  const openRazorpayCheckout = useCallback(
+    ({ razorpayOrderId, keyId, amount: rzpAmount, currency, internalOrderId }) => {
+      const options = {
+        key: keyId,
+        amount: rzpAmount, // already in paise from backend
+        currency: currency || "INR",
+        name: "AstroBhavana Wallet",
+        description: "Wallet Recharge",
+        order_id: razorpayOrderId,
+        prefill: {
+          name: name || "",
+          email: email || "",
+          contact: mobile || "",
+        },
+        theme: { color: "#16a34a" },
+        handler: async function (response) {
+          // Payment success — verify signature on backend
+          try {
+            setLoading(true);
+            const res = await axios.post(
+              "https://bhavanaastro.onrender.com/api/wallet/verify",
+              {
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature,
+                orderId: internalOrderId,
+              }
+            );
+            setStatus(res.data.orderStatus);
+            setTransaction(res.data.transaction);
+
+            // Refresh balance
+            const userRes = await axios.get(
+              `https://bhavanaastro.onrender.com/api/users/${userId}/details`
+            );
+            setBalance(userRes.data.wallet?.balance || 0);
+          } catch (err) {
+            console.error(err);
+            setError("Payment succeeded but verification failed. Contact support.");
+          } finally {
+            setLoading(false);
+          }
+        },
+        modal: {
+          ondismiss: () => {
+            setLoading(false);
+            setError("Payment cancelled.");
+          },
+        },
+      };
+
+      const rzp = new window.Razorpay(options);
+      rzp.on("payment.failed", function (response) {
+        setError(`Payment failed: ${response.error.description}`);
+        setLoading(false);
+      });
+      rzp.open();
+    },
+    [name, email, mobile, userId]
+  );
+
+  // 💳 Razorpay recharge
   const handleRecharge = async () => {
     if (!amount) return alert("Enter an amount");
     if (!userId) return alert("User not logged in!");
@@ -42,6 +115,12 @@ const Wallet = () => {
 
     try {
       setLoading(true);
+
+      const loaded = await loadRazorpayScript();
+      if (!loaded) {
+        setError("Failed to load Razorpay. Check your internet connection.");
+        return;
+      }
 
       const res = await axios.post(
         "https://bhavanaastro.onrender.com/api/wallet/topup",
@@ -54,48 +133,18 @@ const Wallet = () => {
         }
       );
 
-      const { orderId, paymentSessionId } = res.data;
-      if (!paymentSessionId) {
-        setError("Payment session not received from server");
+      const { orderId: internalOrderId, razorpayOrderId, keyId, amount: rzpAmount, currency } = res.data;
+      if (!razorpayOrderId) {
+        setError("Payment order not received from server");
         return;
       }
 
-      setOrderId(orderId);
+      setOrderId(internalOrderId);
 
-      const cashfree = await load({ mode: "production" });
-      await cashfree.checkout({
-        paymentSessionId,
-        redirectTarget: "_self",
-      });
+      openRazorpayCheckout({ razorpayOrderId, keyId, amount: rzpAmount, currency, internalOrderId });
     } catch (err) {
       console.error("Failed to create wallet recharge:", err);
       setError("Failed to initiate payment. Try again.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // 🧾 Verify payment (Cashfree)
-  const handleVerify = async () => {
-    if (!orderId) return alert("No order ID to verify");
-
-    try {
-      setLoading(true);
-      const res = await axios.post(
-        "https://bhavanaastro.onrender.com/api/wallet/verify",
-        { orderId }
-      );
-      setStatus(res.data.orderStatus);
-      setTransaction(res.data.transaction);
-
-      const userRes = await axios.get(
-        `https://bhavanaastro.onrender.com/api/users/${userId}/details`
-      );
-      setBalance(userRes.data.wallet?.balance || 0);
-    } catch (err) {
-      console.error(err);
-      alert("Failed to verify payment");
-    } finally {
       setLoading(false);
     }
   };
@@ -130,7 +179,7 @@ const Wallet = () => {
           Add Funds
         </h3>
 
-        {/* Input + Button */}
+        {/* Input */}
         <div className="flex items-center gap-3 mb-4">
           <input
             type="number"
@@ -148,7 +197,7 @@ const Wallet = () => {
             disabled={loading || !amount}
             className="bg-green-600 hover:bg-green-700 text-white px-5 py-2 rounded-lg shadow-md transition disabled:opacity-50"
           >
-            {loading ? "Processing..." : "Add via Cashfree"}
+            {loading ? "Processing..." : "Add via Razorpay"}
           </button>
         </div>
 
@@ -169,20 +218,6 @@ const Wallet = () => {
           ))}
         </div>
       </div>
-
-      {/* Verify Payment */}
-      {orderId && (
-        <div className="text-center mt-5">
-          <button
-            onClick={handleVerify}
-            disabled={loading}
-            className="bg-blue-600 hover:bg-blue-700 flex items-center gap-2 justify-center text-white px-5 py-2 rounded-lg shadow-md transition disabled:opacity-50 mx-auto"
-          >
-            <RefreshCw size={18} />
-            Verify Payment
-          </button>
-        </div>
-      )}
 
       {/* Error Message */}
       {error && <p className="text-red-500 text-sm mt-3 text-center">{error}</p>}

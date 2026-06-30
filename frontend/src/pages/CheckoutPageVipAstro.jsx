@@ -1,7 +1,18 @@
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import axios from "axios";
-import { load } from "@cashfreepayments/cashfree-js";
+
+// Load Razorpay script dynamically
+const loadRazorpayScript = () =>
+  new Promise((resolve) => {
+    if (document.getElementById("razorpay-script")) return resolve(true);
+    const script = document.createElement("script");
+    script.id = "razorpay-script";
+    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.body.appendChild(script);
+  });
 
 export default function CheckoutPage() {
   const location = useLocation();
@@ -10,7 +21,6 @@ export default function CheckoutPage() {
 
   const [paymentMethod, setPaymentMethod] = useState("");
   const [loading, setLoading] = useState(false);
-  const [orderId, setOrderId] = useState(null);
   const [error, setError] = useState("");
 
   const storedUser = sessionStorage.getItem("user");
@@ -18,13 +28,72 @@ export default function CheckoutPage() {
   const userId = user?._id || user?.id;
   const { name, email, mobile } = user || {};
 
-  // ---------- CASHFREE PAYMENT FLOW ----------
-  const handleCashfreePayment = async () => {
+  // ---------- RAZORPAY PAYMENT FLOW ----------
+  const openRazorpayCheckout = useCallback(
+    ({ razorpayOrderId, keyId, amount, currency, internalOrderId }) => {
+      const options = {
+        key: keyId,
+        amount,
+        currency: currency || "INR",
+        name: "AstroBhavana",
+        description: service.title,
+        order_id: razorpayOrderId,
+        prefill: {
+          name: name || "",
+          email: email || "",
+          contact: mobile || "",
+        },
+        theme: { color: "#ca8a04" }, // yellow to match the page theme
+        handler: async function (response) {
+          try {
+            setLoading(true);
+            await axios.post(
+              "https://bhavanaastro.onrender.com/api/wallet/verify",
+              {
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature,
+                orderId: internalOrderId,
+              }
+            );
+            navigate("/wallet-success?order_id=" + internalOrderId);
+          } catch (err) {
+            console.error(err);
+            setError("Payment succeeded but verification failed. Contact support.");
+          } finally {
+            setLoading(false);
+          }
+        },
+        modal: {
+          ondismiss: () => {
+            setLoading(false);
+            setError("Payment cancelled.");
+          },
+        },
+      };
+
+      const rzp = new window.Razorpay(options);
+      rzp.on("payment.failed", function (response) {
+        setError(`Payment failed: ${response.error.description}`);
+        setLoading(false);
+      });
+      rzp.open();
+    },
+    [name, email, mobile, service.title, navigate]
+  );
+
+  const handleRazorpayPayment = async () => {
     if (!userId) return alert("User not logged in!");
     setError("");
     setLoading(true);
 
     try {
+      const loaded = await loadRazorpayScript();
+      if (!loaded) {
+        setError("Failed to load Razorpay. Check your internet connection.");
+        return;
+      }
+
       const res = await axios.post(
         "https://bhavanaastro.onrender.com/api/wallet/topup",
         {
@@ -36,25 +105,18 @@ export default function CheckoutPage() {
         }
       );
 
-      const { orderId, paymentSessionId } = res.data;
-      if (!paymentSessionId) throw new Error("Payment session not received");
+      const { orderId: internalOrderId, razorpayOrderId, keyId, amount, currency } = res.data;
+      if (!razorpayOrderId) throw new Error("Payment order not received");
 
-      setOrderId(orderId);
-
-      const cashfree = await load({ mode: "production" });
-      await cashfree.checkout({
-        paymentSessionId,
-        redirectTarget: "_self",
-      });
+      openRazorpayCheckout({ razorpayOrderId, keyId, amount, currency, internalOrderId });
     } catch (err) {
       console.error(err);
-      setError("Failed to initiate Cashfree payment. Try again.");
-    } finally {
+      setError("Failed to initiate Razorpay payment. Try again.");
       setLoading(false);
     }
   };
 
-  // ---------- NOWPAYMENTS CRYPTO PAYMENT FLOW ----------
+  // ---------- NOWPAYMENTS CRYPTO PAYMENT FLOW ---------- (unchanged)
   const handleCryptoPayment = async () => {
     if (!userId) return alert("User not logged in!");
     setError("");
@@ -97,8 +159,8 @@ export default function CheckoutPage() {
       return;
     }
 
-    if (paymentMethod === "Cashfree") {
-      await handleCashfreePayment();
+    if (paymentMethod === "Razorpay") {
+      await handleRazorpayPayment();
     } else if (paymentMethod === "Crypto") {
       await handleCryptoPayment();
     }
@@ -201,14 +263,14 @@ export default function CheckoutPage() {
             <div className="flex flex-col md:flex-row gap-4">
               <button
                 type="button"
-                onClick={() => setPaymentMethod("Cashfree")}
+                onClick={() => setPaymentMethod("Razorpay")}
                 className={`flex-1 py-3 rounded-xl font-semibold text-white transition ${
-                  paymentMethod === "Cashfree"
+                  paymentMethod === "Razorpay"
                     ? "bg-green-800 shadow-lg"
                     : "bg-black hover:bg-yellow-600"
                 }`}
               >
-                Cashfree
+                Razorpay
               </button>
               <button
                 type="button"

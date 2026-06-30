@@ -1,34 +1,35 @@
 const express = require('express');
-const { Cashfree, CFEnvironment } = require('cashfree-pg');
+const Razorpay = require('razorpay');
+const crypto = require('crypto');
 const WalletTransaction = require('../models/WalletTransaction');
 const User = require('../models/User');
 
 const router = express.Router();
 
-// Cashfree config
-const CASHFREE_APP_ID = process.env.CASHFREE_APP_ID;
-const CASHFREE_SECRET_KEY = process.env.CASHFREE_SECRET_KEY;
+// Razorpay config
+const RAZORPAY_KEY_ID = process.env.RAZORPAY_KEY_ID;
+const RAZORPAY_KEY_SECRET = process.env.RAZORPAY_KEY_SECRET;
 
-// Initialize Cashfree SDK
-const cashfree = new Cashfree(
-  process.env.NODE_ENV === 'production' ? CFEnvironment.PRODUCTION : CFEnvironment.SANDBOX,
-  CASHFREE_APP_ID,
-  CASHFREE_SECRET_KEY
-);
+// Initialize Razorpay instance
+const razorpay = new Razorpay({
+  key_id: RAZORPAY_KEY_ID,
+  key_secret: RAZORPAY_KEY_SECRET,
+});
 
-// Helper to generate order ID
-const generateOrderId = () =>
-  'WALLET_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+// Helper to generate receipt ID (Razorpay calls it "receipt", max 40 chars)
+const generateReceiptId = () =>
+  'WLT_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
 
-// Helper to map Cashfree status to DB status
+// Helper to map Razorpay status to DB status
 const mapStatus = (status) => {
   switch (status) {
-    case 'PAID':
+    case 'paid':
       return 'paid';
-    case 'FAILED':
+    case 'failed':
       return 'failed';
-    case 'EXPIRED':
-      return 'cancelled';
+    case 'created':
+    case 'attempted':
+      return 'pending';
     default:
       return status.toLowerCase();
   }
@@ -48,7 +49,7 @@ async function creditWalletOnce(userId, amount, paymentId) {
           amount,
           description: 'Wallet recharge',
           paymentId,
-          date: new Date()
+          date: new Date(),
         },
       },
     }
@@ -62,61 +63,56 @@ async function creditWalletOnce(userId, amount, paymentId) {
 }
 
 // ------------------- TOPUP -------------------
+// Creates a Razorpay order and returns order_id + key_id to frontend
 router.post('/topup', async (req, res) => {
   try {
     const { userId, amount, phone, name, email } = req.body;
 
     if (!userId || !amount)
       return res.status(400).json({ message: 'User ID and amount are required' });
-    if (!CASHFREE_APP_ID || !CASHFREE_SECRET_KEY)
-      return res.status(500).json({ message: 'Cashfree configuration missing' });
+    if (!RAZORPAY_KEY_ID || !RAZORPAY_KEY_SECRET)
+      return res.status(500).json({ message: 'Razorpay configuration missing' });
 
-    const orderId = generateOrderId();
+    const receiptId = generateReceiptId();
 
     // Save transaction as pending
     const transaction = new WalletTransaction({
       userId,
-      orderId,
+      orderId: receiptId,   // we store receipt as our orderId reference
       amount,
       status: 'pending',
     });
     await transaction.save();
-    console.log(`Transaction created: ${orderId}, status: pending`);
+    console.log(`Transaction created: ${receiptId}, status: pending`);
 
-    // Create Cashfree order
-    const orderData = {
-      order_amount: amount,
-      order_currency: 'INR',
-      order_id: orderId,
-      customer_details: {
-        customer_id: `USER_${userId}`,
-        customer_phone: phone || '9999999999',
-        customer_name: name || 'Test User',
-        customer_email: email || 'test@example.com',
+    // Create Razorpay order (amount must be in paise)
+    const razorpayOrder = await razorpay.orders.create({
+      amount: Math.round(amount * 100), // paise
+      currency: 'INR',
+      receipt: receiptId,
+      notes: {
+        userId,
+        walletTopup: 'true',
       },
-      order_meta: {
-        return_url: `https://www.astrobhavana.com/wallet-success?order_id=${orderId}`,
-        notify_url: `https://bhavanaastro.onrender.com/api/wallet/webhook`,
-        payment_methods: 'cc,dc,upi',
-      },
-    };
+    });
 
-    const cashfreeResponse = await cashfree.PGCreateOrder(orderData);
+    console.log(`Razorpay order created: ${razorpayOrder.id}`);
 
-    if (cashfreeResponse.data.payment_session_id) {
-      console.log(`Cashfree order created: ${orderId}`);
-      res.json({
-        success: true,
-        orderId,
-        paymentUrl: cashfreeResponse.data.payment_link,
-        paymentSessionId: cashfreeResponse.data.payment_session_id,
-      });
-    } else {
-      transaction.status = 'failed';
-      await transaction.save();
-      console.log(`Failed to create Cashfree order: ${orderId}`);
-      throw new Error('Failed to create payment session');
-    }
+    // Update transaction with Razorpay order id
+    transaction.razorpayOrderId = razorpayOrder.id;
+    await transaction.save();
+
+    res.json({
+      success: true,
+      orderId: receiptId,           // our internal order reference
+      razorpayOrderId: razorpayOrder.id,  // pass to frontend Razorpay checkout
+      keyId: RAZORPAY_KEY_ID,       // frontend needs the key
+      amount: razorpayOrder.amount, // amount in paise
+      currency: razorpayOrder.currency,
+      name: name || 'User',
+      email: email || '',
+      phone: phone || '',
+    });
   } catch (error) {
     console.error('Wallet topup error:', error);
     res.status(500).json({ message: 'Failed to initiate wallet top-up', error: error.message });
@@ -124,28 +120,45 @@ router.post('/topup', async (req, res) => {
 });
 
 // ------------------- VERIFY -------------------
+// Called after Razorpay checkout success — verifies signature and credits wallet
 router.post('/verify', async (req, res) => {
   try {
-    const { orderId } = req.body;
-    if (!orderId) return res.status(400).json({ message: 'Order ID is required' });
+    const { razorpay_order_id, razorpay_payment_id, razorpay_signature, orderId } = req.body;
 
-    const cashfreeResponse = await cashfree.PGFetchOrder(orderId);
-    const orderStatus = cashfreeResponse.data.order_status;
-    const paymentDetails = cashfreeResponse.data.payment_details || {};
+    if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature || !orderId)
+      return res.status(400).json({ message: 'Missing payment verification fields' });
+
+    // Signature verification
+    const generatedSignature = crypto
+      .createHmac('sha256', RAZORPAY_KEY_SECRET)
+      .update(`${razorpay_order_id}|${razorpay_payment_id}`)
+      .digest('hex');
+
+    if (generatedSignature !== razorpay_signature) {
+      return res.status(400).json({ success: false, message: 'Invalid payment signature' });
+    }
+
+    // Fetch payment details from Razorpay to get method and time
+    const payment = await razorpay.payments.fetch(razorpay_payment_id);
 
     const transaction = await WalletTransaction.findOne({ orderId });
     if (!transaction) return res.status(404).json({ message: 'Transaction not found' });
 
-    transaction.status = mapStatus(orderStatus);
-    transaction.paymentId = paymentDetails.payment_id || transaction.paymentId;
-    transaction.paymentMethod = paymentDetails.payment_method || transaction.paymentMethod;
-    transaction.paymentTime = paymentDetails.payment_time || transaction.paymentTime;
-    transaction.paymentMessage = paymentDetails.payment_message || transaction.paymentMessage;
+    transaction.status = mapStatus(payment.status);
+    transaction.paymentId = razorpay_payment_id;
+    transaction.paymentMethod = payment.method || 'unknown';
+    transaction.paymentTime = new Date(payment.created_at * 1000).toISOString();
+    transaction.paymentMessage = payment.description || '';
 
     await transaction.save();
     console.log(`Transaction verified: ${orderId}, status: ${transaction.status}`);
 
-    res.json({ success: true, orderStatus, transaction });
+    // Credit wallet if paid
+    if (transaction.status === 'paid') {
+      await creditWalletOnce(transaction.userId, transaction.amount, razorpay_payment_id);
+    }
+
+    res.json({ success: true, orderStatus: transaction.status.toUpperCase(), transaction });
   } catch (error) {
     console.error('Wallet verify error:', error);
     res.status(500).json({ message: 'Failed to verify payment', error: error.message });
@@ -153,60 +166,79 @@ router.post('/verify', async (req, res) => {
 });
 
 // ------------------- WEBHOOK -------------------
-router.post('/webhook', async (req, res) => {
+// Razorpay webhook — configure in Razorpay dashboard → Webhooks → payment.captured / payment.failed
+router.post('/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
   try {
-    console.log('Wallet webhook received:', req.body);
+    // Verify webhook signature
+    const webhookSecret = process.env.RAZORPAY_WEBHOOK_SECRET;
+    const signature = req.headers['x-razorpay-signature'];
 
-    const { data } = req.body;
-    if (!data || !data.order || !data.payment)
-      return res.status(400).json({ success: false, message: 'Invalid webhook payload' });
+    if (webhookSecret && signature) {
+      const generatedSignature = crypto
+        .createHmac('sha256', webhookSecret)
+        .update(req.body) // raw body buffer
+        .digest('hex');
 
-    const orderId = data.order.order_id;
-    const orderAmount = data.order.order_amount;
-    const rawStatus = data.payment.payment_status;
-    const orderStatus = rawStatus === 'SUCCESS' ? 'PAID' : rawStatus;
+      if (generatedSignature !== signature) {
+        console.warn('Webhook signature mismatch');
+        return res.status(400).json({ success: false, message: 'Invalid webhook signature' });
+      }
+    }
 
-    const paymentId = data.payment.cf_payment_id;
-    const paymentMethod = data.payment.payment_group || 'unknown';
-    const paymentTime = data.payment.payment_time;
-    const paymentMessage = data.payment.payment_message;
+    const payload = JSON.parse(req.body);
+    const event = payload.event;
+    console.log('Wallet webhook received event:', event);
 
-    let transaction = await WalletTransaction.findOne({ orderId });
+    // Only handle payment captured/failed events
+    if (!['payment.captured', 'payment.failed'].includes(event)) {
+      return res.json({ success: true, message: 'Event ignored' });
+    }
+
+    const paymentEntity = payload.payload?.payment?.entity;
+    if (!paymentEntity) return res.status(400).json({ success: false, message: 'Invalid webhook payload' });
+
+    const razorpayOrderId = paymentEntity.order_id;
+    const razorpayPaymentId = paymentEntity.id;
+    const paymentStatus = paymentEntity.status; // 'captured' or 'failed'
+    const orderAmount = paymentEntity.amount / 100; // paise → rupees
+
+    // Find transaction by razorpayOrderId
+    const transaction = await WalletTransaction.findOne({ razorpayOrderId });
     if (!transaction)
       return res.status(404).json({ success: false, message: 'Transaction not found' });
 
-    transaction.status = mapStatus(orderStatus);
-    transaction.paymentId = paymentId;
-    transaction.paymentMethod = paymentMethod;
-    transaction.paymentTime = paymentTime;
-    transaction.paymentMessage = paymentMessage;
+    transaction.status = paymentStatus === 'captured' ? 'paid' : 'failed';
+    transaction.paymentId = razorpayPaymentId;
+    transaction.paymentMethod = paymentEntity.method || 'unknown';
+    transaction.paymentTime = new Date(paymentEntity.created_at * 1000).toISOString();
+    transaction.paymentMessage = paymentEntity.description || '';
 
     await transaction.save();
-    console.log(`Webhook updated transaction: ${orderId}, status: ${transaction.status}`);
+    console.log(`Webhook updated transaction: ${transaction.orderId}, status: ${transaction.status}`);
 
-    // Credit wallet if PAID
+    // Credit wallet if captured
     if (transaction.status === 'paid') {
-      await creditWalletOnce(transaction.userId, orderAmount, paymentId);
+      await creditWalletOnce(transaction.userId, orderAmount, razorpayPaymentId);
     }
 
-    res.json({ success: true, message: 'Webhook processed', orderId, status: transaction.status });
+    res.json({ success: true, message: 'Webhook processed', orderId: transaction.orderId, status: transaction.status });
   } catch (error) {
     console.error('Wallet webhook error:', error);
     res.status(500).json({ success: false, message: 'Failed to process webhook', error: error.message });
   }
 });
 
-
+// ------------------- STATUS -------------------
 router.get('/status/:orderId', async (req, res) => {
   try {
     const { orderId } = req.params;
-    let transaction = await WalletTransaction.findOne({ orderId });
+    const transaction = await WalletTransaction.findOne({ orderId });
     if (!transaction) return res.status(404).json({ message: 'Transaction not found' });
 
-    if (transaction.status === 'pending') {
-      // Optionally fetch Cashfree status, but do NOT credit wallet here
-      const cfResponse = await cashfree.PGFetchOrder(orderId);
-      transaction.status = mapStatus(cfResponse.data.order_status);
+    // If still pending, fetch from Razorpay using razorpayOrderId
+    if (transaction.status === 'pending' && transaction.razorpayOrderId) {
+      const rzpOrder = await razorpay.orders.fetch(transaction.razorpayOrderId);
+      transaction.status = mapStatus(rzpOrder.status);
       await transaction.save();
     }
 
